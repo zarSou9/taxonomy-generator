@@ -1,0 +1,14 @@
+{
+  "markdownFormatter.formatULSymbol": false,
+  "[markdown]": {
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.wordWrap": "on",
+    "editor.quickSuggestions": {
+      "other": false,
+      "comments": false,
+      "strings": false
+    },
+    "editor.defaultFormatter": "mervin.markdown-formatter"
+  }
+}
