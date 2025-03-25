@@ -173,5 +173,8 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# System stuff:
+# System stuff
 .DS_Store
+
+# This project
+anything.py
