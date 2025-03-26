@@ -1,3 +1,5 @@
+import concurrent.futures
+import concurrent.futures.thread
 import os
 import time
 from typing import Literal, Optional
@@ -7,7 +9,7 @@ from google import genai
 from google.genai.chats import Chat
 from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
 
-from .utils import get_last, log_space
+from taxonomy_generator.utils.utils import get_last, log_space
 
 anthropic_client = Anthropic()
 genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
@@ -94,11 +96,11 @@ def ask_llm(
     prompt_or_messages: str | list[str],
     system: Optional[str] = None,
     model: Literal[
-        "claude-3-5-sonnet-latest",
+        "claude-3-7-sonnet-latest",
         "gemini-1.5-pro",
         "gemini-2.0-flash",
         "gemini-2.5-pro-exp-03-25",
-    ] = "claude-3-5-sonnet-latest",
+    ] = "claude-3-7-sonnet-latest",
     temp=None,
     max_tokens=8192,
     max_retries=4,
@@ -108,17 +110,17 @@ def ask_llm(
     use_cache=False,
     dont_cache_last=False,
     verbose=False,
-):
+) -> str | None:
     if verbose:
         log_space(get_last(prompt_or_messages))
 
     if not is_google_model(model) and ground_with_google_search:
         model = "gemini-1.5-pro"
 
-    response = ""
+    response = None
     for attempt in range(max_retries):
         try:
-            if model == "claude-3-5-sonnet-latest":
+            if model == "claude-3-7-sonnet-latest":
                 messages = convert_to_anthropic_messages(
                     prompt_or_messages,
                     use_cache,
@@ -160,7 +162,7 @@ def ask_llm(
 
                 chat: Chat = genai_client.chats.create(
                     model=model,
-                    generation_config=generation_config,
+                    config=generation_config,
                     history=convert_to_google_messages(prompt_or_messages[:-1]),
                 )
 
@@ -168,7 +170,7 @@ def ask_llm(
                     response = chat.send_message(get_last(prompt_or_messages)).text
                 except Exception as e:
                     print(f"Gemini stopped generating a response: {str(e)}")
-                    return ""
+                    return None
 
             if response:
                 if verbose:
@@ -203,3 +205,43 @@ def run_through_convo(
             print("\n\n\n")
         i += 1
     return assistant_messages
+
+
+def run_in_parallel(
+    prompts_or_messages_list: list[str | list[str]], max_workers: int = 5, **kwargs
+) -> list[str | None]:
+    """
+    Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
+
+    Args:
+        prompts_or_messages_list: A list of prompts or message histories to process
+        max_workers: Maximum number of concurrent workers (default: 5)
+        **kwargs: Additional arguments to pass to ask_llm
+
+    Returns:
+        A list of responses in the same order as the input prompts
+    """
+
+    results = []
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks to the executor
+        future_to_prompt = {
+            executor.submit(ask_llm, prompt_or_messages, **kwargs): i
+            for i, prompt_or_messages in enumerate(prompts_or_messages_list)
+        }
+
+        # Initialize results list with placeholders
+        results = [None] * len(prompts_or_messages_list)
+
+        # Process completed futures as they finish
+        for future in concurrent.futures.as_completed(future_to_prompt):
+            prompt_index = future_to_prompt[future]
+            try:
+                result = future.result()
+                results[prompt_index] = result
+            except Exception as e:
+                print(f"Error processing prompt at index {prompt_index}: {str(e)}")
+                results[prompt_index] = None
+
+    return results
