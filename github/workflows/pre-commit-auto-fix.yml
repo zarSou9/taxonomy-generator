@@ -1,0 +1,57 @@
+name: Pre-commit Auto-fix
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  pre-commit-auto-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # For pushing changes
+      pull-requests: write # For commenting on PRs
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }} # Check out PR branch
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13.2"
+
+      - name: Setup Poetry
+        uses: snok/install-poetry@v1
+        run: |
+          poetry self add poetry-plugin-export>=1.8
+          poetry install
+
+      - name: Run pre-commit with auto-fix
+        id: pre-commit
+        run: |
+          poetry run pre-commit run --all-files || echo "FIXES_NEEDED=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes if needed
+        if: steps.pre-commit.outputs.FIXES_NEEDED == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          poetry run git commit -m "Auto-fix pre-commit issues"
+          git push
+
+      - name: Comment on PR if changes were made
+        if: steps.pre-commit.outputs.FIXES_NEEDED == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🤖 I automatically fixed some code style issues. Please pull these changes locally before making additional edits.'
+            })
