@@ -219,7 +219,7 @@ def run_in_parallel(
         **kwargs: Additional arguments to pass to ask_llm
 
     Returns:
-        A list of responses in the same order as the input prompts
+        list[str | None]: Responses in the same order as the input prompts
     """
 
     results = []
