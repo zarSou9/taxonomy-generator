@@ -3,7 +3,6 @@ name: Pre-commit Auto-fix
 on:
   pull_request:
     branches: [main, master]
-  workflow_dispatch:
 
 jobs:
   pre-commit-auto-fix:
@@ -17,7 +16,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }} # Check out PR branch
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
