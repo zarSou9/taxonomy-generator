@@ -1,10 +1,5 @@
 name: Pre-commit Auto-fix
 
-on:
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
-
 jobs:
   pre-commit-auto-fix:
     runs-on: ubuntu-latest
