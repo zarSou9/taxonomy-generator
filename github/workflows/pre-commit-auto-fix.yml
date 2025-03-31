@@ -32,6 +32,7 @@ jobs:
       - name: Run pre-commit with auto-fix
         id: pre-commit
         run: |
+          poetry run pre-commit install
           poetry run pre-commit run --all-files || echo "FIXES_NEEDED=true" >> $GITHUB_OUTPUT
 
       - name: Commit and push changes if needed
@@ -40,7 +41,7 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add -A
-          poetry run git commit -m "Auto-fix pre-commit issues"
+          poetry run git commit -m "Auto-fix pre-commit issues" || exit 1
           git push
 
       - name: Comment on PR if changes were made
