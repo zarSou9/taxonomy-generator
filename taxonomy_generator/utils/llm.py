@@ -8,6 +8,7 @@ from anthropic import Anthropic
 from google import genai
 from google.genai.chats import Chat as GenaiChat
 from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
+from tqdm import tqdm
 
 from taxonomy_generator.utils.utils import get_last, log_space
 
@@ -163,7 +164,11 @@ def ask_llm(
                 chat: GenaiChat = genai_client.chats.create(
                     model=model,
                     config=generation_config,
-                    history=convert_to_google_messages(prompt_or_messages[:-1]),
+                    history=(
+                        None
+                        if isinstance(prompt_or_messages, str)
+                        else convert_to_google_messages(prompt_or_messages[:-1])
+                    ),
                 )
 
                 try:
@@ -173,6 +178,7 @@ def ask_llm(
                     return None
 
             if response:
+                response = response.strip()
                 if verbose:
                     log_space(response)
                 return response
@@ -222,7 +228,7 @@ def run_in_parallel(
         list[str | None]: Responses in the same order as the input prompts
     """
 
-    results = []
+    results = [None] * len(prompts_or_messages_list)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks to the executor
@@ -231,11 +237,13 @@ def run_in_parallel(
             for i, prompt_or_messages in enumerate(prompts_or_messages_list)
         }
 
-        # Initialize results list with placeholders
-        results = [None] * len(prompts_or_messages_list)
-
-        # Process completed futures as they finish
-        for future in concurrent.futures.as_completed(future_to_prompt):
+        # Process completed futures with progress bar
+        for future in tqdm(
+            concurrent.futures.as_completed(future_to_prompt),
+            total=len(prompts_or_messages_list),
+            desc="Processing prompts",
+            unit="prompt",
+        ):
             prompt_index = future_to_prompt[future]
             try:
                 result = future.result()

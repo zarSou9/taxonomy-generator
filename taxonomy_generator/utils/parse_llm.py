@@ -29,7 +29,7 @@ def parse_response_json(response: str, fallback: T_JSON = {}) -> T_JSON:
         return fallback
 
 
-def get_xml_content(response: str, tag: str) -> str | bool:
+def get_xml_content(response: str, tag: str) -> str | None:
     """Get the content of an XML tag from a response.
 
     Args:
@@ -37,14 +37,14 @@ def get_xml_content(response: str, tag: str) -> str | bool:
         tag (str): XML tag to extract content from
 
     Returns:
-        str | bool: Content of the tag or False if not found.
+        str | None: Content of the tag or None if not found.
     """
     s = f"<{tag}>"
     start = response.find(s)
     end = response.find(f"</{tag}>")
 
     if start == -1 or end == -1:
-        return False
+        return
 
     return response[start + len(s) : end].strip()
 

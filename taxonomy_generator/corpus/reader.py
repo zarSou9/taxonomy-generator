@@ -1,6 +1,7 @@
 import csv
 import random
 import re
+from typing import Iterable
 
 import pandas as pd
 from pydantic import BaseModel
@@ -61,9 +62,8 @@ class AICorpus:
             reader = csv.DictReader(f)
             return [Paper(**row) for row in reader]
 
-    def get_random_sample(self, n: int = 1, subtopic: str | None = None) -> list[Paper]:
-        papers = self.filter_papers(subtopic)
-        return random.sample(papers, min(n, len(papers)))
+    def get_random_sample(self, n: int = 1) -> list[Paper]:
+        return random.sample(self.papers, min(n, len(self.papers)))
 
     def get_paper_by_id(self, arxiv_id: str) -> Paper | None:
         for paper in self.papers:
@@ -97,7 +97,7 @@ class AICorpus:
 
     def get_pretty_sample(
         self,
-        sample_or_n: int | list[Paper],
+        sample_or_n: int | Iterable[Paper | str],
         keys: list[str] = ["title", "published", "abstract"],
         sep_len: int = 0,
     ) -> str:
@@ -122,19 +122,41 @@ class AICorpus:
 
         return all_dups
 
-    def add_papers(self, paper_or_ids: list[Paper | str]) -> list[Paper]:
+    def resolve_paper_ids(self, paper_or_ids: list[Paper | str]) -> list[str]:
+        return self.resolve_papers(paper_or_ids, True)
+
+    def resolve_papers(
+        self, paper_or_ids: list[Paper | str], only_ids: bool = False
+    ) -> list[Paper | str]:
+        papers = []
+        included_ids: set[str] = set()
+        for p in paper_or_ids:
+            arx_id = get_base_arxiv_id(p if isinstance(p, str) else p.arxiv_id)
+
+            if arx_id not in included_ids:
+                papers.append(
+                    arx_id if only_ids else (self.get_paper_by_id(arx_id) or arx_id)
+                )
+                included_ids.add(arx_id)
+
+        return papers
+
+    def add_papers(
+        self, paper_or_ids: list[Paper | str], verbose: int = 0, dry_run: int = 0
+    ) -> list[Paper]:
         """
         Returns:
             paper_or_ids resolved (without dups) and converted to list[Paper]
         """
-        papers: list[Paper | str] = []
-        included_ids: set[str] = set()
-        for p in paper_or_ids:
-            arx_id = get_base_arxiv_id(p if isinstance(p, str) else p.arxiv_id)
-            if arx_id in included_ids:
-                continue
-            papers.append(self.get_paper_by_id(arx_id) or arx_id)
-            included_ids.add(arx_id)
+        papers = self.resolve_papers(paper_or_ids)
+
+        if dry_run == 2:
+            print(f"Papers length: {len(papers)}")
+            if len(papers) != len(paper_or_ids):
+                print(
+                    f"Removed {len(paper_or_ids) - len(papers)} duplicates from input"
+                )
+            return papers
 
         fetched = (
             Paper(**p)
@@ -145,25 +167,67 @@ class AICorpus:
                 papers[i] = next(fetched)
 
         to_add = [p for p in papers if not self.get_paper_by_id(p.arxiv_id)]
-        if to_add:
+        if to_add and not dry_run:
             self.papers.extend(to_add)
+            self.save_to_csv()
 
-            new_rows = []
-            for paper in to_add:
-                p = paper.model_dump()
-                p["categories"] = ", ".join(p.get("categories") or [])
-                new_rows.append(p)
-
-            if new_rows:
-                try:
-                    df = pd.read_csv(self.corpus_path)
-                    df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
-                except (FileNotFoundError, pd.errors.EmptyDataError):
-                    df = pd.DataFrame(new_rows)
-
-                df.to_csv(self.corpus_path, index=False)
+        if verbose:
+            print("-----------------------------------------------")
+            print(f"Papers length: {len(papers)}")
+            if len(papers) != len(paper_or_ids):
+                print(
+                    f"Removed {len(paper_or_ids) - len(papers)} duplicates from input"
+                )
+            print(
+                f"Added {len(to_add)} papers to corpus - {round((len(to_add) / len(papers)) * 100)}% were new"
+            )
+            print("-----------------------------------------------")
+            if verbose == 2:
+                print()
+                print(
+                    self.get_pretty_sample(
+                        papers, ["title", "url", "published", "abstract"]
+                    )
+                )
+                print()
 
         return papers
+
+    def remove_papers(
+        self, paper_or_ids: list[Paper | str], dry_run: bool = False
+    ) -> list[Paper]:
+        paper_ids = self.resolve_paper_ids(paper_or_ids)
+
+        papers = []
+        papers_removed = []
+        for p in self.papers:
+            if get_base_arxiv_id(p.arxiv_id) in paper_ids:
+                papers_removed.append(p)
+            else:
+                papers.append(p)
+
+        print("-----------------------------------------------")
+        print(f"Removing {len(paper_ids)} paper IDs from corpus")
+        print(f"Actually removed {len(papers_removed)} papers")
+        print("-----------------------------------------------")
+
+        if not dry_run:
+            self.papers = papers
+            self.save_to_csv()
+            print(f"Saved updated corpus with {len(self.papers)} papers")
+        else:
+            print("Dry run - changes not saved to disk")
+
+        return papers_removed
+
+    def save_to_csv(self):
+        rows = []
+        for paper in self.papers:
+            p = paper.model_dump()
+            p["categories"] = ", ".join(p.get("categories") or [])
+            rows.append(p)
+        if rows:
+            pd.DataFrame(rows).to_csv(self.corpus_path, index=False)
 
 
 if __name__ == "__main__":

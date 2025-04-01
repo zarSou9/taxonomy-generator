@@ -5,7 +5,7 @@ from exa_py import Exa
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 
 
-def fetch_arxiv_urls(query: str, num_results: int = 25) -> list[str]:
+def search_arx_urls(query: str, num_results: int = 25) -> list[str]:
     return [
         r.url
         for r in exa.search(

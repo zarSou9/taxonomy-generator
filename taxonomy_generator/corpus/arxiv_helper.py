@@ -21,11 +21,47 @@ def extract_paper_info(paper: arxiv.Result) -> dict[str, str]:
     }
 
 
-def fetch_papers_by_id(arxiv_ids: list[str]):
-    client = arxiv.Client()
-    search = arxiv.Search(id_list=arxiv_ids, max_results=len(arxiv_ids))
+def fetch_papers_by_id(
+    arxiv_ids: list[str], batch_size: int = 100
+) -> list[dict[str, str]]:
+    """Fetch papers from arXiv by their IDs in batches.
 
-    return (extract_paper_info(result) for result in client.results(search))
+    Args:
+        arxiv_ids: List of arXiv paper IDs to fetch
+        batch_size: Number of papers to fetch in each batch (default: 100)
+
+    Returns:
+        List of dictionaries containing paper information
+    """
+    if not arxiv_ids:
+        return []
+
+    all_papers = []
+    client = arxiv.Client(
+        page_size=100,
+        delay_seconds=1.5,
+        num_retries=5,
+    )
+
+    for i in range(0, len(arxiv_ids), batch_size):
+        batch = arxiv_ids[i : i + batch_size]
+        print(
+            f"Fetching batch {i // batch_size + 1} of {(len(arxiv_ids) + batch_size - 1) // batch_size} "
+            f"(papers {i + 1}-{min(i + batch_size, len(arxiv_ids))})"
+        )
+
+        try:
+            search = arxiv.Search(id_list=batch, max_results=len(batch))
+            batch_papers = list(map(extract_paper_info, client.results(search)))
+            all_papers.extend(batch_papers)
+
+            print(f"Successfully fetched {len(batch_papers)} papers from current batch")
+
+        except Exception as e:
+            print(f"Error fetching batch: {str(e)}")
+            continue
+
+    return all_papers
 
 
 class ArxivSafetyPipeline:
