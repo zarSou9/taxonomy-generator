@@ -5,33 +5,15 @@ import re
 import pandas as pd
 from pydantic import BaseModel
 
-from taxonomy_generator.corpus.generator import fetch_papers_by_id
+from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 
 
 def get_base_arxiv_id(url: str) -> str:
-    """
-    Extract the base arXiv ID (only the numbers) from a URL.
-
-    Args:
-        url: The URL containing the arXiv ID
-
-    Returns:
-        str: The base arXiv ID
-    """
     match = re.search(r"\d+\.\d+", url)
     return match.group(0) if match else ""
 
 
 def get_arxiv_id_from_url(url: str) -> str:
-    """
-    Extract the full arXiv ID from a URL.
-
-    Args:
-        url: The URL containing an arXiv ID
-
-    Returns:
-        str: The full arXiv ID
-    """
     pattern = r"arxiv\.org/(?:.+?)/(\d+\.\d+(?:v\d+)?)"
     match = re.search(pattern, url, re.IGNORECASE)
 
@@ -71,12 +53,6 @@ class AICorpus:
     """
 
     def __init__(self, corpus_path: str = "data/ai_safety_corpus.csv"):
-        """
-        Initialize the corpus reader.
-
-        Args:
-            corpus_path: Path to the corpus CSV file
-        """
         self.corpus_path = corpus_path
         self.papers = self._load_papers()
 
@@ -93,11 +69,6 @@ class AICorpus:
         for paper in self.papers:
             if get_base_arxiv_id(paper.arxiv_id) == get_base_arxiv_id(arxiv_id):
                 return paper
-
-    def filter_papers(self, subtopic: str | None = None) -> list[Paper]:
-        return [
-            p for p in self.papers if (p.subtopic == subtopic if subtopic else True)
-        ]
 
     def get_pretty_paper(
         self,
@@ -137,25 +108,37 @@ class AICorpus:
             self.get_pretty_paper(paper, keys) for paper in sample_or_n
         )
 
+    def find_duplicates(self) -> list[list[str]]:
+        all_dups = []
+        for paper in self.papers:
+            arx_id = get_base_arxiv_id(paper.arxiv_id)
+            if arx_id not in [get_base_arxiv_id(d[0]) for d in all_dups]:
+                dups = []
+                for sub_paper in self.papers:
+                    if arx_id == get_base_arxiv_id(sub_paper.arxiv_id):
+                        dups.append(sub_paper.arxiv_id)
+                if len(dups) > 1:
+                    all_dups.append(dups)
+
+        return all_dups
+
     def add_papers(self, paper_or_ids: list[Paper | str]) -> list[Paper]:
-        """Add one or more papers to the corpus and save to CSV file.
-
-        Args:
-            papers: One or more Paper objects to add to the corpus
-
-        Returns:
-            int: Number of papers added
         """
-        papers: list[Paper | str] = [
-            self.get_paper_by_id(p if isinstance(p, str) else p.arxiv_id) or p
-            for p in paper_or_ids
-        ]
+        Returns:
+            paper_or_ids resolved (without dups) and converted to list[Paper]
+        """
+        papers: list[Paper | str] = []
+        included_ids: set[str] = set()
+        for p in paper_or_ids:
+            arx_id = get_base_arxiv_id(p if isinstance(p, str) else p.arxiv_id)
+            if arx_id in included_ids:
+                continue
+            papers.append(self.get_paper_by_id(arx_id) or arx_id)
+            included_ids.add(arx_id)
 
         fetched = (
             Paper(**p)
-            for p in fetch_papers_by_id(
-                [get_base_arxiv_id(p) for p in papers if isinstance(p, str)]
-            )
+            for p in fetch_papers_by_id([p for p in papers if isinstance(p, str)])
         )
         for i, paper in enumerate(papers):
             if isinstance(paper, str):
@@ -163,6 +146,8 @@ class AICorpus:
 
         to_add = [p for p in papers if not self.get_paper_by_id(p.arxiv_id)]
         if to_add:
+            self.papers.extend(to_add)
+
             new_rows = []
             for paper in to_add:
                 p = paper.model_dump()
@@ -183,5 +168,5 @@ class AICorpus:
 
 if __name__ == "__main__":
     corpus = AICorpus("data/ai_safety_corpus.csv")
-    sample = corpus.get_random_sample(3)
-    print(corpus.get_pretty_sample(sample))
+    for dup in corpus.find_duplicates():
+        print(dup)
