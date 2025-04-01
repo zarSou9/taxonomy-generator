@@ -6,6 +6,28 @@ import arxiv
 import pandas as pd
 
 
+def extract_paper_info(paper: arxiv.Result) -> dict[str, str]:
+    """Extract relevant information from an Arxiv paper."""
+    return {
+        "arxiv_id": paper.get_short_id(),
+        "title": paper.title,
+        "abstract": paper.summary.replace("\n", " "),
+        "authors": ", ".join(author.name for author in paper.authors),
+        "url": paper.entry_id,
+        "published": paper.published.strftime("%Y-%m-%d"),
+        "updated": paper.updated.strftime("%Y-%m-%d"),
+        "categories": ", ".join(paper.categories),
+        "retrieved_date": datetime.now().strftime("%Y-%m-%d"),
+    }
+
+
+def fetch_papers_by_id(arxiv_ids: list[str]):
+    client = arxiv.Client()
+    search = arxiv.Search(id_list=arxiv_ids, max_results=len(arxiv_ids))
+
+    return (extract_paper_info(result) for result in client.results(search))
+
+
 class ArxivSafetyPipeline:
     def __init__(
         self,
@@ -108,16 +130,9 @@ class ArxivSafetyPipeline:
             )
 
             try:
-                client = arxiv.Client(delay_seconds=3.0, num_retries=3)
-                search = arxiv.Search(id_list=arxiv_ids, max_results=batch_size)
-
-                results = list(client.results(search))
-                print(f"Retrieved {len(results)} papers from API")
-
                 # Process fetched results
-                for paper in results:
-                    paper_id = paper.get_short_id()
-                    paper_info = self.extract_paper_info(paper)
+                for paper in fetch_papers_by_id(arxiv_ids):
+                    paper_id = paper["arxiv_id"]
 
                     # Get the row with this ID to preserve existing data
                     original_row = (
@@ -132,9 +147,9 @@ class ArxivSafetyPipeline:
                         and "subtopic" in original_row
                         and not pd.isna(original_row["subtopic"])
                     ):
-                        paper_info["subtopic"] = original_row["subtopic"]
+                        paper["subtopic"] = original_row["subtopic"]
 
-                    updated_entries.append(paper_info)
+                    updated_entries.append(paper)
                     print(f"Updated metadata for {paper_id}")
 
                 # Be nice to the API between batches
@@ -203,20 +218,6 @@ class ArxivSafetyPipeline:
 
         return unique_results
 
-    def extract_paper_info(self, paper: arxiv.Result) -> dict[str, str]:
-        """Extract relevant information from an Arxiv paper."""
-        return {
-            "arxiv_id": paper.get_short_id(),
-            "title": paper.title,
-            "abstract": paper.summary.replace("\n", " "),
-            "authors": ", ".join(author.name for author in paper.authors),
-            "url": paper.entry_id,
-            "published": paper.published.strftime("%Y-%m-%d"),
-            "updated": paper.updated.strftime("%Y-%m-%d"),
-            "categories": ", ".join(paper.categories),
-            "retrieved_date": datetime.now().strftime("%Y-%m-%d"),
-        }
-
     def run_pipeline(self) -> list[dict[str, str]]:
         """Run the complete pipeline for all subtopics."""
         all_papers: list[dict[str, str]] = []
@@ -227,7 +228,7 @@ class ArxivSafetyPipeline:
 
             if papers:
                 # Extract paper info and tag with subtopic
-                paper_data = [self.extract_paper_info(p) for p in papers]
+                paper_data = [extract_paper_info(p) for p in papers]
                 for paper in paper_data:
                     paper["subtopic"] = subtopic
 

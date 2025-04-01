@@ -1,4 +1,7 @@
-IS_AI_SAFETY = """Given the following paper:
+from taxonomy_generator.scripts.format_prompts import fps
+
+IS_AI_SAFETY = """
+Given the following paper:
 ---
 {}
 ---
@@ -13,4 +16,8 @@ Provide your score and a one-sentence explanation only if the score is 1 or 2. P
 
 <score>#</score> <explanation>...</explanation>
 
-Only include `<explanation>` if your score is 1 or 2"""
+Only include `<explanation>` if your score is 1 or 2
+"""
+
+
+fps(globals)

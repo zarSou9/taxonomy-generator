@@ -1,7 +1,44 @@
 import csv
 import random
+import re
 
+import pandas as pd
 from pydantic import BaseModel
+
+from taxonomy_generator.corpus.generator import fetch_papers_by_id
+
+
+def get_base_arxiv_id(url: str) -> str:
+    """
+    Extract the base arXiv ID (only the numbers) from a URL.
+
+    Args:
+        url: The URL containing the arXiv ID
+
+    Returns:
+        str: The base arXiv ID
+    """
+    match = re.search(r"\d+\.\d+", url)
+    return match.group(0) if match else ""
+
+
+def get_arxiv_id_from_url(url: str) -> str:
+    """
+    Extract the full arXiv ID from a URL.
+
+    Args:
+        url: The URL containing an arXiv ID
+
+    Returns:
+        str: The full arXiv ID
+    """
+    pattern = r"arxiv\.org/(?:.+?)/(\d+\.\d+(?:v\d+)?)"
+    match = re.search(pattern, url, re.IGNORECASE)
+
+    if match:
+        return match.group(1)
+
+    return get_base_arxiv_id(url)
 
 
 class Paper(BaseModel):
@@ -21,7 +58,7 @@ class Paper(BaseModel):
 
         optional_keys = ["subtopic"]
         for key in optional_keys:
-            if key in kwargs and (kwargs[key] == "" or kwargs[key] == "nan"):
+            if key not in kwargs or (kwargs[key] == "" or kwargs[key] == "nan"):
                 kwargs[key] = None
 
         super().__init__(**kwargs)
@@ -54,7 +91,7 @@ class AICorpus:
 
     def get_paper_by_id(self, arxiv_id: str) -> Paper | None:
         for paper in self.papers:
-            if paper.arxiv_id == arxiv_id:
+            if get_base_arxiv_id(paper.arxiv_id) == get_base_arxiv_id(arxiv_id):
                 return paper
 
     def filter_papers(self, subtopic: str | None = None) -> list[Paper]:
@@ -99,6 +136,49 @@ class AICorpus:
         return ("\n" + "-" * sep_len + "\n").join(
             self.get_pretty_paper(paper, keys) for paper in sample_or_n
         )
+
+    def add_papers(self, paper_or_ids: list[Paper | str]) -> list[Paper]:
+        """Add one or more papers to the corpus and save to CSV file.
+
+        Args:
+            papers: One or more Paper objects to add to the corpus
+
+        Returns:
+            int: Number of papers added
+        """
+        papers: list[Paper | str] = [
+            self.get_paper_by_id(p if isinstance(p, str) else p.arxiv_id) or p
+            for p in paper_or_ids
+        ]
+
+        fetched = (
+            Paper(**p)
+            for p in fetch_papers_by_id(
+                [get_base_arxiv_id(p) for p in papers if isinstance(p, str)]
+            )
+        )
+        for i, paper in enumerate(papers):
+            if isinstance(paper, str):
+                papers[i] = next(fetched)
+
+        to_add = [p for p in papers if not self.get_paper_by_id(p.arxiv_id)]
+        if to_add:
+            new_rows = []
+            for paper in to_add:
+                p = paper.model_dump()
+                p["categories"] = ", ".join(p.get("categories") or [])
+                new_rows.append(p)
+
+            if new_rows:
+                try:
+                    df = pd.read_csv(self.corpus_path)
+                    df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+                except (FileNotFoundError, pd.errors.EmptyDataError):
+                    df = pd.DataFrame(new_rows)
+
+                df.to_csv(self.corpus_path, index=False)
+
+        return papers
 
 
 if __name__ == "__main__":
