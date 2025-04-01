@@ -23,7 +23,7 @@ def parse_response_json(response: str, fallback: T_JSON = {}) -> T_JSON:
         return fallback
 
     try:
-        return json.loads(clean_json_str(response[json_start:json_end]))
+        return json.loads(_clean_json_str(response[json_start:json_end]))
     except Exception as e:
         print(f"Error: {str(e)}")
         return fallback
@@ -49,7 +49,7 @@ def get_xml_content(response: str, tag: str) -> str | bool:
     return response[start + len(s) : end].strip()
 
 
-def clean_json_str(json_str: str) -> str:
+def _clean_json_str(json_str: str) -> str:
     """Clean a JSON string by removing invalid characters.
 
     Args:

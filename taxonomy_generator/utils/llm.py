@@ -6,7 +6,7 @@ from typing import Literal, Optional
 
 from anthropic import Anthropic
 from google import genai
-from google.genai.chats import Chat
+from google.genai.chats import Chat as GenaiChat
 from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
 
 from taxonomy_generator.utils.utils import get_last, log_space
@@ -160,7 +160,7 @@ def ask_llm(
                     generation_config.tools = [Tool(google_search=GoogleSearch())]
                     generation_config.response_modalities = ["TEXT"]
 
-                chat: Chat = genai_client.chats.create(
+                chat: GenaiChat = genai_client.chats.create(
                     model=model,
                     config=generation_config,
                     history=convert_to_google_messages(prompt_or_messages[:-1]),
@@ -245,3 +245,16 @@ def run_in_parallel(
                 results[prompt_index] = None
 
     return results
+
+
+class Chat:
+    def __init__(self, history: list[str] | str | None = None, **kwargs):
+        self.history = ([history] if isinstance(history, str) else history) or []
+        self.settings = kwargs
+
+    def ask(self, prompt: str | None = None, **kwargs) -> str:
+        if prompt:
+            self.history.append(prompt.strip())
+        response = ask_llm(self.history, **(self.settings | kwargs))
+        self.history.append(response)
+        return response
