@@ -5,8 +5,17 @@ from taxonomy_generator.scripts.format_prompts import fps
 from taxonomy_generator.utils.llm import Chat
 from taxonomy_generator.utils.parse_llm import get_xml_content, parse_response_json
 
-BREAKDOWN = """
-Please develop a 1D taxonomy of the field of AI safety
+INIT_GET_TOPICS = """
+Please develop a 1D taxonomy of the field of AI safety.
+
+To help inform your breakdown, the following is a  safety:
+
+
+Here is a sample of {sample_len} randomly chosen papers from the corpus:
+
+---
+{sample}
+---
 
 Expected output:
 
@@ -24,7 +33,7 @@ Expected output:
 </topics>
 """
 
-BREAKDOWN_ITERATE = """
+GET_TOPICS = """
 {num_papers} from the corpus were asked to be categorized by an LLM.
 
 Of these, {easy_num} papers were reportedly easy to categorize
@@ -44,6 +53,16 @@ For the papers that were succesfully categorized, here is how many were in assig
 # Explain it is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important
 
 
+In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
+
+---
+{helpfulness_scores}
+---
+
+Only incorporate feedback that makes sense to you as these are LLMs afterall.  # FIXME
+
+From these metrics, here is the overall score that was calculated: {overall_score}
+
 Expected output:
 <analysis>
 ...
@@ -59,35 +78,120 @@ Expected output:
 </topics>
 """
 
+SORT_PAPER = """
+Input:
+---
+{paper}
+---
+
+```json
+{topics}
+```
+
+Possible outputs:
+1. The paper is not related to the field of {field}
+2. It is under the field of {field}, but the paper doesn't fit into any of the presented topics
+3. The paper fits into more than one topic - and which ones
+4. The paper distictly fits into one of the topics - and which one
+"""
+
+TOPICS_FEEDBACK = """
+Given the following breakdown for the field of {field}
+
+```json
+{topics}
+```
+
+Please rate how helpful this breakdown is for you (1-5)
+- Does it make sense
+- Does it feel like a satisfying encapsulation of the
+- Does it help provide a good
+
+
+Please respond with XML in the following format:
+<score>~#</score> <feedback>...</feedback>
+"""
+
+TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
+    None,
+    "You are an enthusiast of {}",
+    "You are an experienced and prolific {} researcher who is well renown in the field",
+    "You are a newcomer to the field of {} and want to learn more",
+]
+
 fps(globals())
 
 corpus = AICorpus()
 
 
+class SortTopic(BaseModel):
+    title: str
+    papers: list[str]
+
+
 class Topic(BaseModel):
     title: str
     description: str
+    papers: list[str] = []
+    topics: list["Topic"] = []
 
 
-class BreakdownResponse(BaseModel):
-    analysis: str
-    topics: list[Topic]
+class TopicsFeedback(BaseModel):
+    score: int
+    feedback: str
+    system: str | None
 
 
-def resolve_breakdown_response(res: str):
-    return BreakdownResponse(
-        analysis=get_xml_content(res, "analysis"),
-        topics=parse_response_json(get_xml_content(res, "analysis"), []),
+def resolve_topics(response: str):
+    return [
+        Topic(**t) for t in parse_response_json(get_xml_content(response, "topics"), [])
+    ]
+
+
+def evaluate_topics(topics: list[Topic], sample_len: int):
+    return
+
+
+def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
+    return "\n\n".join(
+        [
+            f"System Prompt: {tf.system or 'You are a helpful assistant'}\nScore: {tf.score}\nFeedback: {tf.feedback}"
+            for tf in topics_feedbacks
+        ]
     )
 
 
-def main():
+def main(init_sample_len: int = 80, sort_sample_len: int = 300, num_iterations=300):
+    topic = Topic(
+        title="AI Safety",
+        description="...",
+        papers=corpus.resolve_paper_ids(corpus.papers),
+    )
+
+    best: tuple[list[Topic], int] = (None, 0)
     chat = Chat()
 
-    while True:
-        b_response = resolve_breakdown_response(chat.ask(BREAKDOWN))
+    prompt = INIT_GET_TOPICS.format(
+        sample_len=init_sample_len,
+        sample=corpus.get_pretty_sample(init_sample_len),
+    )
+    topics = resolve_topics(chat.ask(prompt))
 
-        b_response
+    for _ in range(num_iterations):
+        overall_score, topics_feedbacks, parent_papers, sort_topics = evaluate_topics(
+            topics, sort_sample_len, topic.papers
+        )
+
+        if overall_score > best[1]:
+            best = (topics, overall_score)
+
+        prompt = GET_TOPICS.format(
+            overall_score=overall_score,
+            helpfulness_scores=format_topics_feedbacks(topics_feedbacks),
+        )
+        topics = resolve_topics(chat.ask(prompt))
+
+    topic.topics = best[0]
 
 
 if __name__ == "__main__":

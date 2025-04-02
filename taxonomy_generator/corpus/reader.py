@@ -24,6 +24,13 @@ def get_arxiv_id_from_url(url: str) -> str:
     return get_base_arxiv_id(url)
 
 
+def term_in_text(term: str, text: str):
+    if not term or not text:
+        return False
+
+    return bool(re.search(r"\b" + re.escape(term.lower()) + r"\b", text.lower()))
+
+
 class Paper(BaseModel):
     arxiv_id: str
     title: str
@@ -45,6 +52,18 @@ class Paper(BaseModel):
                 kwargs[key] = None
 
         super().__init__(**kwargs)
+
+
+class TermGroups:
+    AI_SAFETY = ["ai safety", "alignment", "safe ai", "responsible ai"]
+    SURVEY = [
+        "survey",
+        "review",
+        "meta-analysis",
+        "meta analysis",
+        "comparative study",
+        "overview",
+    ]
 
 
 class AICorpus:
@@ -228,6 +247,19 @@ class AICorpus:
             rows.append(p)
         if rows:
             pd.DataFrame(rows).to_csv(self.corpus_path, index=False)
+
+    def filter_by_terms(self, *term_groups: list[str]):
+        return (
+            p
+            for p in self.papers
+            if all(
+                any(
+                    term_in_text(term, p.title) or term_in_text(term, p.abstract)
+                    for term in term_group
+                )
+                for term_group in term_groups
+            )
+        )
 
 
 if __name__ == "__main__":

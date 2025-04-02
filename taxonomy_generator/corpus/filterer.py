@@ -25,7 +25,7 @@ Please evaluate how much this paper contributes to the field of AI safety on a s
 
 Provide your score and a one-sentence explanation only if the score is 1 or 2. Please respond with XML in the following format:
 
-<score>#</score> <explanation>...</explanation>
+<score>~#</score> <explanation>...</explanation>
 
 Only include `<explanation>` if your score is 1 or 2.
 
