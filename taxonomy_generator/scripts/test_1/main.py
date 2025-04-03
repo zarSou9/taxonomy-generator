@@ -1,6 +1,9 @@
+import json
+from pathlib import Path
+
 from pydantic import BaseModel
 
-from taxonomy_generator.corpus.reader import AICorpus
+from taxonomy_generator.corpus.reader import AICorpus, Paper
 from taxonomy_generator.scripts.format_prompts import fps
 from taxonomy_generator.utils.llm import Chat
 from taxonomy_generator.utils.parse_llm import get_xml_content, parse_response_json
@@ -121,6 +124,8 @@ TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
 
 fps(globals())
 
+TREE_PATH = Path("data/tree.json")
+
 corpus = AICorpus()
 
 
@@ -129,10 +134,17 @@ class SortTopic(BaseModel):
     papers: list[str]
 
 
+class TopicPaper(BaseModel):
+    title: str
+    arx: str
+    published: str
+    abstract: str
+
+
 class Topic(BaseModel):
     title: str
     description: str
-    papers: list[str] = []
+    papers: list[TopicPaper] = []
     topics: list["Topic"] = []
 
 
@@ -142,6 +154,27 @@ class TopicsFeedback(BaseModel):
     system: str | None
 
 
+class EvalResult(BaseModel):
+    overall_score: float
+    topics_feedbacks: list[TopicsFeedback]
+
+
+def save_tree(root: Topic):
+    TREE_PATH.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
+
+
+def resolve_topic_papers(papers: list[Paper]):
+    return [
+        TopicPaper(
+            title=p.title,
+            arx=p.arxiv_id.split("v")[0],
+            published=p.published,
+            abstract=p.abstract,
+        )
+        for p in papers
+    ]
+
+
 def resolve_topics(response: str):
     return [
         Topic(**t) for t in parse_response_json(get_xml_content(response, "topics"), [])
@@ -149,7 +182,7 @@ def resolve_topics(response: str):
 
 
 def evaluate_topics(topics: list[Topic], sample_len: int):
-    return
+    return EvalResult()
 
 
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
@@ -161,37 +194,41 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
     )
 
 
-def main(init_sample_len: int = 80, sort_sample_len: int = 300, num_iterations=300):
+def main(init_sample_len: int = 80, sort_sample_len: int = 300, num_iterations=5):
     topic = Topic(
         title="AI Safety",
         description="...",
-        papers=corpus.resolve_paper_ids(corpus.papers),
+        papers=resolve_topic_papers(corpus.papers),
     )
 
     best: tuple[list[Topic], int] = (None, 0)
     chat = Chat()
-
-    prompt = INIT_GET_TOPICS.format(
-        sample_len=init_sample_len,
-        sample=corpus.get_pretty_sample(init_sample_len),
-    )
-    topics = resolve_topics(chat.ask(prompt))
+    eval_result: EvalResult | None = None
 
     for _ in range(num_iterations):
-        overall_score, topics_feedbacks, parent_papers, sort_topics = evaluate_topics(
-            topics, sort_sample_len, topic.papers
-        )
+        if not eval_result:
+            prompt = INIT_GET_TOPICS.format(
+                sample_len=init_sample_len,
+                sample=corpus.get_pretty_sample(init_sample_len),
+            )
+        else:
+            prompt = GET_TOPICS.format(
+                overall_score=eval_result.overall_score,
+                helpfulness_scores=format_topics_feedbacks(
+                    eval_result.topics_feedbacks
+                ),
+            )
 
-        if overall_score > best[1]:
-            best = (topics, overall_score)
-
-        prompt = GET_TOPICS.format(
-            overall_score=overall_score,
-            helpfulness_scores=format_topics_feedbacks(topics_feedbacks),
-        )
         topics = resolve_topics(chat.ask(prompt))
 
+        eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
+
+        if eval_result.overall_score > best[1]:
+            best = (topics, eval_result.overall_score)
+
     topic.topics = best[0]
+
+    save_tree(topic)
 
 
 if __name__ == "__main__":
