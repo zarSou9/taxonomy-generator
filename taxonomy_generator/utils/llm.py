@@ -140,7 +140,7 @@ def ask_llm(
     use_cache=False,
     dont_cache_last=False,
     use_thinking: Literal[False] = False,  # <---
-    thinking_budget=10000,
+    thinking_budget=7000,
     verbose=False,
 ) -> str: ...
 
@@ -159,7 +159,7 @@ def ask_llm(
     use_cache=False,
     dont_cache_last=False,
     use_thinking: Literal[True] = True,  # <---
-    thinking_budget=10000,
+    thinking_budget=7000,
     verbose=False,
 ) -> AntMessage: ...
 
@@ -177,7 +177,7 @@ def ask_llm(
     use_cache=False,
     dont_cache_last=False,
     use_thinking=False,
-    thinking_budget=10000,
+    thinking_budget=7000,
     verbose=False,
 ) -> str | AntMessage:
     if verbose:
@@ -203,10 +203,12 @@ def ask_llm(
                 kwargs = {
                     "model": model,
                     "max_tokens": max_tokens,
-                    "temperature": temp or 0.6,
                     "messages": messages,
                     "stop_sequences": stop_sequences,
                 }
+
+                if not use_thinking:
+                    kwargs["temperature"] = temp or 0.6
 
                 if system:
                     kwargs["system"] = [
@@ -220,6 +222,7 @@ def ask_llm(
                             ),
                         }
                     ]
+
                 if use_thinking:
                     kwargs["thinking"] = {
                         "type": "enabled",
