@@ -177,5 +177,5 @@ cython_debug/
 .DS_Store
 
 # This project
-anything.py
+anything*.py
 data
