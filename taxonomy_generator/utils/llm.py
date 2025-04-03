@@ -5,6 +5,7 @@ import time
 from typing import Literal, Optional
 
 from anthropic import Anthropic
+from anthropic.types import Message
 from google import genai
 from google.genai.chats import Chat as GenaiChat
 from google.genai.types import Content, GenerateContentConfig, GoogleSearch, Part, Tool
@@ -150,7 +151,9 @@ def ask_llm(
                         }
                     ]
 
-                response = anthropic_client.messages.create(**kwargs).content[0].text
+                ant_message: Message = anthropic_client.messages.create(**kwargs)
+
+                response = next(c for c in ant_message.content if c.type == "text").text
             else:
                 generation_config = GenerateContentConfig(
                     temperature=temp or 1,

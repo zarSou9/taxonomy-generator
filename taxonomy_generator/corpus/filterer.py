@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Generator
 
 from taxonomy_generator.corpus.reader import AICorpus
-from taxonomy_generator.scripts.format_prompts import fps
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import get_xml_content
+from taxonomy_generator.utils.prompting import fps
 
 IS_AI_SAFETY_EXPLANATION = """
 Given the following paper:

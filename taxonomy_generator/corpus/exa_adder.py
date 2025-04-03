@@ -1,6 +1,6 @@
 from taxonomy_generator.corpus.reader import AICorpus
-from taxonomy_generator.scripts.format_prompts import fps
 from taxonomy_generator.utils.exa import search_arx_urls
+from taxonomy_generator.utils.prompting import fps
 
 """
 Fields:

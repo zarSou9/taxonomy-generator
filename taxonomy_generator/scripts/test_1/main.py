@@ -4,36 +4,40 @@ from pathlib import Path
 from pydantic import BaseModel
 
 from taxonomy_generator.corpus.reader import AICorpus, Paper
-from taxonomy_generator.scripts.format_prompts import fps
 from taxonomy_generator.utils.llm import Chat
 from taxonomy_generator.utils.parse_llm import get_xml_content, parse_response_json
+from taxonomy_generator.utils.prompting import fps
 
 INIT_GET_TOPICS = """
-Please develop a 1D taxonomy of the field of AI safety.
-
-To help inform your breakdown, the following is a  safety:
-
-
-Here is a sample of {sample_len} randomly chosen papers from the corpus:
+Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
 
 ---
 {sample}
 ---
 
-Expected output:
+Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus. Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
 
-<analysis>
-...
-</analysis>
+After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
 
-<topics>
+You are ultimately striving for the following attributes:
+- Aim for MECE: Mutually Exclusive, Collectively Exaustive.
+    - Mutually Exclusive: An LLM will categorize each paper, and for each paper it finds fitting multiple topics, the lower your score will be.
+    - Collectively Exaustive: All papers should fit into at least one topic.
+    - Optimize for these as best you can, but don't strive for perfection. Mutually exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
+- Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
+- Your breakdown should provide a clear mental model of {field} that is valuable to both newcomers and experienced researchers.
+- Strive for topics that likely have existing survey or literature review papers. The evaluation system will reward topics for which it could find at least one associated overview/survey paper.
+
+Please present your topics as a JSON array without any other text or explanation. Example format:
+
+```json
 [
     {{
-        "title": "Clear and concise title"
-        "description": "~2 sentence description of topic"
+        "title": "Clear and concise title",
+        "description": "~2 sentence description of the topic"
     }}
 ]
-</topics>
+```
 """
 
 GET_TOPICS = """
@@ -62,7 +66,7 @@ In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullnes
 {helpfulness_scores}
 ---
 
-Only incorporate feedback that makes sense to you as these are LLMs afterall.  # FIXME
+As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
 
 From these metrics, here is the overall score that was calculated: {overall_score}
 
@@ -194,7 +198,11 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
     )
 
 
-def main(init_sample_len: int = 80, sort_sample_len: int = 300, num_iterations=5):
+def main(
+    init_sample_len: int = 2,
+    sort_sample_len: int = 300,
+    num_iterations: int = 5,
+):
     topic = Topic(
         title="AI Safety",
         description="...",
@@ -208,7 +216,9 @@ def main(init_sample_len: int = 80, sort_sample_len: int = 300, num_iterations=5
     for _ in range(num_iterations):
         if not eval_result:
             prompt = INIT_GET_TOPICS.format(
-                sample_len=init_sample_len,
+                field="AI safety",
+                sample_len=f"{init_sample_len:,}",
+                corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len),
             )
         else:
