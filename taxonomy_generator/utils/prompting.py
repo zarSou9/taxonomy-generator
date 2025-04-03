@@ -27,7 +27,6 @@ def fps(globals: dict[str, Any]):
                     cleaned_lines.append(line.rstrip())
 
             if key.startswith("EXA"):
-                value = value.replace("\n", " ")
                 value += ": "
 
             globals[key] = "\n".join(cleaned_lines)
