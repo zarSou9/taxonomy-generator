@@ -121,7 +121,7 @@ def get_last(history: History) -> str:
     return resolve_message_text(history[-1] if isinstance(history, list) else history)
 
 
-def resolve_history_strs(history: History) -> list[str]:
+def resolve_simple_history(history: History) -> list[str]:
     history = history if isinstance(history, list) else [history]
     return [resolve_message_text(m) for m in history]
 
