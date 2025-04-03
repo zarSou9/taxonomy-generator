@@ -96,7 +96,7 @@ def resolve_data(data_file: Path) -> Generator[tuple[int, str]]:
         yield (score, arx_id)
 
 
-def print_relevance_data(data_file: Path, verbose: bool = False):
+def print_relevance_data(data_file: Path, verbose: int = 0):
     data: list[tuple[str, str]] = json.loads(data_file.read_text())
     scores = []
 
@@ -107,13 +107,13 @@ def print_relevance_data(data_file: Path, verbose: bool = False):
                     c for c in (get_xml_content(r, "score").strip() or r) if c.isdigit()
                 )
             )
-            if score < 3 and verbose:
-                explanation = get_xml_content(r, "explanation").strip()
+            if verbose >= 2 or score < 3 and verbose == 1:
+                explanation = get_xml_content(r, "explanation")
                 print("---")
-                print(corpus.get_pretty_paper(arx_id))
+                print(corpus.get_pretty_paper(arx_id, ["title", "url", "abstract"]))
                 print("---")
                 print(f"Score: {score}")
-                explanation and print(f"Explanation: {explanation}")
+                explanation and print(f"Explanation: {explanation.strip()}")
                 print()
         else:
             score = int(next(c for c in r if c.isdigit()))
@@ -135,26 +135,46 @@ def print_relevance_data(data_file: Path, verbose: bool = False):
     print("-" * 50)
 
 
-def filter_papers(data_file: Path, dry_run=False):
+def filter_papers(
+    data_file: Path,
+    dry_run=False,
+    print_sample=False,
+    rem_chances=(1, 1),
+    path_override: str | None = None,
+):
     to_remove: list[str] = []
 
     for score, arx_id in resolve_data(data_file):
-        if score == 1:
-            to_remove.append(arx_id)
-        elif score == 2 and random.random() > 0.6:
-            to_remove.append(arx_id)
+        for i, chance in enumerate(rem_chances):
+            if score == i + 1 and random.random() < chance:
+                to_remove.append(arx_id)
 
-    return corpus.remove_papers(to_remove, dry_run=dry_run)
-
-
-def main():
-    removed = filter_papers(SAMPLE_DIR_PATH / "full_2025-04-01_04PM:32:20.json")
-    print(
-        corpus.get_pretty_sample(
-            random.sample(removed, 10), keys=["title", "url", "published", "abstract"]
-        )
+    removed = corpus.remove_papers(
+        to_remove, dry_run=dry_run, path_override=path_override
     )
+
+    if print_sample:
+        print(
+            "\n"
+            + corpus.get_pretty_sample(
+                random.sample(removed, 10),
+                keys=["title", "url", "published", "abstract"],
+            )
+        )
+
+    return removed
 
 
 if __name__ == "__main__":
-    main()
+    # sample_name = "full_2025-04-01_04PM:32:20"
+
+    # check_relevance(verbose=2, with_explanations=True)
+
+    # filter_papers(SAMPLE_DIR_PATH / f"{sample_name}.json")
+
+    # print_relevance_data(
+    #     SAMPLE_DIR_PATH / f"{sample_name}.json",
+    #     verbose=2,
+    # )
+
+    print("\n" + corpus.get_pretty_sample(10, ["title", "url", "abstract"]) + "\n")

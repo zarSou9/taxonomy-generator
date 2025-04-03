@@ -213,7 +213,10 @@ class AICorpus:
         return papers
 
     def remove_papers(
-        self, paper_or_ids: list[Paper | str], dry_run: bool = False
+        self,
+        paper_or_ids: list[Paper | str],
+        dry_run: bool = False,
+        path_override: str | None = None,
     ) -> list[Paper]:
         paper_ids = self.resolve_paper_ids(paper_or_ids)
 
@@ -232,21 +235,21 @@ class AICorpus:
 
         if not dry_run:
             self.papers = papers
-            self.save_to_csv()
+            self.save_to_csv(path_override)
             print(f"Saved updated corpus with {len(self.papers)} papers")
         else:
             print("Dry run - changes not saved to disk")
 
         return papers_removed
 
-    def save_to_csv(self):
+    def save_to_csv(self, path_override: str | None = None):
         rows = []
         for paper in self.papers:
             p = paper.model_dump()
             p["categories"] = ", ".join(p.get("categories") or [])
             rows.append(p)
         if rows:
-            pd.DataFrame(rows).to_csv(self.corpus_path, index=False)
+            pd.DataFrame(rows).to_csv(path_override or self.corpus_path, index=False)
 
     def filter_by_terms(self, *term_groups: list[str]):
         return (
