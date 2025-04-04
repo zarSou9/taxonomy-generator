@@ -214,19 +214,20 @@ def main(
     eval_result: EvalResult | None = None
 
     for _ in range(num_iterations):
-        if not eval_result:
+        if eval_result:
+            prompt = GET_TOPICS.format(
+                field="AI safety",
+                overall_score=eval_result.overall_score,
+                helpfulness_scores=format_topics_feedbacks(
+                    eval_result.topics_feedbacks
+                ),
+            )
+        else:
             prompt = INIT_GET_TOPICS.format(
                 field="AI safety",
                 sample_len=f"{init_sample_len:,}",
                 corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len),
-            )
-        else:
-            prompt = GET_TOPICS.format(
-                overall_score=eval_result.overall_score,
-                helpfulness_scores=format_topics_feedbacks(
-                    eval_result.topics_feedbacks
-                ),
             )
 
         topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))
