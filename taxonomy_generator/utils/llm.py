@@ -1,8 +1,10 @@
 import concurrent.futures
 import concurrent.futures.thread
+import json
 import os
 import time
-from typing import Literal, overload
+from pathlib import Path
+from typing import Literal, TypedDict, overload
 
 from anthropic import Anthropic
 from anthropic.types import Message as AntMessage
@@ -13,6 +15,8 @@ from google.genai.types import GenerateContentConfig, GoogleSearch, Part, Tool
 from tqdm import tqdm
 
 from taxonomy_generator.utils.utils import log
+
+CHAT_CACHE_PATH = Path("chat_cache")
 
 AllModels = Literal[
     "claude-3-7-sonnet-latest",
@@ -233,15 +237,21 @@ def ask_llm(
 
                 if use_thinking:
                     if verbose:
-                        mess = "---\nCLAUDE THINKING\n---\n"
+                        output = "-------THINKING START------\n\n"
 
                         for m in ant_message.content:
                             if m.type == "thinking":
-                                mess += m.thinking + "\n---\n"
+                                output += m.thinking + "\n"
                             elif m.type == "redacted_thinking":
-                                mess += "REDACTED\n---\n"
+                                output += (
+                                    "------------\nREDACTED SECTION\n------------\n"
+                                )
 
-                        log(mess)
+                        output += "\n-------THINKING END-------\n\n"
+
+                        output += f"\n-------RESPONSE START-------\n\n{get_ant_message_text(ant_message)}\n\n-------RESPONSE END-------\n"
+
+                        log(output)
 
                     return ant_message
 
@@ -343,14 +353,122 @@ def run_in_parallel(
     return results
 
 
+class ChatMessage(TypedDict):
+    settings_override: dict
+    message: str | AntMessage
+
+
+class ChatMessageJSON(TypedDict):
+    settings_override: dict
+    message: str | dict
+
+
+class Cache(TypedDict):
+    settings: dict
+    history: list[ChatMessageJSON]
+
+
+def resolve_chat_json(chat_history: list[ChatMessage]) -> list[ChatMessageJSON]:
+    return [
+        cm
+        if isinstance(cm["message"], str)
+        else ChatMessage(
+            message=cm["message"].model_dump(mode="json"),
+            settings_override=cm["settings_override"],
+        )
+        for cm in chat_history
+    ]
+
+
+def model_validate_chat(chat_json: list[ChatMessageJSON]) -> list[ChatMessage]:
+    return [
+        cmj
+        if isinstance(cmj["message"], str)
+        else ChatMessage(
+            message=AntMessage.model_validate(cmj["message"]),
+            settings_override=cmj["settings_override"],
+        )
+        for cmj in chat_json
+    ]
+
+
+def chat_to_history(chat_history: list[ChatMessage]):
+    return [m["message"] for m in chat_history]
+
+
+def history_to_chat(history: History | None):
+    history = ([history] if isinstance(history, str) else history) or []
+    return [ChatMessage(message=m, settings_override={}) for m in history]
+
+
 class Chat:
-    def __init__(self, history: History | None = None, **kwargs):
-        self.history = ([history] if isinstance(history, str) else history) or []
+    def __init__(
+        self,
+        history: History | None = None,
+        cache_file_name: str | None = "history",
+        cache_limit: int = 30,
+        **kwargs,
+    ):
+        self.history = history_to_chat(history)
         self.settings = kwargs
+        self.cache_file_name = cache_file_name
+        self.cache_limit = cache_limit
 
     def ask(self, prompt: str | None = None, **kwargs) -> str:
-        if prompt:
-            self.history.append(prompt.strip())
-        response = ask_llm(self.history, **(self.settings | kwargs))
-        self.history.append(response)
-        return response
+        self.history.append(ChatMessage(message=prompt.strip(), settings_override={}))
+
+        cached_history = self.handle_cache()
+
+        if (
+            len(cached_history) > len(self.history)
+            and (self.settings | kwargs) != self.settings
+        ):
+            response = cached_history[len(self.history)]
+            self.history.append(response)
+        else:
+            response = ChatMessage(
+                message=ask_llm(
+                    chat_to_history(self.history), **(self.settings | kwargs)
+                ),
+                settings_override=kwargs,
+            )
+            self.history.append(response)
+            self.handle_cache()
+
+        return resolve_message_text(response["message"])
+
+    @property
+    def simple_history(self):
+        return resolve_simple_history(self.history)
+
+    def handle_cache(self):
+        CHAT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
+        cache_file = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
+
+        cache_list: list[Cache] = []
+        if cache_file.exists():
+            cache_list = json.loads(cache_file.read_text())[-self.cache_limit :]
+
+        chat_json = resolve_chat_json(self.history)
+
+        cache_found = False
+        for cache in cache_list:
+            if cache["settings"] != self.settings:
+                continue
+
+            # If chat in cache, return cache
+            if chat_json == cache["history"][: len(chat_json)]:
+                return model_validate_chat(cache["history"])
+
+            # If cache in chat, update cache
+            if cache["history"] == chat_json[: len(cache["history"])]:
+                cache["history"] = chat_json
+                cache_found = True
+                break
+
+        if not cache_found:
+            cache_list.append(Cache(settings=self.settings, history=chat_json))
+
+        cache_file.write_text(json.dumps(cache_list, ensure_ascii=False))
+
+        return self.history

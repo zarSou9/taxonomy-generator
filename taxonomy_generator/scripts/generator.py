@@ -199,7 +199,7 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
 
 
 def main(
-    init_sample_len: int = 2,
+    init_sample_len: int = 80,
     sort_sample_len: int = 300,
     num_iterations: int = 5,
 ):
@@ -229,7 +229,12 @@ def main(
                 ),
             )
 
-        topics = resolve_topics(chat.ask(prompt))
+        topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))
+
+        print("---TOPICS---")
+        print(topic.model_dump_json(indent=2))
+        print("------------")
+        return
 
         eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
 
