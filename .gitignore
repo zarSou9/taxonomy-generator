@@ -178,5 +178,5 @@ cython_debug/
 
 # This project
 anything*.py
-data
-chat_cache
+data/
+.chat_cache/

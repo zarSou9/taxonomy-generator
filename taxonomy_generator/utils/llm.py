@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from taxonomy_generator.utils.utils import log
 
-CHAT_CACHE_PATH = Path("chat_cache")
+CHAT_CACHE_PATH = Path(".chat_cache")
 
 AllModels = Literal[
     "claude-3-7-sonnet-latest",
@@ -421,7 +421,7 @@ class Chat:
 
         if (
             len(cached_history) > len(self.history)
-            and (self.settings | kwargs) != self.settings
+            and kwargs == cached_history[len(self.history)]["settings_override"]
         ):
             response = cached_history[len(self.history)]
             self.history.append(response)
