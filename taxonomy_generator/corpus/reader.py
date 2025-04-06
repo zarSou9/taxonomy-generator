@@ -81,7 +81,9 @@ class AICorpus:
             reader = csv.DictReader(f)
             return [Paper(**row) for row in reader]
 
-    def get_random_sample(self, n: int = 1) -> list[Paper]:
+    def get_random_sample(self, n: int = 1, seed: int | None = None) -> list[Paper]:
+        if seed is not None:
+            random.seed(seed)
         return random.sample(self.papers, min(n, len(self.papers)))
 
     def get_paper_by_id(self, arxiv_id: str) -> Paper | None:
@@ -119,9 +121,10 @@ class AICorpus:
         sample_or_n: int | Iterable[Paper | str],
         keys: list[str] = ["title", "published", "abstract"],
         sep_len: int = 0,
+        seed: int | None = None,
     ) -> str:
         if isinstance(sample_or_n, int):
-            sample_or_n = self.get_random_sample(sample_or_n)
+            sample_or_n = self.get_random_sample(sample_or_n, seed)
 
         return ("\n" + "-" * sep_len + "\n").join(
             self.get_pretty_paper(paper, keys) for paper in sample_or_n

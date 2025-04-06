@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from taxonomy_generator.corpus.reader import AICorpus, Paper
 from taxonomy_generator.utils.llm import Chat
-from taxonomy_generator.utils.parse_llm import get_xml_content, parse_response_json
+from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.prompting import fps
 
 INIT_GET_TOPICS = """
@@ -33,7 +33,7 @@ Please present your topics as a JSON array without any other text or explanation
 ```json
 [
     {{
-        "title": "Clear and concise title",
+        "title": "Clear and concise title",  # Make shorter I think
         "description": "~2 sentence description of the topic"
     }}
 ]
@@ -41,25 +41,45 @@ Please present your topics as a JSON array without any other text or explanation
 """
 
 GET_TOPICS = """
-{num_papers} from the corpus were asked to be categorized by an LLM.
+The evaluation ran successfully on your proposed breakdown. Here are the results:
 
-Of these, {easy_num} papers were reportedly easy to categorize
+# Sorting
+A sample of {sort_sample_len} papers from the corpus were asked to be categorized by an LLM.
 
-For {no_place_num} papers, the LLM reported that it didn't fit into any of the categories. Here are some examples of those:
+Of these, {easy_num} ({easy_perc}%) papers were reportedly easy to categorize.
 
-{no_place_papers}
+For {no_place_num} ({no_place_perc}%) papers, the LLM couldn't find a suitable category. Examples:
 
-For {multiple_num} papers, the LLM reported the paper fit into multiple of the presented categories and couldn't uniquely categorize it. Here are some examples of those:
+---
+{no_place_examples}
+---
 
-{multiple_papers}  # With reasonings from LLM
+The LLM found overlap in {overlap_num} ({overlap_perc}%) papers (those which it decided had multiple applicable categories). Examples:
 
-For the papers that were succesfully categorized, here is how many were in assigned to each topic:
+---
+{overlap_examples}
+---
 
+Here are how many papers were sorted into each of your categories
+
+---
 {numbers_breakdown}
+---
 
-# Explain it is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important
+It is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important to have as a seperate category.
 
+For additional context, here are {paper_topic_examples_num_per_topic} randomly selected papers for each topic that were categorized by the LLM:
 
+---
+{paper_topic_examples}
+---
+
+# Overview Papers
+For each topic, we attempted to find at least one associated overview or literature review paper.
+
+{overview_paper_results}
+
+# Helpfulness Scores
 In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
 
 ---
@@ -68,21 +88,10 @@ In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullnes
 
 As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
 
+# Final Score
 From these metrics, here is the overall score that was calculated: {overall_score}
 
-Expected output:
-<analysis>
-...
-</analysis>
-
-<topics>
-[
-    {{
-        "title": "Clear and concise title"
-        "description": "~2 sentence description of topic"
-    }}
-]
-</topics>
+After analyzing and incorporating this feedback, please present your updated set of topics as a JSON array like before.
 """
 
 SORT_PAPER = """
@@ -180,13 +189,7 @@ def resolve_topic_papers(papers: list[Paper]):
 
 
 def resolve_topics(response: str):
-    return [
-        Topic(**t) for t in parse_response_json(get_xml_content(response, "topics"), [])
-    ]
-
-
-def evaluate_topics(topics: list[Topic], sample_len: int):
-    return EvalResult()
+    return [Topic(**t) for t in parse_response_json(response, [])]
 
 
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
@@ -196,6 +199,10 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
             for tf in topics_feedbacks
         ]
     )
+
+
+def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
+    return EvalResult()
 
 
 def main(
@@ -227,7 +234,7 @@ def main(
                 field="AI safety",
                 sample_len=f"{init_sample_len:,}",
                 corpus_len=f"{len(topic.papers):,}",
-                sample=corpus.get_pretty_sample(init_sample_len),
+                sample=corpus.get_pretty_sample(init_sample_len, seed=1),
             )
 
         topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))

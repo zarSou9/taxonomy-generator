@@ -407,12 +407,14 @@ class Chat:
         history: History | None = None,
         cache_file_name: str | None = "history",
         cache_limit: int = 30,
+        dont_cache: bool = False,
         **kwargs,
     ):
         self.history = history_to_chat(history)
         self.settings = kwargs
         self.cache_file_name = cache_file_name
         self.cache_limit = cache_limit
+        self.dont_cache = dont_cache
 
     def ask(self, prompt: str | None = None, **kwargs) -> str:
         self.history.append(ChatMessage(message=prompt.strip(), settings_override={}))
@@ -442,6 +444,9 @@ class Chat:
         return resolve_simple_history(self.history)
 
     def handle_cache(self):
+        if self.dont_cache:
+            return self.history
+
         CHAT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
         cache_file = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
 
