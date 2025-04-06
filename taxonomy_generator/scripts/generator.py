@@ -1,10 +1,11 @@
 import json
+import random
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from taxonomy_generator.corpus.reader import AICorpus, Paper
-from taxonomy_generator.utils.llm import Chat
+from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.prompting import fps
 
@@ -95,20 +96,24 @@ After analyzing and incorporating this feedback, please present your updated set
 """
 
 SORT_PAPER = """
-Input:
+You are categorizing a paper for an {field} taxonomy.
+
+PAPER:
 ---
 {paper}
 ---
 
+AVAILABLE CATEGORIES:
 ```json
 {topics}
 ```
 
-Possible outputs:
-1. The paper is not related to the field of {field}
-2. It is under the field of {field}, but the paper doesn't fit into any of the presented topics
-3. The paper fits into more than one topic - and which ones
-4. The paper distictly fits into one of the topics - and which one
+TASK: Identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
+
+Example responses:
+["Category A"]
+["Category A", "Category B"]
+[]
 """
 
 TOPICS_FEEDBACK = """
@@ -138,6 +143,8 @@ TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
 fps(globals())
 
 TREE_PATH = Path("data/tree.json")
+
+FIELD = "AI safety"
 
 corpus = AICorpus()
 
@@ -201,7 +208,46 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
     )
 
 
+def topics_json_str(topics: list[Topic]):
+    return json.dumps(
+        [{"title": t.title, "description": t.description} for t in topics],
+        indent=2,
+        ensure_ascii=False,
+    )
+
+
 def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
+    # Sorting
+
+    random.seed(1)
+    sample = random.sample(all_papers, min(sample_len, len(all_papers)))
+    topics_str = topics_json_str(topics)
+
+    results = run_in_parallel(
+        [
+            SORT_PAPER.format(
+                paper=corpus.get_pretty_paper(p), topics=topics_str, field=FIELD
+            )
+            for p in sample
+        ],
+        model="gemini-2.0-flash",
+    )
+    results = [
+        {
+            "paper": p,
+            "topics": next(
+                [t for t in topics if t.title in parse_response_json(r, [])]
+            ),
+        }
+        for r, p in zip(results, sample)
+    ]
+
+    # Overview Papers
+
+    # Helpfulness Scores
+
+    # Final Score
+
     return EvalResult()
 
 
@@ -211,7 +257,7 @@ def main(
     num_iterations: int = 5,
 ):
     topic = Topic(
-        title="AI Safety",
+        title=FIELD,
         description="...",
         papers=resolve_topic_papers(corpus.papers),
     )
@@ -223,7 +269,7 @@ def main(
     for _ in range(num_iterations):
         if eval_result:
             prompt = GET_TOPICS.format(
-                field="AI safety",
+                field=FIELD,
                 overall_score=eval_result.overall_score,
                 helpfulness_scores=format_topics_feedbacks(
                     eval_result.topics_feedbacks
@@ -231,7 +277,7 @@ def main(
             )
         else:
             prompt = INIT_GET_TOPICS.format(
-                field="AI safety",
+                field=FIELD,
                 sample_len=f"{init_sample_len:,}",
                 corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len, seed=1),
