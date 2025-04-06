@@ -416,6 +416,15 @@ class Chat:
         self.cache_limit = cache_limit
         self.dont_cache = dont_cache
 
+        CHAT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
+        self.cache_file = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
+
+        self.cache_list: list[Cache] = []
+        if self.cache_file.exists():
+            self.cache_list = json.loads(self.cache_file.read_text())[
+                -self.cache_limit :
+            ]
+
     def ask(self, prompt: str | None = None, **kwargs) -> str:
         self.history.append(ChatMessage(message=prompt.strip(), settings_override={}))
 
@@ -447,17 +456,10 @@ class Chat:
         if self.dont_cache:
             return self.history
 
-        CHAT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
-        cache_file = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
-
-        cache_list: list[Cache] = []
-        if cache_file.exists():
-            cache_list = json.loads(cache_file.read_text())[-self.cache_limit :]
-
         chat_json = resolve_chat_json(self.history)
 
         cache_found = False
-        for cache in cache_list:
+        for cache in self.cache_list:
             if cache["settings"] != self.settings:
                 continue
 
@@ -472,8 +474,10 @@ class Chat:
                 break
 
         if not cache_found:
-            cache_list.append(Cache(settings=self.settings, history=chat_json))
+            self.cache_list.append(Cache(settings=self.settings, history=chat_json))
 
-        cache_file.write_text(json.dumps(cache_list, ensure_ascii=False))
+        self.cache_file.write_text(
+            json.dumps(self.cache_list[-self.cache_limit :], ensure_ascii=False)
+        )
 
         return self.history

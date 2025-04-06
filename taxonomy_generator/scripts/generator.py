@@ -8,6 +8,7 @@ from taxonomy_generator.corpus.reader import AICorpus, Paper
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.prompting import fps
+from taxonomy_generator.utils.utils import cache
 
 INIT_GET_TOPICS = """
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
@@ -174,11 +175,6 @@ class TopicsFeedback(BaseModel):
     system: str | None
 
 
-class EvalResult(BaseModel):
-    overall_score: float
-    topics_feedbacks: list[TopicsFeedback]
-
-
 def save_tree(root: Topic):
     TREE_PATH.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
 
@@ -208,7 +204,7 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
     )
 
 
-def topics_json_str(topics: list[Topic]):
+def topics_to_json(topics: list[Topic]):
     return json.dumps(
         [{"title": t.title, "description": t.description} for t in topics],
         indent=2,
@@ -216,14 +212,19 @@ def topics_json_str(topics: list[Topic]):
     )
 
 
-def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
-    # Sorting
+def find_overview_papers(topic: Topic) -> list[TopicPaper]:
+    return []
 
-    random.seed(1)
-    sample = random.sample(all_papers, min(sample_len, len(all_papers)))
-    topics_str = topics_json_str(topics)
 
-    results = run_in_parallel(
+def resolve_topic(title: str, topics: list[Topic]):
+    return next((t for t in topics if t.title.lower() == title.lower()), None)
+
+
+@cache()
+def get_sort_results(topics: list[Topic], sample: list[TopicPaper]):
+    topics_str = topics_to_json(topics)
+
+    return run_in_parallel(
         [
             SORT_PAPER.format(
                 paper=corpus.get_pretty_paper(p), topics=topics_str, field=FIELD
@@ -232,23 +233,77 @@ def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[Topic
         ],
         model="gemini-2.0-flash",
     )
-    results = [
-        {
-            "paper": p,
-            "topics": next(
-                [t for t in topics if t.title in parse_response_json(r, [])]
-            ),
-        }
-        for r, p in zip(results, sample)
-    ]
+
+
+class EvalResult(BaseModel):
+    overall_score: float
+    topics_feedbacks: list[TopicsFeedback]
+    topic_papers: dict[str, list[TopicPaper]]
+    overlap_papers: dict[set[str], list[TopicPaper]]
+    not_placed: list[TopicPaper]
+    papers_processed_num: int
+    overview_papers: dict[str, list[TopicPaper]]
+
+
+def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
+    random.seed(1)
+    sample = random.sample(all_papers, min(sample_len, len(all_papers)))
+
+    results = get_sort_results(topics, sample)
+
+    topic_papers: dict[str, list[TopicPaper]] = {t.title.lower(): [] for t in topics}
+    overlap_papers: dict[frozenset[str], list[TopicPaper]] = {}
+    papers_processed_num: int = 0
+    not_placed: list[TopicPaper] = []
+
+    for paper, response in zip(sample, results):
+        try:
+            chosen_topics: frozenset[str] = frozenset(
+                {
+                    t.lower()
+                    for t in parse_response_json(response or "", [], raise_on_fail=True)
+                }
+            )
+        except ValueError:
+            print(f"Error parsing response: {response}")
+            continue
+
+        if not all(t in topic_papers for t in chosen_topics):
+            continue
+
+        papers_processed_num += 1
+
+        if not chosen_topics:
+            not_placed.append(paper)
+            continue
+
+        for title in chosen_topics:
+            topic_papers[title].append(paper)
+
+        if len(chosen_topics) > 1:
+            if chosen_topics in overlap_papers:
+                overlap_papers[chosen_topics].append(paper)
+            else:
+                overlap_papers[chosen_topics] = [paper]
 
     # Overview Papers
+    overview_papers: dict[str, list[TopicPaper]] = {
+        t.title: find_overview_papers(t) for t in topics
+    }
 
     # Helpfulness Scores
 
     # Final Score
 
-    return EvalResult()
+    return EvalResult(
+        overall_score=0,
+        topics_feedbacks=[],
+        topic_papers=topic_papers,
+        overlap_papers=overlap_papers,
+        not_placed=not_placed,
+        papers_processed_num=papers_processed_num,
+        overview_papers=overview_papers,
+    )
 
 
 def main(

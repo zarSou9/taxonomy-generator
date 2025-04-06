@@ -4,7 +4,9 @@ from typing import TypeVar
 T_JSON = TypeVar("T_JSON", bound=dict | list)
 
 
-def parse_response_json(response: str, fallback: T_JSON = {}) -> T_JSON:
+def parse_response_json(
+    response: str, fallback: T_JSON = {}, raise_on_fail: bool = False
+) -> T_JSON:
     """Parse a JSON response from an LLM.
 
     Args:
@@ -20,12 +22,16 @@ def parse_response_json(response: str, fallback: T_JSON = {}) -> T_JSON:
     json_start = response.find(start_char)
     json_end = response.rfind(end_char) + 1
     if json_start == -1 or json_end == -1:
+        if raise_on_fail:
+            raise ValueError("Invalid JSON response")
         return fallback
 
     try:
         return json.loads(_clean_json_str(response[json_start:json_end]))
     except Exception as e:
         print(f"Error: {str(e)}")
+        if raise_on_fail:
+            raise ValueError("Invalid JSON response")
         return fallback
 
 
