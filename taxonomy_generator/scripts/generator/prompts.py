@@ -1,3 +1,5 @@
+from tabulate import tabulate
+
 from taxonomy_generator.corpus.reader import AICorpus
 from taxonomy_generator.scripts.generator.types import (
     EvalResult,
@@ -126,28 +128,63 @@ For {not_placed_num} ({format_perc(not_placed_num / eval_result.sample_len)}%) p
 
 def get_overlap_str(eval_result: EvalResult, duplicate_arxs: set[str]) -> str:
     overlap_num = len(duplicate_arxs)
+    overlap_stats: list[tuple[str, int, str]] = []
+    examples: list[str] = []
+
+    overlap_sorted = sorted(
+        eval_result.overlap_papers.items(), key=lambda tp: len(tp[1]), reverse=True
+    )
+
+    for topic_titles, papers in overlap_sorted:
+        title = ", ".join(topic_titles)
+
+        overlap_stats.append(
+            (title, len(papers), format_perc(len(papers) / eval_result.sample_len))
+        )
+
+        sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
+        examples.append(f"## {title}\n\n{sample_str}")
+
+    examples_str = "\n\n".join(examples)
 
     if overlap_num == 0:
         return """
+The LLM didn't classify any papers as fitting into more than one category. This could indicate that the topics are well-separated, but it might also suggest the topics are not semantically derived and thus less useful.
 """
 
     if overlap_num == 1:
         return """
+The LLM found only one paper that was categorized into more than one category. Your topics are very well-separated.
 """
 
     return f"""
 The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}%) papers (those which it decided had multiple applicable categories).
+
+The following stats show the sets of topics which the LLM sorted these overlap papers into, and shows how many papers were assigned to all the topics in each set for each set, sorted from most to least amount of papers.
+
+{tabulate(overlap_stats, headers=["Topics", "Num Papers", "Percent of Sample"])}
+
+And then here are some examples by topics sets:
+
+<overlap_examples_by_topics_set>
+{examples_str}
+</overlap_examples_by_topics_set>
 """
 
 
-def get_numbers_breakdown(eval_result: EvalResult, topics: list[Topic]):
+def get_topic_paper_table(eval_result: EvalResult) -> str:
     numbers_breakdown = []
-    for topic in topics:
-        num = len(eval_result.topic_papers[topic.title])
+    for topic_title, papers in eval_result.topic_papers.items():
         numbers_breakdown.append(
-            f"{topic.title}: {num} - {format_perc(num / eval_result.sample_len)}"
+            (
+                topic_title,
+                len(papers),
+                format_perc(len(papers) / eval_result.sample_len),
+            )
         )
-    return "\n".join(numbers_breakdown)
+    return tabulate(
+        numbers_breakdown, headers=["Topic", "Num Papers", "Percent of Sample"]
+    )
 
 
 def get_topic_paper_examples(topic_papers: dict[str, list[TopicPaper]]) -> str:
@@ -180,17 +217,7 @@ def get_single_arxs(eval_result: EvalResult) -> list[str]:
 
 
 @prompt
-def resolve_get_topics_prompt(
-    field: str, eval_result: EvalResult, topics: list[Topic]
-) -> str:
-    # overall_score: float
-    # topics_feedbacks: list[TopicsFeedback]
-    # topic_papers: dict[str, list[TopicPaper]]
-    # overlap_papers: dict[set[str], list[TopicPaper]]
-    # not_placed: list[TopicPaper]
-    # papers_processed_num: int
-    # overview_papers: dict[str, list[TopicPaper]]
-
+def resolve_get_topics_prompt(eval_result: EvalResult, topics: list[Topic]) -> str:
     single_arxs, duplicate_arxs = get_single_arxs(eval_result)
 
     return f"""
@@ -203,9 +230,7 @@ Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample
 {get_not_placed_str(eval_result)}{get_overlap_str(eval_result, duplicate_arxs)}
 Here are how many papers were sorted into each of your categories
 
----
-{get_numbers_breakdown(eval_result, topics)}
----
+{get_topic_paper_table(eval_result)}
 
 It is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important to have as a seperate category.
 
@@ -223,9 +248,9 @@ For each topic, we attempted to find at least one associated overview or literat
 #! Helpfulness Scores
 In an attempt to gauge *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
 
----
+<helpfulness_feedback>
 {format_topics_feedbacks(eval_result.topics_feedbacks)}
----
+</helpfulness_feedback>
 
 As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
 

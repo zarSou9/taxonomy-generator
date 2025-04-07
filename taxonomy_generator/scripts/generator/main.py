@@ -19,7 +19,7 @@ FIELD = "AI safety"
 corpus = AICorpus()
 
 
-def resolve_topic_papers(papers: list[Paper]):
+def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
     return [
         TopicPaper(
             title=p.title,
@@ -31,11 +31,11 @@ def resolve_topic_papers(papers: list[Paper]):
     ]
 
 
-def resolve_topics(response: str):
+def resolve_topics(response: str) -> list[Topic]:
     return [Topic(**t) for t in parse_response_json(response, [], raise_on_fail=True)]
 
 
-def topics_to_json(topics: list[Topic]):
+def topics_to_json(topics: list[Topic]) -> str:
     return json.dumps(
         [{"title": t.title, "description": t.description} for t in topics],
         indent=2,
@@ -48,7 +48,7 @@ def find_overview_papers(topic: Topic) -> list[TopicPaper]:
 
 
 @cache()
-def get_sort_results(topics: list[Topic], sample: list[TopicPaper]):
+def get_sort_results(topics: list[Topic], sample: list[TopicPaper]) -> list[str | None]:
     topics_str = topics_to_json(topics)
 
     return run_in_parallel(
@@ -66,7 +66,9 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
     return next((t for t in topics if t.title.lower() == title.lower()), None)
 
 
-def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
+def evaluate_topics(
+    topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]
+) -> EvalResult:
     # Sorting
     sample = random_sample(all_papers, sample_len, 1)
 
@@ -105,9 +107,7 @@ def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[Topic
                 overlap_papers[chosen_topics] = [paper]
 
     # Overview Papers
-    overview_papers: dict[str, list[TopicPaper]] = {
-        t.title: find_overview_papers(t) for t in topics
-    }
+    overview_papers = {t.title: find_overview_papers(t) for t in topics}
 
     # Helpfulness Scores
 
@@ -142,7 +142,7 @@ def main(
 
     for _ in range(num_iterations):
         if eval_result:
-            prompt = resolve_get_topics_prompt(FIELD, eval_result, topics)
+            prompt = resolve_get_topics_prompt(eval_result, topics)
         else:
             prompt = INIT_GET_TOPICS.format(
                 field=FIELD,
@@ -150,6 +150,8 @@ def main(
                 corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len, seed=1),
             )
+            print(prompt)
+            return
 
         topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))
 

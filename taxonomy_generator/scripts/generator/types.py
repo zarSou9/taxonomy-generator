@@ -30,7 +30,7 @@ class EvalResult(BaseModel):
     overall_score: float
     topics_feedbacks: list[TopicsFeedback]
     topic_papers: dict[str, list[TopicPaper]]
-    overlap_papers: dict[set[str], list[TopicPaper]]
+    overlap_papers: dict[frozenset[str], list[TopicPaper]]
     not_placed: list[TopicPaper]
     sample_len: int
     overview_papers: dict[str, list[TopicPaper]]
