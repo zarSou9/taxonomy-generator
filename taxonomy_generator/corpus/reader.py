@@ -1,5 +1,4 @@
 import csv
-import random
 import re
 from typing import Iterable
 
@@ -7,6 +6,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
+from taxonomy_generator.utils.utils import random_sample
 
 
 def get_base_arxiv_id(url: str) -> str:
@@ -72,9 +72,15 @@ class AICorpus:
     Provides functionality to load, sample, and display papers from the corpus.
     """
 
-    def __init__(self, corpus_path: str = "data/ai_safety_corpus.csv"):
+    def __init__(
+        self,
+        corpus_path: str = "data/ai_safety_corpus.csv",
+        papers_override: list | None = None,
+    ):
         self.corpus_path = corpus_path
-        self.papers = self._load_papers()
+        self.papers = (
+            self._load_papers() if papers_override is None else papers_override
+        )
 
     def _load_papers(self) -> list[Paper]:
         with open(self.corpus_path, "r", encoding="utf-8") as f:
@@ -82,9 +88,7 @@ class AICorpus:
             return [Paper(**row) for row in reader]
 
     def get_random_sample(self, n: int = 1, seed: int | None = None) -> list[Paper]:
-        if seed is not None:
-            random.seed(seed)
-        return random.sample(self.papers, min(n, len(self.papers)))
+        return random_sample(self.papers, n, seed)
 
     def get_paper_by_id(self, arxiv_id: str) -> Paper | None:
         for paper in self.papers:

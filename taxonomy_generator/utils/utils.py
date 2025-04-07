@@ -1,9 +1,12 @@
 import functools
 import pickle
+import random
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Sequence, TypeVar
 
 from pydantic import BaseModel
+
+T = TypeVar("T")
 
 
 def cache(cache_filename_override: str | None = None, max_size: int | None = 30):
@@ -65,3 +68,11 @@ def format_perc(value: float) -> str:
     if rounded % 1 == 0:
         rounded = int(rounded)
     return f"{rounded}%"
+
+
+def random_sample(
+    population: Sequence[T], n: int = 1, seed: int | None = None
+) -> list[T]:
+    if seed is not None:
+        random.seed(seed)
+    return random.sample(population, min(n, len(population)))

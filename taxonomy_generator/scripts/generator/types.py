@@ -32,5 +32,5 @@ class EvalResult(BaseModel):
     topic_papers: dict[str, list[TopicPaper]]
     overlap_papers: dict[set[str], list[TopicPaper]]
     not_placed: list[TopicPaper]
-    papers_processed_num: int
+    sample_len: int
     overview_papers: dict[str, list[TopicPaper]]

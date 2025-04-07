@@ -18,12 +18,8 @@ def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
 
     cleaned_lines = []
     for line in prompt.split("\n"):
-        if not line.lstrip().startswith("#"):
-            line = line.replace("~#", "HASH_PLACEHOLDER")
-            line = line.split("#", 1)[0]
-            line = line.replace("HASH_PLACEHOLDER", "#")
-
-            cleaned_lines.append(line.rstrip())
+        if not line.lstrip().startswith("#!"):
+            cleaned_lines.append(line.split("#!", 1)[0].rstrip())
 
     if is_exa_query:
         prompt += ": "

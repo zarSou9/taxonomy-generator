@@ -1,5 +1,4 @@
 import json
-import random
 from pathlib import Path
 
 from taxonomy_generator.corpus.reader import AICorpus, Paper
@@ -11,7 +10,7 @@ from taxonomy_generator.scripts.generator.prompts import (
 from taxonomy_generator.scripts.generator.types import EvalResult, Topic, TopicPaper
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
-from taxonomy_generator.utils.utils import cache
+from taxonomy_generator.utils.utils import cache, random_sample
 
 TREE_PATH = Path("data/tree.json")
 
@@ -69,8 +68,7 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
 
 def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
     # Sorting
-    random.seed(1)
-    sample = random.sample(all_papers, min(sample_len, len(all_papers)))
+    sample = random_sample(all_papers, sample_len, 1)
 
     results = get_sort_results(topics, sample)
 
@@ -121,7 +119,7 @@ def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[Topic
         topic_papers=topic_papers,
         overlap_papers=overlap_papers,
         not_placed=not_placed,
-        papers_processed_num=papers_processed_num,
+        sample_len=papers_processed_num,
         overview_papers=overview_papers,
     )
 

@@ -1,6 +1,12 @@
-from taxonomy_generator.scripts.generator.types import EvalResult, Topic, TopicsFeedback
+from taxonomy_generator.corpus.reader import AICorpus
+from taxonomy_generator.scripts.generator.types import (
+    EvalResult,
+    Topic,
+    TopicPaper,
+    TopicsFeedback,
+)
 from taxonomy_generator.utils.prompting import fps, prompt
-from taxonomy_generator.utils.utils import format_perc
+from taxonomy_generator.utils.utils import format_perc, random_sample
 
 INIT_GET_TOPICS = """
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
@@ -27,7 +33,7 @@ Please present your topics as a JSON array without any other text or explanation
 ```json
 [
     {{
-        "title": "Clear and concise title",  # Make shorter I think
+        "title": "Clear and concise title",  #! Make shorter I think
         "description": "~2 sentence description of the topic"
     }}
 ]
@@ -69,7 +75,7 @@ Please rate how helpful this breakdown is for you (1-5)
 
 
 Please respond with XML in the following format:
-<score>~#</score> <feedback>...</feedback>
+<score>#</score> <feedback>...</feedback>
 """
 
 TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
@@ -81,6 +87,8 @@ TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
 
 fps(globals())
 
+corpus = AICorpus(papers_override=[])
+
 
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
     return "\n\n".join(
@@ -89,6 +97,86 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
             for tf in topics_feedbacks
         ]
     )
+
+
+def get_not_placed_str(eval_result: EvalResult) -> str:
+    not_placed_num = len(eval_result.not_placed)
+    not_placed_examples = corpus.get_pretty_sample(eval_result.not_placed)
+
+    if not_placed_num == 0:
+        return "The sorting LLM marked all papers as fitting into at least one category - nice!"
+
+    if not_placed_num == 1:
+        return f"""
+The LLM marked only one paper as not fitting into any of the topics - nice! This was that paper:
+
+<paper_not_placed>
+{not_placed_examples}
+</paper_not_placed>
+"""
+
+    return f"""
+For {not_placed_num} ({format_perc(not_placed_num / eval_result.sample_len)}%) papers, the LLM couldn't find a suitable category. Here are a couple of those papers:
+
+<example_papers_not_placed>
+{not_placed_examples}
+</example_papers_not_placed>
+"""
+
+
+def get_overlap_str(eval_result: EvalResult, duplicate_arxs: set[str]) -> str:
+    overlap_num = len(duplicate_arxs)
+
+    if overlap_num == 0:
+        return """
+"""
+
+    if overlap_num == 1:
+        return """
+"""
+
+    return f"""
+The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}%) papers (those which it decided had multiple applicable categories).
+"""
+
+
+def get_numbers_breakdown(eval_result: EvalResult, topics: list[Topic]):
+    numbers_breakdown = []
+    for topic in topics:
+        num = len(eval_result.topic_papers[topic.title])
+        numbers_breakdown.append(
+            f"{topic.title}: {num} - {format_perc(num / eval_result.sample_len)}"
+        )
+    return "\n".join(numbers_breakdown)
+
+
+def get_topic_paper_examples(topic_papers: dict[str, list[TopicPaper]]) -> str:
+    topic_paper_examples = []
+    for topic_title, papers in topic_papers.items():
+        sample = random_sample(papers, 3, seed=1)
+        pretty_sample = (
+            corpus.get_pretty_sample(sample)
+            if sample
+            else "No papers were categorized into this topic"
+        )
+        topic_paper_examples.append(f"## {topic_title}\n\n{pretty_sample}")
+    return "\n\n".join(topic_paper_examples)
+
+
+def get_single_arxs(eval_result: EvalResult) -> list[str]:
+    single_arxs: set[str] = set()
+    duplicate_arxs: set[str] = set()
+    for _, papers in eval_result.topic_papers.items():
+        for paper in papers:
+            if paper.arx in single_arxs:
+                duplicate_arxs.add(paper.arx)
+            else:
+                single_arxs.add(paper.arx)
+
+    for dup_arx in duplicate_arxs:
+        single_arxs.remove(dup_arx)
+
+    return single_arxs, duplicate_arxs
 
 
 @prompt
@@ -103,78 +191,45 @@ def resolve_get_topics_prompt(
     # papers_processed_num: int
     # overview_papers: dict[str, list[TopicPaper]]
 
-    topics_feedbacks = format_topics_feedbacks(eval_result.topics_feedbacks)
-    single_num = eval_result.topic_papers
-    no_place_num = 0
-    sample_len = eval_result.papers_processed_num
-
-    numbers_breakdown = []
-    for topic in topics:
-        num = len(eval_result.topic_papers[topic.title])
-        numbers_breakdown.append(
-            f"{topic.title}: {num} - {format_perc(num / sample_len)}"
-        )
-    numbers_breakdown = "\n".join(numbers_breakdown)
-
-    if no_place_num == 0:
-        no_place_str = "TODO"
-    elif no_place_num == 1:
-        no_place_str = "TODO"
-    else:
-        no_place_str = f"""
-For {no_place_num} ({format_perc(no_place_num / sample_len)}%) papers, the LLM couldn't find a suitable category. Some examples:
-
----
-{{no_place_examples}}
----
-"""
+    single_arxs, duplicate_arxs = get_single_arxs(eval_result)
 
     return f"""
 The evaluation script ran successfully on your proposed breakdown. Here are the results:
 
-# Sorting
-A random sample of {sample_len} papers from the corpus were asked to be categorized by an LLM.
+#! Sorting
+A random sample of {eval_result.sample_len} papers from the corpus were asked to be categorized by an LLM.
 
-Of these, {single_num} ({format_perc(single_num / sample_len)}) papers were cleanly categorized into one category.
-
-{no_place_str}
-
-
-The LLM found overlap in {{overlap_num}} ({{overlap_perc}}%) papers (those which it decided had multiple applicable categories). Examples:
-
----
-{{overlap_examples}}
----
-
+Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample_len)}) papers were cleanly categorized into one category.
+{get_not_placed_str(eval_result)}{get_overlap_str(eval_result, duplicate_arxs)}
 Here are how many papers were sorted into each of your categories
 
 ---
-{numbers_breakdown}
+{get_numbers_breakdown(eval_result, topics)}
 ---
 
 It is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important to have as a seperate category.
 
-For additional context, here are {{paper_topic_examples_num_per_topic}} randomly selected papers for each topic that were categorized by the LLM:
+For additional context, here are a some randomly chosen papers by topic, as sorted by the LLM:
 
----
-{{paper_topic_examples}}
----
+<example_papers_by_topic>
+{get_topic_paper_examples(eval_result.topic_papers)}
+</example_papers_by_topic>
 
-# Overview Papers
+#! Overview Papers
 For each topic, we attempted to find at least one associated overview or literature review paper.
 
 {{overview_paper_results}}
 
-# Helpfulness Scores
-In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
+#! Helpfulness Scores
+In an attempt to gauge *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
 
 ---
-{topics_feedbacks}
+{format_topics_feedbacks(eval_result.topics_feedbacks)}
 ---
 
 As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
 
-# Final Score
+#! Final Score
 From these metrics, here is the overall score that was calculated: {eval_result.overall_score}
 
 After analyzing and incorporating this feedback, please present your updated set of topics as a JSON array like before.
