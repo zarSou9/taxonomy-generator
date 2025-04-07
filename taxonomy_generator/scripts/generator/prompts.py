@@ -1,5 +1,6 @@
-from taxonomy_generator.scripts.generator.types import Topic, TopicsFeedback
-from taxonomy_generator.utils.prompting import fps
+from taxonomy_generator.scripts.generator.types import EvalResult, Topic, TopicsFeedback
+from taxonomy_generator.utils.prompting import fps, prompt
+from taxonomy_generator.utils.utils import format_perc
 
 INIT_GET_TOPICS = """
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
@@ -81,11 +82,7 @@ TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
 fps(globals())
 
 
-def resolve_topic(title: str, topics: list[Topic]):
-    return next((t for t in topics if t.title.lower() == title.lower()), None)
-
-
-def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
+def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
     return "\n\n".join(
         [
             f"System Prompt: {tf.system or 'You are a helpful assistant'}\nScore: {tf.score}\nFeedback: {tf.feedback}"
@@ -94,27 +91,59 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]):
     )
 
 
+@prompt
 def resolve_get_topics_prompt(
-    field: str,
-):
-    return """
+    field: str, eval_result: EvalResult, topics: list[Topic]
+) -> str:
+    # overall_score: float
+    # topics_feedbacks: list[TopicsFeedback]
+    # topic_papers: dict[str, list[TopicPaper]]
+    # overlap_papers: dict[set[str], list[TopicPaper]]
+    # not_placed: list[TopicPaper]
+    # papers_processed_num: int
+    # overview_papers: dict[str, list[TopicPaper]]
+
+    topics_feedbacks = format_topics_feedbacks(eval_result.topics_feedbacks)
+    single_num = eval_result.topic_papers
+    no_place_num = 0
+    sample_len = eval_result.papers_processed_num
+
+    numbers_breakdown = []
+    for topic in topics:
+        num = len(eval_result.topic_papers[topic.title])
+        numbers_breakdown.append(
+            f"{topic.title}: {num} - {format_perc(num / sample_len)}"
+        )
+    numbers_breakdown = "\n".join(numbers_breakdown)
+
+    if no_place_num == 0:
+        no_place_str = "TODO"
+    elif no_place_num == 1:
+        no_place_str = "TODO"
+    else:
+        no_place_str = f"""
+For {no_place_num} ({format_perc(no_place_num / sample_len)}%) papers, the LLM couldn't find a suitable category. Some examples:
+
+---
+{{no_place_examples}}
+---
+"""
+
+    return f"""
 The evaluation script ran successfully on your proposed breakdown. Here are the results:
 
 # Sorting
-A sample of {sort_sample_len} papers from the corpus were asked to be categorized by an LLM.
+A random sample of {sample_len} papers from the corpus were asked to be categorized by an LLM.
 
-Of these, {easy_num} ({easy_perc}%) papers were categorized cleanly into one category.
+Of these, {single_num} ({format_perc(single_num / sample_len)}) papers were cleanly categorized into one category.
 
-For {no_place_num} ({no_place_perc}%) papers, the LLM couldn't find a suitable category. [[xamples:
+{no_place_str}
 
----
-{no_place_examples}
----]]
 
-The LLM found overlap in {overlap_num} ({overlap_perc}%) papers (those which it decided had multiple applicable categories). Examples:
+The LLM found overlap in {{overlap_num}} ({{overlap_perc}}%) papers (those which it decided had multiple applicable categories). Examples:
 
 ---
-{overlap_examples}
+{{overlap_examples}}
 ---
 
 Here are how many papers were sorted into each of your categories
@@ -125,28 +154,28 @@ Here are how many papers were sorted into each of your categories
 
 It is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important to have as a seperate category.
 
-For additional context, here are {paper_topic_examples_num_per_topic} randomly selected papers for each topic that were categorized by the LLM:
+For additional context, here are {{paper_topic_examples_num_per_topic}} randomly selected papers for each topic that were categorized by the LLM:
 
 ---
-{paper_topic_examples}
+{{paper_topic_examples}}
 ---
 
 # Overview Papers
 For each topic, we attempted to find at least one associated overview or literature review paper.
 
-{overview_paper_results}
+{{overview_paper_results}}
 
 # Helpfulness Scores
 In an attempt to guage *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
 
 ---
-{helpfulness_scores}
+{topics_feedbacks}
 ---
 
 As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
 
 # Final Score
-From these metrics, here is the overall score that was calculated: {overall_score}
+From these metrics, here is the overall score that was calculated: {eval_result.overall_score}
 
 After analyzing and incorporating this feedback, please present your updated set of topics as a JSON array like before.
 """

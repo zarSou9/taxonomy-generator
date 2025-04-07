@@ -58,3 +58,10 @@ def serialize(obj: list[BaseModel] | BaseModel):
         if isinstance(obj, BaseModel)
         else [o.model_dump() for o in obj]
     )
+
+
+def format_perc(value: float) -> str:
+    rounded = round(value * 100, 2)
+    if rounded % 1 == 0:
+        rounded = int(rounded)
+    return f"{rounded}%"

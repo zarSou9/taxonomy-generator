@@ -63,6 +63,10 @@ def get_sort_results(topics: list[Topic], sample: list[TopicPaper]):
     )
 
 
+def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
+    return next((t for t in topics if t.title.lower() == title.lower()), None)
+
+
 def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]):
     # Sorting
     random.seed(1)
@@ -70,25 +74,22 @@ def evaluate_topics(topics: list[Topic], sample_len: int, all_papers: list[Topic
 
     results = get_sort_results(topics, sample)
 
-    topic_papers: dict[str, list[TopicPaper]] = {t.title.lower(): [] for t in topics}
+    topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topics}
     overlap_papers: dict[frozenset[str], list[TopicPaper]] = {}
     papers_processed_num: int = 0
     not_placed: list[TopicPaper] = []
 
     for paper, response in zip(sample, results):
         try:
-            chosen_topics: frozenset[str] = frozenset(
-                {
-                    t.lower()
-                    for t in parse_response_json(response or "", [], raise_on_fail=True)
-                }
-            )
+            chosen_topics = parse_response_json(response or "", [], raise_on_fail=True)
         except ValueError:
             print(f"Error parsing response: {response}")
             continue
 
-        if not all(t in topic_papers for t in chosen_topics):
+        if not all(resolve_topic(t, topics) for t in chosen_topics):
             continue
+
+        chosen_topics = frozenset(resolve_topic(t, topics).title for t in chosen_topics)
 
         papers_processed_num += 1
 
@@ -139,10 +140,11 @@ def main(
     best: tuple[list[Topic], int] = (None, 0)
     chat = Chat()
     eval_result: EvalResult | None = None
+    topics: list[Topic] | None = None
 
     for _ in range(num_iterations):
         if eval_result:
-            prompt = resolve_get_topics_prompt(field=FIELD, overall_score=eval_result)
+            prompt = resolve_get_topics_prompt(FIELD, eval_result, topics)
         else:
             prompt = INIT_GET_TOPICS.format(
                 field=FIELD,
