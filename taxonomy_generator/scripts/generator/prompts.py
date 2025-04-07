@@ -149,26 +149,26 @@ def get_overlap_str(eval_result: EvalResult, duplicate_arxs: set[str]) -> str:
 
     if overlap_num == 0:
         return """
-The LLM didn't classify any papers as fitting into more than one category. This could indicate that the topics are well-separated, but it might also suggest the topics are not semantically derived and thus less useful.
+The LLM didn't classify any papers as fitting into more than one category. Your topics are very well-separated.
 """
 
     if overlap_num == 1:
         return """
-The LLM found only one paper that was categorized into more than one category. Your topics are very well-separated.
+The LLM only found one paper that was categorized into more than one category. Your topics are very well-separated.
 """
 
     return f"""
 The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}%) papers (those which it decided had multiple applicable categories).
 
-The following stats show the sets of topics which the LLM sorted these overlap papers into, and shows how many papers were assigned to all the topics in each set for each set, sorted from most to least amount of papers.
+Here is a table showing topic combinations where papers were categorized into multiple topics, sorted by frequency (highest to lowest).
 
 {tabulate(overlap_stats, headers=["Topics", "Num Papers", "Percent of Sample"])}
 
-And then here are some examples by topics sets:
+And here are some examples of papers sorted into these combinations:
 
-<overlap_examples_by_topics_set>
+<overlap_examples_by_topic_combinations>
 {examples_str}
-</overlap_examples_by_topics_set>
+</overlap_examples_by_topic_combinations>
 """
 
 
