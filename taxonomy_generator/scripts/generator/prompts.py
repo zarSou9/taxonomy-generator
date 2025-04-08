@@ -1,7 +1,7 @@
 from tabulate import tabulate
 
 from taxonomy_generator.corpus.reader import AICorpus
-from taxonomy_generator.scripts.generator.types import (
+from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     Topic,
     TopicPaper,
@@ -118,7 +118,7 @@ The LLM marked only one paper as not fitting into any of the topics - nice! This
 """
 
     return f"""
-For {not_placed_num} ({format_perc(not_placed_num / eval_result.sample_len)}%) papers, the LLM couldn't find a suitable category. Here are a couple of those papers:
+For {not_placed_num} ({format_perc(not_placed_num / eval_result.sample_len)}) papers, the LLM couldn't find a suitable category. Here are a couple of those papers:
 
 <example_papers_not_placed>
 {not_placed_examples}
@@ -136,10 +136,14 @@ def get_overlap_str(eval_result: EvalResult, duplicate_arxs: set[str]) -> str:
     )
 
     for topic_titles, papers in overlap_sorted:
-        title = ", ".join(topic_titles)
+        title = " | ".join(topic_titles)
 
         overlap_stats.append(
-            (title, len(papers), format_perc(len(papers) / eval_result.sample_len))
+            (
+                title,
+                len(papers),
+                format_perc(len(papers) / eval_result.sample_len, fill=True),
+            )
         )
 
         sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
@@ -158,11 +162,11 @@ The LLM only found one paper that was categorized into more than one category. Y
 """
 
     return f"""
-The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}%) papers (those which it decided had multiple applicable categories).
+The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}) papers (those which it decided had multiple applicable categories).
 
-Here is a table showing topic combinations where papers were categorized into multiple topics, sorted by frequency (highest to lowest).
+Here's a table showing the topic combinations these papers were sorted into, ordered by frequency (highest to lowest).
 
-{tabulate(overlap_stats, headers=["Topics", "Num Papers", "Percent of Sample"])}
+{tabulate(overlap_stats, headers=["Topics", "Num Papers", "Percent of Sample"], colalign=["left", "right", "right"])}
 
 And here are some examples of papers sorted into these combinations:
 
@@ -173,17 +177,24 @@ And here are some examples of papers sorted into these combinations:
 
 
 def get_topic_paper_table(eval_result: EvalResult) -> str:
+    topic_papers_sorted = sorted(
+        eval_result.topic_papers.items(), key=lambda tp: len(tp[1]), reverse=True
+    )
+
     numbers_breakdown = []
-    for topic_title, papers in eval_result.topic_papers.items():
+    for topic_title, papers in topic_papers_sorted:
         numbers_breakdown.append(
             (
                 topic_title,
                 len(papers),
-                format_perc(len(papers) / eval_result.sample_len),
+                format_perc(len(papers) / eval_result.sample_len, fill=True),
             )
         )
+
     return tabulate(
-        numbers_breakdown, headers=["Topic", "Num Papers", "Percent of Sample"]
+        numbers_breakdown,
+        headers=["Topic", "Num Papers", "Percent of Sample"],
+        colalign=["left", "right", "right"],
     )
 
 
@@ -228,13 +239,13 @@ A random sample of {eval_result.sample_len} papers from the corpus were asked to
 
 Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample_len)}) papers were cleanly categorized into one category.
 {get_not_placed_str(eval_result)}{get_overlap_str(eval_result, duplicate_arxs)}
-Here are how many papers were sorted into each of your categories
+This table shows many papers were sorted into each topic, ordered by frequency:
 
 {get_topic_paper_table(eval_result)}
 
 It is generally good to try and even out how many papers are in each category, but be cautious as this could just indicate there is less work in the topic but it is still important to have as a seperate category.
 
-For additional context, here are a some randomly chosen papers by topic, as sorted by the LLM:
+For additional context, here are a some randomly chosen papers from the sample, organized by the topic they were sorted into:
 
 <example_papers_by_topic>
 {get_topic_paper_examples(eval_result.topic_papers)}
@@ -246,16 +257,18 @@ For each topic, we attempted to find at least one associated overview or literat
 {{overview_paper_results}}
 
 #! Helpfulness Scores
-In an attempt to gauge *helpfulness*, 4 LLM were asked to generate a helpfullness score and provide feedback on your proposed breakdown. Here are the results:
+In an attempt to gauge *helpfulness*, 4 LLMs were asked to provide feedback on how helpful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and were asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is best). Here are the results:
 
 <helpfulness_feedback>
 {format_topics_feedbacks(eval_result.topics_feedbacks)}
 </helpfulness_feedback>
 
-As this is LLM generated feedback, take it with disgression, and only incorporate feedback that makes sense.
+As this is LLM-generated feedback, use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
 
 #! Final Score
 From these metrics, here is the overall score that was calculated: {eval_result.overall_score}
 
-After analyzing and incorporating this feedback, please present your updated set of topics as a JSON array like before.
+Depending on the results of this evaluation, you may want to combine, split, update, or add topics.
+
+After developing your improved taxonomy, please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys.
 """

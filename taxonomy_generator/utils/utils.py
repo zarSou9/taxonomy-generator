@@ -63,11 +63,11 @@ def serialize(obj: list[BaseModel] | BaseModel):
     )
 
 
-def format_perc(value: float) -> str:
+def format_perc(value: float, fill: bool = False) -> str:
     rounded = round(value * 100, 2)
-    if rounded % 1 == 0:
+    if rounded % 1 == 0 and not fill:
         rounded = int(rounded)
-    return f"{rounded}%"
+    return f"{rounded:.2f}%" if fill else f"{rounded}%"
 
 
 def random_sample(

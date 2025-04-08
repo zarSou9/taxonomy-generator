@@ -2,12 +2,16 @@ import json
 from pathlib import Path
 
 from taxonomy_generator.corpus.reader import AICorpus, Paper
+from taxonomy_generator.scripts.generator.generator_types import (
+    EvalResult,
+    Topic,
+    TopicPaper,
+)
 from taxonomy_generator.scripts.generator.prompts import (
     INIT_GET_TOPICS,
     SORT_PAPER,
     resolve_get_topics_prompt,
 )
-from taxonomy_generator.scripts.generator.types import EvalResult, Topic, TopicPaper
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.utils import cache, random_sample
@@ -143,6 +147,8 @@ def main(
     for _ in range(num_iterations):
         if eval_result:
             prompt = resolve_get_topics_prompt(eval_result, topics)
+            print(prompt)
+            return
         else:
             prompt = INIT_GET_TOPICS.format(
                 field=FIELD,
@@ -150,8 +156,6 @@ def main(
                 corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len, seed=1),
             )
-            print(prompt)
-            return
 
         topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))
 
