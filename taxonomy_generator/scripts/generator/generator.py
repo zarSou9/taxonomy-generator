@@ -52,21 +52,60 @@ def find_overview_papers(topic: Topic) -> list[TopicPaper]:
 
 
 @cache()
-def get_sort_results(topics: list[Topic], sample: list[TopicPaper]) -> list[str | None]:
+def process_sort_results(
+    topics: list[Topic], sample: list[TopicPaper], sample_len: int
+) -> list[tuple[TopicPaper, frozenset[str]]]:
     topics_str = topics_to_json(topics)
 
-    return run_in_parallel(
-        [
-            SORT_PAPER.format(
-                paper=corpus.get_pretty_paper(p),
-                topics=topics_str,
-                field=FIELD,
-                field_cap=cap_words(FIELD),
+    results = []
+    parsed_sample_idx = 0
+
+    while len(results) < sample_len:
+        this_sample = sample[parsed_sample_idx:][: sample_len - len(results)]
+
+        if not this_sample:
+            break
+
+        responses = run_in_parallel(
+            [
+                SORT_PAPER.format(
+                    paper=corpus.get_pretty_paper(p),
+                    topics=topics_str,
+                    field=FIELD,
+                    field_cap=cap_words(FIELD),
+                )
+                for p in this_sample
+            ],
+            model="gemini-2.0-flash",
+        )
+
+        for paper, response in zip(this_sample, responses):
+            if not response:
+                continue
+
+            try:
+                chosen_topics = parse_response_json(
+                    response or "", [], raise_on_fail=True
+                )
+            except ValueError:
+                print(f"Error parsing response: {response}")
+                continue
+
+            if f"{FIELD} Overview/Survey".lower() in (t.lower() for t in chosen_topics):
+                continue
+
+            if not all(resolve_topic(t, topics) for t in chosen_topics):
+                continue
+
+            chosen_topics = frozenset(
+                resolve_topic(t, topics).title for t in chosen_topics
             )
-            for p in sample
-        ],
-        model="gemini-2.0-flash",
-    )
+
+            results.append((paper, chosen_topics))
+
+        parsed_sample_idx += len(this_sample)
+
+    return results
 
 
 def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
@@ -74,35 +113,17 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
 
 
 def evaluate_topics(
-    topics: list[Topic], sample_len: int, all_papers: list[TopicPaper]
+    topics: list[Topic], sample_len: int, all_papers: list[TopicPaper], buffer_len=50
 ) -> EvalResult:
-    # Sorting
-    sample = random_sample(all_papers, sample_len, 1)
+    sample = random_sample(all_papers, sample_len + buffer_len, 1)
 
-    results = get_sort_results(topics, sample)
+    sort_results = process_sort_results(topics, sample, sample_len)
 
     topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topics}
     overlap_papers: dict[frozenset[str], list[TopicPaper]] = {}
-    papers_processed_num: int = 0
     not_placed: list[TopicPaper] = []
 
-    for paper, response in zip(sample, results):
-        try:
-            chosen_topics = parse_response_json(response or "", [], raise_on_fail=True)
-        except ValueError:
-            print(f"Error parsing response: {response}")
-            continue
-
-        if f"{FIELD} Overview/Survey".lower() in (t.lower() for t in chosen_topics):
-            continue
-
-        if not all(resolve_topic(t, topics) for t in chosen_topics):
-            continue
-
-        papers_processed_num += 1
-
-        chosen_topics = frozenset(resolve_topic(t, topics).title for t in chosen_topics)
-
+    for paper, chosen_topics in sort_results:
         if not chosen_topics:
             not_placed.append(paper)
             continue
@@ -129,7 +150,7 @@ def evaluate_topics(
         topic_papers=topic_papers,
         overlap_papers=overlap_papers,
         not_placed=not_placed,
-        sample_len=papers_processed_num,
+        sample_len=len(sort_results),
         overview_papers=overview_papers,
     )
 

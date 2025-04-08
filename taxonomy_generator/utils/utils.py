@@ -2,15 +2,16 @@ import functools
 import pickle
 import random
 from pathlib import Path
-from typing import Callable, Sequence, TypeVar
+from typing import Callable, ParamSpec, Sequence, TypeVar
 
 from pydantic import BaseModel
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def cache(cache_filename_override: str | None = None, max_size: int | None = 30):
-    def decorator(func: Callable):
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
         cache_dir = Path(".func_cache")
         cache_dir.mkdir(exist_ok=True)
 
