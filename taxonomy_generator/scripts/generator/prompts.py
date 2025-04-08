@@ -10,7 +10,7 @@ from taxonomy_generator.utils.prompting import fps, prompt
 from taxonomy_generator.utils.utils import format_perc, random_sample
 
 INIT_GET_TOPICS = """
-Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
+Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
 
 ---
 {sample}
@@ -22,7 +22,7 @@ After providing your breakdown, it will automatically be evaluated using LLMs an
 
 You are ultimately striving for the following attributes:
 - Aim for MECE: Mutually Exclusive, Collectively Exaustive.
-    - Mutually Exclusive: An LLM will categorize each paper, and for each paper it finds fitting multiple topics, the lower your score will be.
+    - Mutually Exclusive: An LLM will used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
     - Collectively Exaustive: All papers should fit into at least one topic.
     - Optimize for these as best you can, but don't strive for perfection. Mutually exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
 - Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
@@ -34,7 +34,7 @@ Please present your topics as a JSON array without any other text or explanation
 ```json
 [
     {{
-        "title": "Clear and concise title",  #! Make shorter I think
+        "title": "Clear and concise title",
         "description": "~2 sentence description of the topic"
     }}
 ]
@@ -42,7 +42,7 @@ Please present your topics as a JSON array without any other text or explanation
 """
 
 SORT_PAPER = """
-You are categorizing a paper for an {field} taxonomy.
+You are categorizing a paper into a taxonomy for {field} related papers.
 
 PAPER:
 ---
@@ -54,12 +54,7 @@ AVAILABLE CATEGORIES:
 {topics}
 ```
 
-TASK: Identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
-
-Example responses:
-["Category A"]
-["Category A", "Category B"]
-[]
+Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
 """
 
 TOPICS_FEEDBACK = """
@@ -252,7 +247,6 @@ def resolve_get_topics_prompt(eval_result: EvalResult, topics: list[Topic]) -> s
     return f"""
 The evaluation script ran successfully on your proposed breakdown. Here are the results:
 
-#! Sorting
 A random sample of {eval_result.sample_len} papers from the corpus were categorized by an LLM.
 
 Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample_len)}) papers were cleanly categorized into one category.
@@ -263,12 +257,10 @@ Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample
 
 {get_topic_papers_str(eval_result, single_arxs)}
 
-#! Overview Papers
 For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:
 
 {{overview_paper_results}}
 
-#! Helpfulness Scores
 In an attempt to gauge *helpfulness*, 4 LLMs were asked to provide feedback on how helpful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is best). Here are the results:
 
 <helpfulness_feedback>
