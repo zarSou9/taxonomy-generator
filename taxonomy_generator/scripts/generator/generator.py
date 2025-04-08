@@ -14,7 +14,7 @@ from taxonomy_generator.scripts.generator.prompts import (
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
-from taxonomy_generator.utils.utils import cache, random_sample
+from taxonomy_generator.utils.utils import cache, cap_words, random_sample
 
 TREE_PATH = Path("data/tree.json")
 
@@ -58,7 +58,10 @@ def get_sort_results(topics: list[Topic], sample: list[TopicPaper]) -> list[str 
     return run_in_parallel(
         [
             SORT_PAPER.format(
-                paper=corpus.get_pretty_paper(p), topics=topics_str, field=FIELD
+                paper=corpus.get_pretty_paper(p),
+                topics=topics_str,
+                field=FIELD,
+                field_cap=cap_words(FIELD),
             )
             for p in sample
         ],
@@ -90,12 +93,15 @@ def evaluate_topics(
             print(f"Error parsing response: {response}")
             continue
 
+        if f"{FIELD} Overview/Survey".lower() in (t.lower() for t in chosen_topics):
+            continue
+
         if not all(resolve_topic(t, topics) for t in chosen_topics):
             continue
 
-        chosen_topics = frozenset(resolve_topic(t, topics).title for t in chosen_topics)
-
         papers_processed_num += 1
+
+        chosen_topics = frozenset(resolve_topic(t, topics).title for t in chosen_topics)
 
         if not chosen_topics:
             not_placed.append(paper)
@@ -146,12 +152,13 @@ def main(
 
     for _ in range(num_iterations):
         if eval_result:
-            prompt = resolve_get_topics_prompt(eval_result, topics)
+            prompt = resolve_get_topics_prompt(eval_result)
             print(prompt)
             return
         else:
             prompt = INIT_GET_TOPICS.format(
                 field=FIELD,
+                field_cap=cap_words(FIELD),
                 sample_len=f"{init_sample_len:,}",
                 corpus_len=f"{len(topic.papers):,}",
                 sample=corpus.get_pretty_sample(init_sample_len, seed=1),

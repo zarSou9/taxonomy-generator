@@ -3,7 +3,6 @@ from tabulate import tabulate
 from taxonomy_generator.corpus.reader import AICorpus
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
-    Topic,
     TopicsFeedback,
 )
 from taxonomy_generator.utils.prompting import fps, prompt
@@ -18,9 +17,11 @@ Your task is to develop a taxonomy for categorizing a corpus of {field} related 
 
 Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus. Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
 
+Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {field} as a whole (i.e., for papers like "{field_cap}: A Comprehensive Overview"). You don't need to consider these general overview papers for your taxonomy.
+
 After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
 
-You are ultimately striving for the following attributes:
+You should strive for the following attributes:
 - Aim for MECE: Mutually Exclusive, Collectively Exaustive.
     - Mutually Exclusive: An LLM will used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
     - Collectively Exaustive: All papers should fit into at least one topic.
@@ -42,7 +43,7 @@ Please present your topics as a JSON array without any other text or explanation
 """
 
 SORT_PAPER = """
-You are categorizing a paper into a taxonomy for {field} related papers.
+You are categorizing a paper into a taxonomy for {field} related research papers.
 
 PAPER:
 ---
@@ -53,6 +54,8 @@ AVAILABLE CATEGORIES:
 ```json
 {topics}
 ```
+
+Note: If this paper is a broad overview or survey of {field}, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
 
 Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
 """
@@ -241,8 +244,9 @@ def get_single_arxs(eval_result: EvalResult) -> tuple[set[str], set[str]]:
 
 
 @prompt
-def resolve_get_topics_prompt(eval_result: EvalResult, topics: list[Topic]) -> str:
+def resolve_get_topics_prompt(eval_result: EvalResult) -> str:
     single_arxs, duplicate_arxs = get_single_arxs(eval_result)
+    # {f" {sorted_overview_len} of these papers {'were' if sorted_overview_len > 1 else 'was'} categorized into the special overview/survery of {field} category. Though, since this evaluation is concerned with your taxonomy, we will hereon consider the full length of the sample to be {eval_result.sample_len - sorted_overview_len} papers ({eval_result.sample_len} - {sorted_overview_len})." if sorted_overview_len else ""}
 
     return f"""
 The evaluation script ran successfully on your proposed breakdown. Here are the results:
