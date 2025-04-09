@@ -57,7 +57,10 @@ def log(p: str):
 
 
 def cap_words(text: str) -> str:
-    return " ".join(word.capitalize() for word in text.split(" "))
+    return " ".join(
+        word if any(char.isupper() for char in word) else word.capitalize()
+        for word in text.split(" ")
+    )
 
 
 def serialize(obj: list[BaseModel] | BaseModel):

@@ -66,6 +66,8 @@ def process_sort_results(
         if not this_sample:
             break
 
+        print(f"Attempting to sort {len(this_sample)} papers")
+
         responses = run_in_parallel(
             [
                 SORT_PAPER.format(
@@ -92,6 +94,9 @@ def process_sort_results(
                 continue
 
             if f"{FIELD} Overview/Survey".lower() in (t.lower() for t in chosen_topics):
+                print(
+                    f"Paper sorted as overview/survey:\n\n---\n{corpus.get_pretty_paper(paper)}\n---\n"
+                )
                 continue
 
             if not all(resolve_topic(t, topics) for t in chosen_topics):
@@ -102,6 +107,8 @@ def process_sort_results(
             )
 
             results.append((paper, chosen_topics))
+
+        print(f"Current results len: {len(results)}")
 
         parsed_sample_idx += len(this_sample)
 

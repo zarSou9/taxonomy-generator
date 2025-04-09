@@ -23,9 +23,9 @@ After providing your breakdown, it will automatically be evaluated using LLMs an
 
 You should strive for the following attributes:
 - Aim for MECE: Mutually Exclusive, Collectively Exaustive.
-    - Mutually Exclusive: An LLM will used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
+    - Mutually Exclusive: An LLM will be used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
     - Collectively Exaustive: All papers should fit into at least one topic.
-    - Optimize for these as best you can, but don't strive for perfection. Mutually exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
+    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
 - Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
 - Your breakdown should provide a clear mental model of {field} that is valuable to both newcomers and experienced researchers.
 - Strive for topics that likely have existing survey or literature review papers. The evaluation system will reward topics for which it could find at least one associated overview/survey paper.
@@ -273,7 +273,7 @@ In an attempt to gauge *helpfulness*, 4 LLMs were asked to provide feedback on h
 
 As this is LLM-generated feedback, use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
 
-Depending on the results of this evaluation, you may want to combine, split, update, or add topics.
+Depending on the results of this evaluation, you may decide to combine, split, update, or add topics.
 
 After developing your improved taxonomy, please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys.
 """
