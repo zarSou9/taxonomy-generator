@@ -61,25 +61,31 @@ Please identify which category/categories this paper belongs to. Respond with a 
 """
 
 TOPICS_FEEDBACK = """
-Given the following breakdown for the field of {field}
+Given the following topic breakdown for organizing {field} research papers:
 
 ```json
 {topics}
 ```
 
-Please rate how helpful this breakdown is for you (1-5)
-- Does it make sense
-- Does it feel like a satisfying encapsulation of the
-- Does it help provide a good
+Please provide your feedback on:
+- Do you feel you understand each of the topics? Are the descriptions clear?
+- Does it make sense conceptually? Is anything contradictory?
+- Does it satisfyingly capture the breadth of {field}?
+- How useful would you find this breakdown for navigating the research area?
+- Do the categories seem sufficiently distinct to minimize overlap between topics?
 
+Instead of offering suggestions for improvement, focus more on your experience: what you found helpful or unhelpful, clear or unclear, and why.
 
-Please respond with XML in the following format:
-<score>#</score> <feedback>...</feedback>
+After providing feedback, please rate the overall usefulness of this taxonomy from 1-5 (where 5 is excellent).
+
+Please provide your feedback and score in `<feedback>` and `<score>` XML tags. Example response format:
+<feedback>Your feedback here.</feedback> <score>#</score>
 """
 
-TOPICS_FEEDBACK_SYSTEM_PROMPTS = [
+
+TOPICS_FEEDBACK_SYSTEM_PROMPTS: list[str | None] = [
     None,
-    "You are an enthusiast of {}",
+    "You are an enthusiast of {} research",
     "You are an experienced and prolific {} researcher who is well renown in the field",
     "You are a newcomer to the field of {} and want to learn more",
 ]
@@ -92,7 +98,7 @@ corpus = AICorpus(papers_override=[])
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
     return "\n\n".join(
         [
-            f"System Prompt: {tf.system or 'You are a helpful assistant'}\nScore: {tf.score}\nFeedback: {tf.feedback}"
+            f"System Prompt: {tf.system or 'No system prompt'}\nScore: {tf.score}\nFeedback:\n---\n{tf.feedback}\n---"
             for tf in topics_feedbacks
         ]
     )
@@ -263,9 +269,9 @@ Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample
 
 For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:
 
-{{overview_paper_results}}
+{tabulate(((title, "YES" if papers else "NO") for title, papers in eval_result.overview_papers.items()), headers=["Topic", "Found Overview Paper"])}
 
-In an attempt to gauge *helpfulness*, 4 LLMs were asked to provide feedback on how helpful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is best). Here are the results:
+In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:
 
 <helpfulness_feedback>
 {format_topics_feedbacks(eval_result.topics_feedbacks)}
@@ -275,5 +281,5 @@ As this is LLM-generated feedback, use your discretion and only incorporate sugg
 
 Depending on the results of this evaluation, you may decide to combine, split, update, or add topics.
 
-After developing your improved taxonomy, please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys.
+After developing your improved taxonomy, please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
 """

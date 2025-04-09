@@ -74,3 +74,7 @@ def _clean_json_str(json_str: str) -> str:
         else:
             result += c
     return result
+
+
+def first_int(text: str, default: int = -1) -> int:
+    return int(next((c for c in text if c.isdigit()), default))

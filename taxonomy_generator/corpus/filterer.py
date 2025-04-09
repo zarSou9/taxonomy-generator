@@ -8,7 +8,7 @@ from typing import Generator
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY, IS_AI_SAFETY_EXPLANATION
 from taxonomy_generator.utils.llm import run_in_parallel
-from taxonomy_generator.utils.parse_llm import get_xml_content
+from taxonomy_generator.utils.parse_llm import first_int, get_xml_content
 
 SAMPLE_DIR_PATH = Path("data/relevance_checks")
 
@@ -49,9 +49,8 @@ def check_relevance(
 def resolve_data(data_file: Path) -> Generator[tuple[int, str]]:
     for r, arx_id in json.loads(data_file.read_text()):
         if "explanations" in data_file.name:
-            r = get_xml_content(r, "score").strip() or r
-        score = int(next(c for c in r if c.isdigit()))
-        yield (score, arx_id)
+            r = get_xml_content(r, "score") or r
+        yield (first_int(r), arx_id)
 
 
 def print_relevance_data(data_file: Path, verbose: int = 0):
@@ -60,11 +59,8 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
 
     for r, arx_id in data:
         if "explanations" in data_file.name:
-            score = int(
-                next(
-                    c for c in (get_xml_content(r, "score").strip() or r) if c.isdigit()
-                )
-            )
+            score = first_int(get_xml_content(r, "score") or r)
+
             if verbose >= 2 or score < 3 and verbose == 1:
                 explanation = get_xml_content(r, "explanation")
                 print("---")
@@ -74,7 +70,7 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
                 explanation and print(f"Explanation: {explanation.strip()}")
                 print()
         else:
-            score = int(next(c for c in r if c.isdigit()))
+            score = first_int(r)
 
         if score:
             scores.append(score)

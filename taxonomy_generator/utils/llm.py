@@ -261,6 +261,7 @@ def ask_llm(
                     temperature=temp or 1,
                     max_output_tokens=max_tokens,
                     stop_sequences=stop_sequences,
+                    system_instruction=system,
                 )
                 if ground_with_google_search:
                     generation_config.tools = [Tool(google_search=GoogleSearch())]
@@ -314,7 +315,10 @@ def run_through_convo(
 
 
 def run_in_parallel(
-    histories: list[History], max_workers: int = 5, **kwargs
+    histories: list[History],
+    settingss: list[dict] | None = None,
+    max_workers: int = 5,
+    **kwargs,
 ) -> list[str | None]:
     """
     Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
@@ -330,10 +334,15 @@ def run_in_parallel(
 
     results = [None] * len(histories)
 
+    if settingss:
+        assert len(settingss) == len(histories)
+    else:
+        settingss = [{}] * len(histories)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_prompt = {
-            executor.submit(ask_llm, prompt_or_messages, **kwargs): i
-            for i, prompt_or_messages in enumerate(histories)
+            executor.submit(ask_llm, history, **kwargs, **settings): i
+            for i, (history, settings) in enumerate(zip(histories, settingss))
         }
 
         for future in tqdm(

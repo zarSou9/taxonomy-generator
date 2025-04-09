@@ -7,15 +7,22 @@ from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     Topic,
     TopicPaper,
+    TopicsFeedback,
 )
 from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
 from taxonomy_generator.scripts.generator.prompts import (
     INIT_GET_TOPICS,
     SORT_PAPER,
+    TOPICS_FEEDBACK,
+    TOPICS_FEEDBACK_SYSTEM_PROMPTS,
     resolve_get_topics_prompt,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
-from taxonomy_generator.utils.parse_llm import parse_response_json
+from taxonomy_generator.utils.parse_llm import (
+    first_int,
+    get_xml_content,
+    parse_response_json,
+)
 from taxonomy_generator.utils.utils import cache, cap_words, random_sample
 
 FIELD = "AI safety"
@@ -144,12 +151,30 @@ def evaluate_topics(
     overview_papers = {t.title: find_overview_papers(t, FIELD) for t in topics}
 
     # Helpfulness Scores
+    prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
+    responses = run_in_parallel(
+        [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
+        [
+            {"system": system and system.format(FIELD)}
+            for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+        ],
+        model="gemini-1.5-pro",
+        temp=1.55,
+    )
+    topics_feedbacks = [
+        TopicsFeedback(
+            score=first_int(get_xml_content(response, "score")),
+            feedback=get_xml_content(response, "feedback"),
+            system=system and system.format(FIELD),
+        )
+        for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
+    ]
 
     # Final Score
 
     return EvalResult(
         overall_score=0,
-        topics_feedbacks=[],
+        topics_feedbacks=topics_feedbacks,
         topic_papers=topic_papers,
         overlap_papers=overlap_papers,
         not_placed=not_placed,

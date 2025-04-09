@@ -8,6 +8,7 @@ from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY
 from taxonomy_generator.utils.llm import run_in_parallel
+from taxonomy_generator.utils.parse_llm import first_int
 from taxonomy_generator.utils.utils import random_sample
 
 
@@ -188,9 +189,7 @@ class AICorpus:
 
             filtered = []
             for paper, response in zip(to_add, responses):
-                score = int(next((c for c in response if c.isdigit()), 0))
-
-                if score >= relevance_threshold:
+                if first_int(response) >= relevance_threshold:
                     filtered.append(paper)
 
             to_add = filtered
