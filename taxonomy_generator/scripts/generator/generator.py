@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
 
-from taxonomy_generator.corpus.reader import AICorpus, Paper
+from taxonomy_generator.corpus.corpus_instance import corpus
+from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     Topic,
     TopicPaper,
 )
+from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
 from taxonomy_generator.scripts.generator.prompts import (
     INIT_GET_TOPICS,
     SORT_PAPER,
@@ -16,11 +18,8 @@ from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.utils import cache, cap_words, random_sample
 
-TREE_PATH = Path("data/tree.json")
-
 FIELD = "AI safety"
-
-corpus = AICorpus()
+TREE_PATH = Path("data/tree.json")
 
 
 def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
@@ -45,10 +44,6 @@ def topics_to_json(topics: list[Topic]) -> str:
         indent=2,
         ensure_ascii=False,
     )
-
-
-def find_overview_papers(topic: Topic) -> list[TopicPaper]:
-    return []
 
 
 @cache()
@@ -79,6 +74,7 @@ def process_sort_results(
                 for p in this_sample
             ],
             model="gemini-2.0-flash",
+            temp=0,
         )
 
         for paper, response in zip(this_sample, responses):
@@ -145,7 +141,7 @@ def evaluate_topics(
                 overlap_papers[chosen_topics] = [paper]
 
     # Overview Papers
-    overview_papers = {t.title: find_overview_papers(t) for t in topics}
+    overview_papers = {t.title: find_overview_papers(t, FIELD) for t in topics}
 
     # Helpfulness Scores
 
@@ -192,7 +188,9 @@ def main(
                 sample=corpus.get_pretty_sample(init_sample_len, seed=1),
             )
 
-        topics = resolve_topics(chat.ask(prompt, use_thinking=True, verbose=True))
+        topics = resolve_topics(
+            chat.ask(prompt, use_thinking=True, verbose=True)  # TODO: Use cache
+        )
 
         eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
 

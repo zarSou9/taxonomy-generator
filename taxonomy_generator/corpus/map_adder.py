@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
 
-from taxonomy_generator.corpus.reader import AICorpus
-
-corpus = AICorpus()
+from taxonomy_generator.corpus.corpus_instance import corpus
 
 
 def get_all_arxiv_urls(tree: dict, urls: list[str] | None = None):

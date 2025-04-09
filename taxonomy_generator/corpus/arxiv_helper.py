@@ -1,9 +1,12 @@
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Literal, overload
 
 import arxiv
 import pandas as pd
+
+from taxonomy_generator.corpus.corpus_types import Paper
 
 
 def extract_paper_info(paper: arxiv.Result) -> dict[str, str]:
@@ -21,9 +24,21 @@ def extract_paper_info(paper: arxiv.Result) -> dict[str, str]:
     }
 
 
+@overload
 def fetch_papers_by_id(
-    arxiv_ids: list[str], batch_size: int = 100
-) -> list[dict[str, str]]:
+    arxiv_ids: list[str], as_dict: Literal[False] = False, batch_size: int = 100
+) -> list[Paper]: ...
+
+
+@overload
+def fetch_papers_by_id(
+    arxiv_ids: list[str], as_dict: Literal[True] = True, batch_size: int = 100
+) -> list[dict[str, str]]: ...
+
+
+def fetch_papers_by_id(
+    arxiv_ids: list[str], as_dict: bool = False, batch_size: int = 100
+):
     """Fetch papers from arXiv by their IDs in batches.
 
     Args:
@@ -61,7 +76,7 @@ def fetch_papers_by_id(
             print(f"Error fetching batch: {str(e)}")
             continue
 
-    return all_papers
+    return all_papers if as_dict else [Paper(**p) for p in all_papers]
 
 
 class ArxivSafetyPipeline:
@@ -167,7 +182,7 @@ class ArxivSafetyPipeline:
 
             try:
                 # Process fetched results
-                for paper in fetch_papers_by_id(arxiv_ids):
+                for paper in fetch_papers_by_id(arxiv_ids, as_dict=True):
                     paper_id = paper["arxiv_id"]
 
                     # Get the row with this ID to preserve existing data

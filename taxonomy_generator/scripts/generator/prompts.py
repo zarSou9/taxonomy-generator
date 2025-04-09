@@ -1,6 +1,6 @@
 from tabulate import tabulate
 
-from taxonomy_generator.corpus.reader import AICorpus
+from taxonomy_generator.corpus.ai_corpus import AICorpus
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     TopicsFeedback,

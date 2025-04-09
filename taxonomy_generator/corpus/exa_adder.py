@@ -1,5 +1,5 @@
-from taxonomy_generator.corpus.reader import AICorpus
-from taxonomy_generator.utils.exa import search_arx_urls
+from taxonomy_generator.corpus.corpus_instance import corpus
+from taxonomy_generator.utils.exa import search_arxs
 from taxonomy_generator.utils.prompting import fps
 
 """
@@ -33,12 +33,10 @@ This paper presents a novel approach to {}
 
 fps(globals())
 
-corpus = AICorpus()
-
 
 def main():
     corpus.add_papers(
-        search_arx_urls(
+        search_arxs(
             EXA_NOVEL_APPROACH.format(),
             num_results=25,
         ),

@@ -3,9 +3,11 @@ import re
 from typing import Iterable
 
 import pandas as pd
-from pydantic import BaseModel
 
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
+from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.corpus.prompts import IS_AI_SAFETY
+from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.utils import random_sample
 
 
@@ -29,29 +31,6 @@ def term_in_text(term: str, text: str):
         return False
 
     return bool(re.search(r"\b" + re.escape(term.lower()) + r"\b", text.lower()))
-
-
-class Paper(BaseModel):
-    arxiv_id: str
-    title: str
-    abstract: str
-    authors: str
-    url: str
-    published: str
-    updated: str
-    categories: list[str]
-    retrieved_date: str
-    subtopic: str | None
-
-    def __init__(self, **kwargs):
-        kwargs["categories"] = kwargs["categories"].split(", ")
-
-        optional_keys = ["subtopic"]
-        for key in optional_keys:
-            if key not in kwargs or (kwargs[key] == "" or kwargs[key] == "nan"):
-                kwargs[key] = None
-
-        super().__init__(**kwargs)
 
 
 class TermGroups:
@@ -168,7 +147,12 @@ class AICorpus:
         return papers
 
     def add_papers(
-        self, paper_or_ids: list[Paper | str], verbose: int = 0, dry_run: int = 0
+        self,
+        paper_or_ids: list[Paper | str],
+        verbose: int = 0,
+        dry_run: int = 0,
+        ensure_relevance: bool = False,
+        relevance_threshold: int = 3,
     ) -> list[Paper]:
         """
         Returns:
@@ -184,15 +168,29 @@ class AICorpus:
                 )
             return papers
 
-        fetched = (
-            Paper(**p)
-            for p in fetch_papers_by_id([p for p in papers if isinstance(p, str)])
-        )
+        fetched = fetch_papers_by_id([p for p in papers if isinstance(p, str)])
         for i, paper in enumerate(papers):
             if isinstance(paper, str):
                 papers[i] = next(fetched)
 
         to_add = [p for p in papers if not self.get_paper_by_id(p.arxiv_id)]
+
+        if ensure_relevance:
+            responses = run_in_parallel(
+                [IS_AI_SAFETY.format(self.get_pretty_paper(paper)) for paper in to_add],
+                model="gemini-2.0-flash",
+                temp=0,
+            )
+
+            filtered = []
+            for paper, response in zip(to_add, responses):
+                score = int(next((c for c in response if c.isdigit()), 0))
+
+                if score >= relevance_threshold:
+                    filtered.append(paper)
+
+            to_add = filtered
+
         if to_add and not dry_run:
             self.papers.extend(to_add)
             self.save_to_csv()

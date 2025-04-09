@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from taxonomy_generator.corpus.corpus_types import Paper
+
 
 class SortTopic(BaseModel):
     title: str
@@ -33,4 +35,4 @@ class EvalResult(BaseModel):
     overlap_papers: dict[frozenset[str], list[TopicPaper]]
     not_placed: list[TopicPaper]
     sample_len: int
-    overview_papers: dict[str, list[TopicPaper]]
+    overview_papers: dict[str, list[Paper]]

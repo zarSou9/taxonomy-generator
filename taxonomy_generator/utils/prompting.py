@@ -24,7 +24,7 @@ def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
     prompt = "\n".join(cleaned_lines)
 
     if is_exa_query:
-        prompt += ": "
+        prompt = prompt.rstrip(":") + ": "
 
     prompt = re.sub(r"\n{3,}", "\n\n", prompt)
 

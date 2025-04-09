@@ -56,11 +56,29 @@ def log(p: str):
     print(p + "\n\n")
 
 
+def split_join(
+    text: str, func: Callable[[str], str], seps: list[str] = [" ", "-"]
+) -> str:
+    if not seps:
+        return func(text)
+
+    current_sep = seps[0]
+    remaining_seps = seps[1:]
+
+    parts = text.split(current_sep)
+    processed_parts = [split_join(part, func, remaining_seps) for part in parts]
+
+    return current_sep.join(processed_parts)
+
+
 def cap_words(text: str) -> str:
-    return " ".join(
-        word if any(char.isupper() for char in word) else word.capitalize()
-        for word in text.split(" ")
+    return split_join(
+        text, lambda w: w if any(char.isupper() for char in w) else w.capitalize()
     )
+
+
+def safe_lower(text: str) -> str:
+    return split_join(text, lambda w: w.lower() if w.capitalize() == w else w)
 
 
 def serialize(obj: list[BaseModel] | BaseModel):
