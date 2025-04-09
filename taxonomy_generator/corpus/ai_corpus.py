@@ -152,26 +152,30 @@ class AICorpus:
         verbose: int = 0,
         dry_run: int = 0,
         ensure_relevance: bool = False,
+        assume_safe_papers: bool = False,
         relevance_threshold: int = 3,
     ) -> list[Paper]:
         """
         Returns:
             paper_or_ids resolved (without dups) and converted to list[Paper]
         """
-        papers = self.resolve_papers(paper_or_ids)
+        if assume_safe_papers:
+            papers = paper_or_ids
+        else:
+            papers = self.resolve_papers(paper_or_ids)
 
-        if dry_run == 2:
-            print(f"Papers length: {len(papers)}")
-            if len(papers) != len(paper_or_ids):
-                print(
-                    f"Removed {len(paper_or_ids) - len(papers)} duplicates from input"
-                )
-            return papers
+            if dry_run == 2:
+                print(f"Papers length: {len(papers)}")
+                if len(papers) != len(paper_or_ids):
+                    print(
+                        f"Removed {len(paper_or_ids) - len(papers)} duplicates from input"
+                    )
+                return papers
 
-        fetched = fetch_papers_by_id([p for p in papers if isinstance(p, str)])
-        for i, paper in enumerate(papers):
-            if isinstance(paper, str):
-                papers[i] = next(fetched)
+            fetched = fetch_papers_by_id([p for p in papers if isinstance(p, str)])
+            for i, paper in enumerate(papers):
+                if isinstance(paper, str):
+                    papers[i] = next(fetched)
 
         to_add = [p for p in papers if not self.get_paper_by_id(p.arxiv_id)]
 

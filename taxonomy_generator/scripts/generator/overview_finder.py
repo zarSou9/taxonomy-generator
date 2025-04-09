@@ -50,6 +50,6 @@ def find_overview_papers(topic: Topic, field: str) -> list[Paper]:
         paper for paper, response in zip(papers, responses) if "yes" in response.lower()
     ]
 
-    corpus.add_papers(overview_papers, verbose=1)
+    corpus.add_papers(overview_papers, verbose=1, assume_safe_papers=True)
 
     return overview_papers
