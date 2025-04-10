@@ -1,6 +1,7 @@
 import functools
 import pickle
 import random
+import time
 from pathlib import Path
 from typing import Callable, ParamSpec, Sequence, TypeVar
 
@@ -101,8 +102,7 @@ def format_perc(value: float, fill: bool = False) -> str:
 def random_sample(
     population: Sequence[T], n: int = 1, seed: int | None = None
 ) -> list[T]:
-    if seed is not None:
-        random.seed(seed)
+    random.seed(seed)
     return random.sample(population, min(n, len(population)))
 
 
@@ -111,3 +111,9 @@ def get_avg_deviation(nums: list[int]) -> float:
     deviations = [abs(num - mean) for num in nums]
     mean_deviation = sum(deviations) / len(deviations)
     return mean_deviation / mean
+
+
+def unique_file(file_name: str) -> str:
+    return file_name.format(
+        f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
+    )

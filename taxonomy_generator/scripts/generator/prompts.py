@@ -183,8 +183,6 @@ And here are a few examples from the top combinations:
 <overlap_examples>
 {examples_str}
 </overlap_examples>
-
-Remember, while reducing overlap is a core goal here, it's important that you don't sacrifice the quality of your taxonomy in sole pursuit of mutual exclusivity. For example, you might be tempted to create a new category that represents one of these topic combinations. Don't do this unless you have a very good reason to, as it would likely confuse readers and disrupt the consistent structure of your taxonomy.
 """
 
 
@@ -264,7 +262,9 @@ In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs w
 
 As this is LLM-generated feedback, use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
 
-Depending on the results of this evaluation, you may decide to combine, split, update, or add topics.
+These metrics have been combined to produce an overall score of {eval_result.overall_score:.2f} for this taxonomy.
 
-After developing your improved taxonomy, please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field.
+
+Please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
 """

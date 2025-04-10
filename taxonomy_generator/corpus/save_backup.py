@@ -1,6 +1,7 @@
 import shutil
-import time
 from pathlib import Path
+
+from taxonomy_generator.utils.utils import unique_file
 
 SOURCE_PATH = Path("data/ai_safety_corpus.csv")
 BACKUP_PATH = Path().resolve().parent.parent / "_archive"
@@ -12,9 +13,8 @@ def save_backup():
     to the backup directory with a timestamp in the filename.
     """
     BACKUP_PATH.mkdir(parents=True, exist_ok=True)
-    timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 
-    backup_file_path = BACKUP_PATH / f"ai_safety_corpus_{timestamp}.csv"
+    backup_file_path = BACKUP_PATH / unique_file("ai_safety_corpus_{}.csv")
 
     shutil.copy2(SOURCE_PATH, backup_file_path)
 

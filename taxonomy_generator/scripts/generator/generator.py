@@ -29,11 +29,12 @@ from taxonomy_generator.utils.utils import (
     cap_words,
     get_avg_deviation,
     random_sample,
+    unique_file,
 )
 
 FIELD = "AI safety"
 TREE_PATH = Path("data/tree.json")
-BREAKDOWN_RESULTS = Path("data/breakdown_results.md")
+BREAKDOWN_RESULTS = Path("data/breakdown_results")
 
 
 def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
@@ -87,6 +88,7 @@ def process_sort_results(
                 )
                 for p in this_sample
             ],
+            max_workers=40,
             model="gemini-2.0-flash",
             temp=0,
         )
@@ -130,9 +132,15 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
 
 
 def evaluate_topics(
-    topics: list[Topic], sample_len: int, all_papers: list[TopicPaper], buffer_len=50
+    topics: list[Topic],
+    sample_len: int,
+    all_papers: list[TopicPaper],
+    buffer_len: int = 50,
+    sample_seed: int | None = None,
+    no_feedback=False,
+    no_overviews=False,
 ) -> EvalResult:
-    sample = random_sample(all_papers, sample_len + buffer_len, 1)
+    sample = random_sample(all_papers, sample_len + buffer_len, sample_seed)
 
     sort_results = process_sort_results(topics, sample, sample_len)
 
@@ -161,27 +169,40 @@ def evaluate_topics(
             single_papers.append(paper)
 
     # Overview Papers
-    overview_papers = {t.title: find_overview_papers(t, FIELD) for t in topics}
+    overview_papers = {
+        t.title: ([] if no_overviews else find_overview_papers(t, FIELD))
+        for t in topics
+    }
 
     # Helpfulness Scores
-    prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
-    responses = run_in_parallel(
-        [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
-        [
-            {"system": system and system.format(FIELD)}
-            for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
-        ],
-        model="gemini-1.5-pro",
-        temp=1.55,
-    )
-    topics_feedbacks = [
-        TopicsFeedback(
-            score=first_int(get_xml_content(response, "score")),
-            feedback=get_xml_content(response, "feedback"),
-            system=system and system.format(FIELD),
+    if not no_feedback:
+        prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
+        responses = run_in_parallel(
+            [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
+            [
+                {"system": system and system.format(FIELD)}
+                for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+            ],
+            model="gemini-1.5-pro",
+            temp=1.55,
         )
-        for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
-    ]
+        topics_feedbacks = [
+            TopicsFeedback(
+                score=first_int(get_xml_content(response, "score")),
+                feedback=get_xml_content(response, "feedback"),
+                system=system and system.format(FIELD),
+            )
+            for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
+        ]
+    else:
+        topics_feedbacks = [
+            TopicsFeedback(
+                score=1,
+                feedback="No feedback",
+                system="No feedback",
+            )
+            for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+        ]
 
     # Final Score
     feedback_score = (
@@ -193,7 +214,7 @@ def evaluate_topics(
     ) / len(topics)
 
     not_placed_perc = len(not_placed) / len(sort_results)
-    not_placed_score = -(not_placed_perc if not_placed_perc > 0.02 else 0)
+    not_placed_score = -(not_placed_perc if not_placed_perc > 0.015 else 0)
 
     deviation_score = -get_avg_deviation(
         [len(papers) for papers in topic_papers.values()]
@@ -207,9 +228,9 @@ def evaluate_topics(
     overall_score = (
         feedback_score
         + topics_overview_score
-        + not_placed_score * 1.5
+        + not_placed_score * 3
         + deviation_score * 0.5
-        + single_score * 1.5
+        + single_score * 1.25
     )
 
     return EvalResult(
@@ -234,8 +255,9 @@ def evaluate_topics(
 
 def main(
     init_sample_len: int = 100,
-    sort_sample_len: int = 300,
-    num_iterations: int = 5,
+    sort_sample_len: int = 400,
+    num_iterations: int = 8,
+    samples_seed: int = 12,
 ):
     topic = Topic(
         title=FIELD,
@@ -270,7 +292,12 @@ def main(
             )
         )
 
-        eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
+        eval_result = evaluate_topics(
+            topics,
+            sort_sample_len,
+            topic.papers,
+            sample_seed=samples_seed + i,
+        )
 
         print("--------------------------------")
         print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
@@ -284,7 +311,8 @@ def main(
         for topics, eval_result in results
     )
     print(f"\n\n{results_str}\n\n")
-    BREAKDOWN_RESULTS.write_text(results_str)
+    BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
+    (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 
