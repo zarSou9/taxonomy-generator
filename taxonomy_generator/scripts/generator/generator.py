@@ -193,7 +193,7 @@ def evaluate_topics(
     ) / len(topics)
 
     not_placed_perc = len(not_placed) / len(sort_results)
-    not_placed_score = -(not_placed_perc if not_placed_perc > 0.005 else 0)
+    not_placed_score = -(not_placed_perc if not_placed_perc > 0.02 else 0)
 
     deviation_score = -get_avg_deviation(
         [len(papers) for papers in topic_papers.values()]
@@ -204,17 +204,23 @@ def evaluate_topics(
         perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6, 0.92
     )
 
-    all_scores = EvalScores(
-        feedback_score=feedback_score,
-        topics_overview_score=topics_overview_score,
-        not_placed_score=not_placed_score * 2,
-        deviation_score=deviation_score * 0.5,
-        single_score=single_score * 1.5,
+    overall_score = (
+        feedback_score
+        + topics_overview_score
+        + not_placed_score * 1.5
+        + deviation_score * 0.5
+        + single_score * 1.5
     )
 
     return EvalResult(
-        all_scores=all_scores,
-        overall_score=sum(score for _, score in all_scores),
+        all_scores=EvalScores(
+            feedback_score=feedback_score,
+            topics_overview_score=topics_overview_score,
+            not_placed_score=not_placed_score,
+            deviation_score=deviation_score,
+            single_score=single_score,
+        ),
+        overall_score=overall_score,
         topics_feedbacks=topics_feedbacks,
         topic_papers=topic_papers,
         overlap_topics_papers=overlap_topics_papers,
