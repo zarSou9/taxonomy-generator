@@ -28,7 +28,16 @@ class TopicsFeedback(BaseModel):
     system: str | None
 
 
+class EvalScores(BaseModel):
+    feedback_score: float
+    topics_overview_score: float
+    not_placed_score: float
+    deviation_score: float
+    single_score: float
+
+
 class EvalResult(BaseModel):
+    all_scores: EvalScores
     overall_score: float
     topics_feedbacks: list[TopicsFeedback]
     topic_papers: dict[str, list[TopicPaper]]

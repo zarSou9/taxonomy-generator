@@ -24,7 +24,6 @@ fps(globals())
 
 
 def find_overview_papers(topic: Topic, field: str) -> list[Paper]:
-    return []
     query = EXA_QUERY.format(
         topic=topic.title,
         field=field,

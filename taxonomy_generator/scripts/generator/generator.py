@@ -5,6 +5,7 @@ from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
+    EvalScores,
     Topic,
     TopicPaper,
     TopicsFeedback,
@@ -13,14 +14,14 @@ from taxonomy_generator.scripts.generator.overview_finder import find_overview_p
 from taxonomy_generator.scripts.generator.prompts import (
     INIT_GET_TOPICS,
     SORT_PAPER,
-    # TOPICS_FEEDBACK,
+    TOPICS_FEEDBACK,
     TOPICS_FEEDBACK_SYSTEM_PROMPTS,
     resolve_get_topics_prompt,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import (
-    # first_int,
-    # get_xml_content,
+    first_int,
+    get_xml_content,
     parse_response_json,
 )
 from taxonomy_generator.utils.utils import (
@@ -163,36 +164,27 @@ def evaluate_topics(
     overview_papers = {t.title: find_overview_papers(t, FIELD) for t in topics}
 
     # Helpfulness Scores
-    # prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
-    # responses = run_in_parallel(
-    #     [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
-    #     [
-    #         {"system": system and system.format(FIELD)}
-    #         for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
-    #     ],
-    #     model="gemini-1.5-pro",
-    #     temp=1.55,
-    # )
-    # topics_feedbacks = [
-    #     TopicsFeedback(
-    #         score=first_int(get_xml_content(response, "score")),
-    #         feedback=get_xml_content(response, "feedback"),
-    #         system=system and system.format(FIELD),
-    #     )
-    #     for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
-    # ]
-
+    prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
+    responses = run_in_parallel(
+        [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
+        [
+            {"system": system and system.format(FIELD)}
+            for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+        ],
+        model="gemini-1.5-pro",
+        temp=1.55,
+    )
     topics_feedbacks = [
         TopicsFeedback(
-            score=4,
-            feedback="feedback",
-            system="system",
+            score=first_int(get_xml_content(response, "score")),
+            feedback=get_xml_content(response, "feedback"),
+            system=system and system.format(FIELD),
         )
-        for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+        for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
     ]
 
     # Final Score
-    feeback_score = (
+    feedback_score = (
         sum(tf.score for tf in topics_feedbacks) / len(topics_feedbacks) - 1
     ) / 4
 
@@ -212,16 +204,17 @@ def evaluate_topics(
         perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6, 0.92
     )
 
-    final_score = (
-        feeback_score
-        + topics_overview_score
-        + not_placed_score * 2
-        + deviation_score * 0.5
-        + single_score * 1.5
+    all_scores = EvalScores(
+        feedback_score=feedback_score,
+        topics_overview_score=topics_overview_score,
+        not_placed_score=not_placed_score * 2,
+        deviation_score=deviation_score * 0.5,
+        single_score=single_score * 1.5,
     )
 
     return EvalResult(
-        overall_score=final_score,
+        all_scores=all_scores,
+        overall_score=sum(score for _, score in all_scores),
         topics_feedbacks=topics_feedbacks,
         topic_papers=topic_papers,
         overlap_topics_papers=overlap_topics_papers,
@@ -234,7 +227,7 @@ def evaluate_topics(
 
 
 def main(
-    init_sample_len: int = 150,
+    init_sample_len: int = 100,
     sort_sample_len: int = 300,
     num_iterations: int = 5,
 ):
@@ -244,16 +237,14 @@ def main(
         papers=resolve_topic_papers(corpus.papers),
     )
 
-    results: list[tuple[list[Topic], int]] = []
+    results: list[tuple[list[Topic], EvalResult]] = []
     chat = Chat()
     eval_result: EvalResult | None = None
     topics: list[Topic] | None = None
 
-    for _ in range(num_iterations):
+    for i in range(num_iterations):
         if eval_result:
             prompt = resolve_get_topics_prompt(eval_result)
-            print(prompt)
-            return
         else:
             prompt = INIT_GET_TOPICS.format(
                 field=FIELD,
@@ -264,23 +255,34 @@ def main(
             )
 
         topics = resolve_topics(
-            chat.ask(prompt, use_thinking=True, verbose=True)  # TODO: Use cache
+            chat.ask(
+                prompt,
+                use_thinking=True,
+                verbose=True,
+                thinking_budget=4000 if i else 2500,
+                use_cache=True,
+            )
         )
 
         eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
 
-        results.append((topics, eval_result.overall_score))
+        print("--------------------------------")
+        print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
+        print(f"Overall Score: {eval_result.overall_score}")
+        print("--------------------------------")
+
+        results.append((topics, eval_result))
 
     results_str = "\n\n".join(
-        f"Topics:\n```json{topics_to_json(topics)}\n```\nScore: {score}"
-        for topics, score in results
+        f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
+        for topics, eval_result in results
     )
     print(f"\n\n{results_str}\n\n")
     BREAKDOWN_RESULTS.write_text(results_str)
 
-    topic.topics = max(results, key=lambda r: r[1])[0]
+    topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 
-    TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+    # TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
 
 
 if __name__ == "__main__":

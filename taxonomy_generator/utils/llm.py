@@ -14,7 +14,7 @@ from google.genai.types import Content as GContent
 from google.genai.types import GenerateContentConfig, GoogleSearch, Part, Tool
 from tqdm import tqdm
 
-from taxonomy_generator.utils.utils import log
+from taxonomy_generator.utils.utils import cap_words, log
 
 CHAT_CACHE_PATH = Path(".chat_cache")
 
@@ -31,27 +31,26 @@ anthropic_client = Anthropic()
 genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 
-def anthropic_user_message(prompt: str, use_cache=False):
+def anthropic_message(
+    role: Literal["user", "assistant"],
+    prompt: str,
+    use_cache=False,
+    thinking_block: dict | None = None,
+):
     return {
-        "role": "user",
+        "role": role,
         "content": [
+            *([thinking_block] if thinking_block else []),
             {
-                "type": "text",
                 "text": prompt,
+                "type": "text",
                 **(
                     {"cache_control": {"type": "ephemeral"}}
                     if use_cache and len(prompt) > 4000
                     else {}
                 ),
-            }
+            },
         ],
-    }
-
-
-def anthropic_assistant_message(response: str):
-    return {
-        "role": "assistant",
-        "content": response,
     }
 
 
@@ -62,28 +61,31 @@ def convert_to_anthropic_messages(
     dont_cache_last=False,
 ) -> list[dict]:
     if isinstance(history, str):
-        return [anthropic_user_message(history, use_cache)]
+        return [anthropic_message("user", history, use_cache)]
     else:
         messages = []
         cached_blocks = 0
         for i, m in enumerate(history):
-            if i % 2 == 0:
-                messages.append(
-                    anthropic_user_message(
-                        m,
-                        cached_blocks < max_cache_blocks
-                        and use_cache
-                        and (not dont_cache_last or i != len(history) - 1),
-                    )
+            thinking_block = None
+            if isinstance(m, AntMessage):
+                thinking_block = next(
+                    (c for c in m.content if c.type == "thinking"), None
                 )
-                if len(m) > 4000:
-                    cached_blocks += 1
-            else:
-                messages.append(
-                    anthropic_assistant_message(m)
-                    if isinstance(m, str)
-                    else m.model_dump()
-                )
+                thinking_block = thinking_block and thinking_block.model_dump()
+                m = get_ant_message_text(m)
+
+            role = "user" if i % 2 == 0 else "assistant"
+            cache_this = (
+                role == "user"
+                and cached_blocks < max_cache_blocks
+                and use_cache
+                and not (dont_cache_last and i == len(history) - 1)
+            )
+            messages.append(anthropic_message(role, m, cache_this, thinking_block))
+
+            if cache_this and len(m) > 4000:
+                cached_blocks += 1
+
         return messages
 
 
@@ -235,6 +237,16 @@ def ask_llm(
 
                 ant_message: AntMessage = anthropic_client.messages.create(**kwargs)
 
+                if verbose:
+                    usage_strs = []
+                    for name, value in ant_message.usage:
+                        usage_strs.append(
+                            f"{cap_words(name.replace('_', ' '))}: {value}"
+                        )
+                    log(
+                        f"-------USAGE START------\n\n{'\n'.join(usage_strs)}\n\n-------USAGE END-------"
+                    )
+
                 if use_thinking:
                     if verbose:
                         output = "-------THINKING START------\n\n"
@@ -283,7 +295,7 @@ def ask_llm(
             if verbose:
                 log(response)
             return response
-        except Exception as e:
+        except FileExistsError as e:
             if attempt < max_retries - 1:
                 retry_delay = initial_retry_delay * (2**attempt)
                 print(f"API error: {str(e)}. Retrying in {retry_delay} seconds...")
@@ -443,6 +455,7 @@ class Chat:
             len(cached_history) > len(self.history)
             and kwargs == cached_history[len(self.history)]["settings_override"]
         ):
+            print("Used Cache!")
             response = cached_history[len(self.history)]
             self.history.append(response)
         else:

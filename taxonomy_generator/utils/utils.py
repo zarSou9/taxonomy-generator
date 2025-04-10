@@ -57,7 +57,9 @@ def log(p: str):
 
 
 def split_join(
-    text: str, func: Callable[[str], str], seps: list[str] = [" ", "-"]
+    text: str,
+    func: Callable[[str], str],
+    seps: list[str] = [" ", "-"],
 ) -> str:
     if not seps:
         return func(text)
