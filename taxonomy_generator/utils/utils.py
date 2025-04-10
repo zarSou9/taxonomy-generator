@@ -102,3 +102,10 @@ def random_sample(
     if seed is not None:
         random.seed(seed)
     return random.sample(population, min(n, len(population)))
+
+
+def get_avg_deviation(nums: list[int]) -> float:
+    mean = sum(nums) / len(nums)
+    deviations = [abs(num - mean) for num in nums]
+    mean_deviation = sum(deviations) / len(deviations)
+    return mean_deviation / mean

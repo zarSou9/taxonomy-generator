@@ -13,20 +13,26 @@ from taxonomy_generator.scripts.generator.overview_finder import find_overview_p
 from taxonomy_generator.scripts.generator.prompts import (
     INIT_GET_TOPICS,
     SORT_PAPER,
-    TOPICS_FEEDBACK,
+    # TOPICS_FEEDBACK,
     TOPICS_FEEDBACK_SYSTEM_PROMPTS,
     resolve_get_topics_prompt,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import (
-    first_int,
-    get_xml_content,
+    # first_int,
+    # get_xml_content,
     parse_response_json,
 )
-from taxonomy_generator.utils.utils import cache, cap_words, random_sample
+from taxonomy_generator.utils.utils import (
+    cache,
+    cap_words,
+    get_avg_deviation,
+    random_sample,
+)
 
 FIELD = "AI safety"
 TREE_PATH = Path("data/tree.json")
+BREAKDOWN_RESULTS = Path("data/breakdown_results.md")
 
 
 def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
@@ -130,8 +136,10 @@ def evaluate_topics(
     sort_results = process_sort_results(topics, sample, sample_len)
 
     topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topics}
-    overlap_papers: dict[frozenset[str], list[TopicPaper]] = {}
+    overlap_topics_papers: dict[frozenset[str], list[TopicPaper]] = {}
     not_placed: list[TopicPaper] = []
+    single_papers: list[TopicPaper] = []
+    overlap_papers: list[TopicPaper] = []
 
     for paper, chosen_topics in sort_results:
         if not chosen_topics:
@@ -142,42 +150,84 @@ def evaluate_topics(
             topic_papers[title].append(paper)
 
         if len(chosen_topics) > 1:
-            if chosen_topics in overlap_papers:
-                overlap_papers[chosen_topics].append(paper)
+            overlap_papers.append(paper)
+
+            if chosen_topics in overlap_topics_papers:
+                overlap_topics_papers[chosen_topics].append(paper)
             else:
-                overlap_papers[chosen_topics] = [paper]
+                overlap_topics_papers[chosen_topics] = [paper]
+        else:
+            single_papers.append(paper)
 
     # Overview Papers
     overview_papers = {t.title: find_overview_papers(t, FIELD) for t in topics}
 
     # Helpfulness Scores
-    prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
-    responses = run_in_parallel(
-        [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
-        [
-            {"system": system and system.format(FIELD)}
-            for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
-        ],
-        model="gemini-1.5-pro",
-        temp=1.55,
-    )
+    # prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
+    # responses = run_in_parallel(
+    #     [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
+    #     [
+    #         {"system": system and system.format(FIELD)}
+    #         for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+    #     ],
+    #     model="gemini-1.5-pro",
+    #     temp=1.55,
+    # )
+    # topics_feedbacks = [
+    #     TopicsFeedback(
+    #         score=first_int(get_xml_content(response, "score")),
+    #         feedback=get_xml_content(response, "feedback"),
+    #         system=system and system.format(FIELD),
+    #     )
+    #     for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
+    # ]
+
     topics_feedbacks = [
         TopicsFeedback(
-            score=first_int(get_xml_content(response, "score")),
-            feedback=get_xml_content(response, "feedback"),
-            system=system and system.format(FIELD),
+            score=4,
+            feedback="feedback",
+            system="system",
         )
-        for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
+        for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS
     ]
 
     # Final Score
+    feeback_score = (
+        sum(tf.score for tf in topics_feedbacks) / len(topics_feedbacks) - 1
+    ) / 4
+
+    topics_overview_score = sum(
+        bool(papers) for papers in overview_papers.values()
+    ) / len(topics)
+
+    not_placed_perc = len(not_placed) / len(sort_results)
+    not_placed_score = -(not_placed_perc if not_placed_perc > 0.005 else 0)
+
+    deviation_score = -get_avg_deviation(
+        [len(papers) for papers in topic_papers.values()]
+    )
+
+    perc_single = len(single_papers) / len(sort_results)
+    single_score = min(
+        perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6, 0.92
+    )
+
+    final_score = (
+        feeback_score
+        + topics_overview_score
+        + not_placed_score * 2
+        + deviation_score * 0.5
+        + single_score * 1.5
+    )
 
     return EvalResult(
-        overall_score=0,
+        overall_score=final_score,
         topics_feedbacks=topics_feedbacks,
         topic_papers=topic_papers,
-        overlap_papers=overlap_papers,
+        overlap_topics_papers=overlap_topics_papers,
         not_placed=not_placed,
+        single_papers=single_papers,
+        overlap_papers=overlap_papers,
         sample_len=len(sort_results),
         overview_papers=overview_papers,
     )
@@ -194,7 +244,7 @@ def main(
         papers=resolve_topic_papers(corpus.papers),
     )
 
-    best: tuple[list[Topic], int] = (None, 0)
+    results: list[tuple[list[Topic], int]] = []
     chat = Chat()
     eval_result: EvalResult | None = None
     topics: list[Topic] | None = None
@@ -219,10 +269,16 @@ def main(
 
         eval_result = evaluate_topics(topics, sort_sample_len, topic.papers)
 
-        if eval_result.overall_score > best[1]:
-            best = (topics, eval_result.overall_score)
+        results.append((topics, eval_result.overall_score))
 
-    topic.topics = best[0]
+    results_str = "\n\n".join(
+        f"Topics:\n```json{topics_to_json(topics)}\n```\nScore: {score}"
+        for topics, score in results
+    )
+    print(f"\n\n{results_str}\n\n")
+    BREAKDOWN_RESULTS.write_text(results_str)
+
+    topic.topics = max(results, key=lambda r: r[1])[0]
 
     TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
 

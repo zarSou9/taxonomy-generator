@@ -134,10 +134,12 @@ For{" only" if perc < 0.02 else ""} {not_placed_num} ({format_perc(perc)}) paper
 
 
 @prompt
-def get_overlap_str(eval_result: EvalResult, duplicate_arxs: set[str]) -> str:
-    overlap_num = len(duplicate_arxs)
+def get_overlap_str(eval_result: EvalResult) -> str:
+    overlap_num = len(eval_result.overlap_papers)
     overlap_sorted = sorted(
-        eval_result.overlap_papers.items(), key=lambda tp: len(tp[1]), reverse=True
+        eval_result.overlap_topics_papers.items(),
+        key=lambda tp: len(tp[1]),
+        reverse=True,
     )
 
     stats: list[tuple[str, int, str]] = []
@@ -187,7 +189,7 @@ Remember, while reducing overlap is a core goal here, it's important that you do
 
 
 @prompt
-def get_topic_papers_str(eval_result: EvalResult, single_arxs: set[str]) -> str:
+def get_topic_papers_str(eval_result: EvalResult) -> str:
     topic_papers_sorted = sorted(
         eval_result.topic_papers.items(), key=lambda tp: len(tp[1]), reverse=True
     )
@@ -203,7 +205,9 @@ def get_topic_papers_str(eval_result: EvalResult, single_arxs: set[str]) -> str:
             )
         )
 
-        clean_papers = [p for p in papers if p.arx in single_arxs]
+        clean_papers = [
+            p for p in papers if p.arx in (p.arx for p in eval_result.single_papers)
+        ]
         papers = clean_papers if len(clean_papers) >= 3 else papers
         sample = random_sample(papers, 3, seed=1)
         pretty_sample = (
@@ -233,39 +237,20 @@ For additional context, here are example papers from each topic:
 """
 
 
-def get_single_arxs(eval_result: EvalResult) -> tuple[set[str], set[str]]:
-    single_arxs: set[str] = set()
-    duplicate_arxs: set[str] = set()
-    for _, papers in eval_result.topic_papers.items():
-        for paper in papers:
-            if paper.arx in single_arxs:
-                duplicate_arxs.add(paper.arx)
-            else:
-                single_arxs.add(paper.arx)
-
-    for dup_arx in duplicate_arxs:
-        single_arxs.remove(dup_arx)
-
-    return single_arxs, duplicate_arxs
-
-
 @prompt
 def resolve_get_topics_prompt(eval_result: EvalResult) -> str:
-    single_arxs, duplicate_arxs = get_single_arxs(eval_result)
-    # {f" {sorted_overview_len} of these papers {'were' if sorted_overview_len > 1 else 'was'} categorized into the special overview/survery of {field} category. Though, since this evaluation is concerned with your taxonomy, we will hereon consider the full length of the sample to be {eval_result.sample_len - sorted_overview_len} papers ({eval_result.sample_len} - {sorted_overview_len})." if sorted_overview_len else ""}
-
     return f"""
 The evaluation script ran successfully on your proposed breakdown. Here are the results:
 
 A random sample of {eval_result.sample_len} papers from the corpus were categorized by an LLM.
 
-Of these, {len(single_arxs)} ({format_perc(len(single_arxs) / eval_result.sample_len)}) papers were cleanly categorized into one category.
+Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_papers) / eval_result.sample_len)}) papers were cleanly categorized into one category.
 
 {get_not_placed_str(eval_result)}
 
-{get_overlap_str(eval_result, duplicate_arxs)}
+{get_overlap_str(eval_result)}
 
-{get_topic_papers_str(eval_result, single_arxs)}
+{get_topic_papers_str(eval_result)}
 
 For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:
 
