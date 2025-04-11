@@ -8,7 +8,7 @@ from taxonomy_generator.scripts.generator.generator_types import (
 from taxonomy_generator.utils.prompting import fps, prompt
 from taxonomy_generator.utils.utils import format_perc, random_sample
 
-INIT_GET_TOPICS = """
+INIT_TOPICS = """
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
 
 ---
@@ -251,7 +251,7 @@ For additional context, here are a couple example papers from each topic:
 
 
 @prompt
-def resolve_get_topics_prompt(eval_result: EvalResult, first=False) -> str:
+def get_iter_topics_prompt(eval_result: EvalResult, first=False) -> str:
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 

@@ -12,11 +12,11 @@ from taxonomy_generator.scripts.generator.generator_types import (
 )
 from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
 from taxonomy_generator.scripts.generator.prompts import (
-    INIT_GET_TOPICS,
+    INIT_TOPICS,
     SORT_PAPER,
     TOPICS_FEEDBACK,
     TOPICS_FEEDBACK_SYSTEM_PROMPTS,
-    resolve_get_topics_prompt,
+    get_iter_topics_prompt,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import (
@@ -273,7 +273,7 @@ def main(
     try:
         for i in range(num_iterations):
             if i == 0:
-                prompt = INIT_GET_TOPICS.format(
+                prompt = INIT_TOPICS.format(
                     field=FIELD,
                     field_cap=cap_words(FIELD),
                     sample_len=f"{init_sample_len:,}",
@@ -281,7 +281,7 @@ def main(
                     sample=corpus.get_pretty_sample(init_sample_len, seed=samples_seed),
                 )
             else:
-                prompt = resolve_get_topics_prompt(eval_result, first=(i == 1))
+                prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
 
             topics = resolve_topics(
                 chat.ask(

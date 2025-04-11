@@ -4,7 +4,7 @@ from taxonomy_generator.scripts.generator.generator import (
     resolve_topic_papers,
 )
 from taxonomy_generator.scripts.generator.generator_types import Topic
-from taxonomy_generator.scripts.generator.prompts import resolve_get_topics_prompt
+from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
 
 TOPICS = [
     {
@@ -52,7 +52,7 @@ def main():
     print(f"Overall Score: {eval_result.overall_score}")
     print("--------------------------------")
 
-    print(resolve_get_topics_prompt(eval_result))
+    print(get_iter_topics_prompt(eval_result))
 
 
 if __name__ == "__main__":
