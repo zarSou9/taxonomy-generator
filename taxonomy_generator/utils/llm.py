@@ -20,6 +20,7 @@ CHAT_CACHE_PATH = Path(".chat_cache")
 
 AllModels = Literal[
     "claude-3-7-sonnet-latest",
+    "claude-3-5-haiku-latest",
     "gemini-1.5-pro",
     "gemini-2.0-flash",
     "gemini-2.5-pro-exp-03-25",
@@ -103,16 +104,16 @@ def convert_to_google_messages(history: History) -> list[GContent]:
         return messages
 
 
-def is_google_model(model):
-    google_models = [
+def is_google_model(model: str) -> bool:
+    return model in [
         "gemini-1.5-pro",
         "gemini-2.0-flash",
         "gemini-2.5-pro-exp-03-25",
     ]
-    for m in google_models:
-        if m == model:
-            return True
-    return False
+
+
+def is_anthropic_model(model: str) -> bool:
+    return model in ["claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"]
 
 
 def get_ant_message_text(ant_message: AntMessage) -> str:
@@ -198,7 +199,7 @@ def ask_llm(
     response = None
     for attempt in range(max_retries):
         try:
-            if model == "claude-3-7-sonnet-latest":
+            if is_anthropic_model(model):
                 messages = convert_to_anthropic_messages(
                     history,
                     use_cache,
@@ -268,7 +269,7 @@ def ask_llm(
                     return ant_message
 
                 response = get_ant_message_text(ant_message)
-            else:
+            elif is_google_model(model):
                 generation_config = GenerateContentConfig(
                     temperature=temp or 1,
                     max_output_tokens=max_tokens,
@@ -290,18 +291,23 @@ def ask_llm(
                 )
 
                 response = chat.send_message(get_last(history)).text
+            else:
+                raise ValueError(f"Invalid model: {model}")
 
             response = response.strip()
             if verbose:
                 log(response)
             return response
-        except FileExistsError as e:
-            if attempt < max_retries - 1:
-                retry_delay = initial_retry_delay * (2**attempt)
-                print(f"API error: {str(e)}. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                raise  # Re-raise the exception if we've exhausted our retries or it's a different error
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise
+
+            if attempt >= max_retries - 1:
+                raise
+
+            retry_delay = initial_retry_delay * (2**attempt)
+            print(f"API error: {str(e)}. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
 
     raise Exception("Max retries reached. Unable to get a response from the API.")
 
@@ -374,14 +380,14 @@ def run_in_parallel(
     return results
 
 
-class ChatMessage(TypedDict):
-    settings_override: dict
+class ChatMessage(TypedDict, total=False):
     message: str | AntMessage
+    settings_override: dict | None
 
 
-class ChatMessageJSON(TypedDict):
-    settings_override: dict
+class ChatMessageJSON(TypedDict, total=False):
     message: str | dict
+    settings_override: dict | None
 
 
 class Cache(TypedDict):
@@ -393,10 +399,7 @@ def resolve_chat_json(chat_history: list[ChatMessage]) -> list[ChatMessageJSON]:
     return [
         cm
         if isinstance(cm["message"], str)
-        else ChatMessage(
-            message=cm["message"].model_dump(mode="json"),
-            settings_override=cm["settings_override"],
-        )
+        else ChatMessageJSON(message=cm["message"].model_dump(mode="json"))
         for cm in chat_history
     ]
 
@@ -405,10 +408,7 @@ def model_validate_chat(chat_json: list[ChatMessageJSON]) -> list[ChatMessage]:
     return [
         cmj
         if isinstance(cmj["message"], str)
-        else ChatMessage(
-            message=AntMessage.model_validate(cmj["message"]),
-            settings_override=cmj["settings_override"],
-        )
+        else ChatMessage(message=AntMessage.model_validate(cmj["message"]))
         for cmj in chat_json
     ]
 
@@ -419,7 +419,12 @@ def chat_to_history(chat_history: list[ChatMessage]):
 
 def history_to_chat(history: History | None):
     history = ([history] if isinstance(history, str) else history) or []
-    return [ChatMessage(message=m, settings_override={}) for m in history]
+    return [
+        ChatMessage(message=m, settings_override={})
+        if i % 2 == 0
+        else ChatMessage(message=m)
+        for i, m in enumerate(history)
+    ]
 
 
 class Chat:
@@ -447,23 +452,22 @@ class Chat:
             ]
 
     def ask(self, prompt: str | None = None, **kwargs) -> str:
-        self.history.append(ChatMessage(message=prompt.strip(), settings_override={}))
+        self.history.append(
+            ChatMessage(message=prompt.strip(), settings_override=kwargs)
+        )
 
         cached_history = self.handle_cache()
 
-        if (
-            len(cached_history) > len(self.history)
-            and kwargs == cached_history[len(self.history)]["settings_override"]
-        ):
-            print("Used Cache!")
+        if len(cached_history) > len(self.history):
+            if kwargs.get("verbose"):
+                print("Used cache!")
             response = cached_history[len(self.history)]
             self.history.append(response)
         else:
             response = ChatMessage(
                 message=ask_llm(
                     chat_to_history(self.history), **(self.settings | kwargs)
-                ),
-                settings_override=kwargs,
+                )
             )
             self.history.append(response)
             self.handle_cache()
@@ -478,28 +482,41 @@ class Chat:
         if self.dont_cache:
             return self.history
 
-        chat_json = resolve_chat_json(self.history)
+        history_json = resolve_chat_json(self.history)
 
-        cache_found = False
-        for cache in self.cache_list:
-            if cache["settings"] != self.settings:
-                continue
+        possible_caches = [
+            cache for cache in self.cache_list if cache["settings"] == self.settings
+        ]
 
-            # If chat in cache, return cache
-            if chat_json == cache["history"][: len(chat_json)]:
-                return model_validate_chat(cache["history"])
+        valid_caches = [
+            cache
+            for cache in possible_caches
+            if history_json == cache["history"][: len(history_json)]  # If chat in cache
+        ]
+        if valid_caches:
+            longest_valid_cache = max(
+                valid_caches, key=lambda cache: len(cache["history"])
+            )
+            return model_validate_chat(longest_valid_cache["history"])
 
-            # If cache in chat, update cache
-            if cache["history"] == chat_json[: len(cache["history"])]:
-                cache["history"] = chat_json
-                cache_found = True
-                break
+        sub_caches = [
+            cache
+            for cache in possible_caches
+            if cache["history"] == history_json[: len(cache["history"])]
+        ]
+        if sub_caches:
+            sub_caches[0]["history"] = history_json
+            self.cache_list = [
+                cache for cache in self.cache_list if cache not in sub_caches[1:]
+            ]
+        else:
+            self.cache_list.append(Cache(settings=self.settings, history=history_json))
 
-        if not cache_found:
-            self.cache_list.append(Cache(settings=self.settings, history=chat_json))
+        self.save_cache()
 
+        return self.history
+
+    def save_cache(self):
         self.cache_file.write_text(
             json.dumps(self.cache_list[-self.cache_limit :], ensure_ascii=False)
         )
-
-        return self.history
