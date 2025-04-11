@@ -251,7 +251,7 @@ For additional context, here are a couple example papers from each topic:
 
 
 @prompt
-def get_iter_topics_prompt(eval_result: EvalResult, first=False) -> str:
+def get_iter_topics_prompt(eval_result: EvalResult, first: bool) -> str:
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 
