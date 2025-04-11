@@ -457,6 +457,7 @@ class Chat:
         )
 
         cached_history = self.handle_cache()
+        print(len(cached_history))
 
         if len(cached_history) > len(self.history):
             if kwargs.get("verbose"):
@@ -464,6 +465,8 @@ class Chat:
             response = cached_history[len(self.history)]
             self.history.append(response)
         else:
+            print("LLM BAD")
+            exit()
             response = ChatMessage(
                 message=ask_llm(
                     chat_to_history(self.history), **(self.settings | kwargs)

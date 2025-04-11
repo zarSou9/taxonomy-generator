@@ -254,7 +254,7 @@ def evaluate_topics(
 
 
 def main(
-    init_sample_len: int = 100,
+    init_sample_len: int = 80,
     sort_sample_len: int = 400,
     num_iterations: int = 5,
     samples_seed: int = 12,
@@ -272,23 +272,24 @@ def main(
 
     try:
         for i in range(num_iterations):
-            if eval_result:
-                prompt = resolve_get_topics_prompt(eval_result)
-            else:
+            if i == 0:
                 prompt = INIT_GET_TOPICS.format(
                     field=FIELD,
                     field_cap=cap_words(FIELD),
                     sample_len=f"{init_sample_len:,}",
                     corpus_len=f"{len(topic.papers):,}",
-                    sample=corpus.get_pretty_sample(init_sample_len, seed=1),
+                    sample=corpus.get_pretty_sample(init_sample_len, seed=samples_seed),
                 )
+            else:
+                prompt = resolve_get_topics_prompt(eval_result, first=(i == 1))
 
             topics = resolve_topics(
                 chat.ask(
                     prompt,
+                    use_cache=True,
                     use_thinking=True,
                     verbose=True,
-                    thinking_budget=4000 if i else 2500,
+                    thinking_budget=3000,
                 )
             )
 

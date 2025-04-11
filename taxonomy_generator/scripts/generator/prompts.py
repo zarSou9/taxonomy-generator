@@ -108,7 +108,7 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
 def get_not_placed_str(eval_result: EvalResult) -> str:
     not_placed_num = len(eval_result.not_placed)
     not_placed_examples = corpus.get_pretty_sample(
-        random_sample(eval_result.not_placed, 4, 1)
+        random_sample(eval_result.not_placed, 4, seed=1)
     )
     perc = not_placed_num / eval_result.sample_len
 
@@ -134,7 +134,7 @@ For{" only" if perc < 0.02 else ""} {not_placed_num} ({format_perc(perc)}) paper
 
 
 @prompt
-def get_overlap_str(eval_result: EvalResult) -> str:
+def get_overlap_str(eval_result: EvalResult, first: bool) -> str:
     overlap_num = len(eval_result.overlap_papers)
     overlap_sorted = sorted(
         eval_result.overlap_topics_papers.items(),
@@ -159,7 +159,7 @@ def get_overlap_str(eval_result: EvalResult) -> str:
             sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
             examples.append(f"## {title}\n\n{sample_str}")
 
-    examples_str = "\n\n".join(examples)
+    examples_str = "\n\n".join(examples[:3])
 
     if overlap_num == 0:
         return """
@@ -172,9 +172,9 @@ The LLM only found one paper that was categorized into more than one category. Y
 """
 
     return f"""
-The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}) papers (those which it decided had multiple applicable categories).
+The LLM found overlap in {overlap_num} ({format_perc(overlap_num / eval_result.sample_len)}) papers{" (those which it decided had multiple applicable categories)" if first else ""}.
 
-Here's a table showing the combinations of topics these papers were sorted into, ordered by frequency (highest to lowest).
+{"Here's a table showing" if first else "Here are"} the combinations of topics these papers were sorted into{", ordered by frequency (highest to lowest)." if first else ":"}
 
 {tabulate(stats, headers=["Topics", "Num Papers", "Percent of Sample"], colalign=["left", "right", "right"])}
 
@@ -187,7 +187,19 @@ And here are a few examples from the top combinations:
 
 
 @prompt
-def get_topic_papers_str(eval_result: EvalResult) -> str:
+def get_overview_results_str(eval_result: EvalResult, first: bool):
+    if all(eval_result.overview_papers.values()) and not first:
+        return "At least one overview paper was found for all topics."
+
+    return f"""
+{"For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:" if first else "Here are the overview paper results:"}
+
+{tabulate(((title, "YES" if papers else "NO") for title, papers in eval_result.overview_papers.items()), headers=["Topic", "Found Overview Paper"])}
+"""
+
+
+@prompt
+def get_topic_papers_str(eval_result: EvalResult, first: bool) -> str:
     topic_papers_sorted = sorted(
         eval_result.topic_papers.items(), key=lambda tp: len(tp[1]), reverse=True
     )
@@ -207,7 +219,7 @@ def get_topic_papers_str(eval_result: EvalResult) -> str:
             p for p in papers if p.arx in (p.arx for p in eval_result.single_papers)
         ]
         papers = clean_papers if len(clean_papers) >= 3 else papers
-        sample = random_sample(papers, 3, seed=1)
+        sample = random_sample(papers, 2, seed=1)
         pretty_sample = (
             corpus.get_pretty_sample(sample)
             if sample
@@ -221,24 +233,27 @@ def get_topic_papers_str(eval_result: EvalResult) -> str:
         colalign=["left", "right", "right"],
     )
     examples_str = "\n\n".join(examples)
-
-    return f"""
-This table shows how many papers were sorted into each topic, ordered by frequency:
-
-{table_str}
-
-For additional context, here are example papers from each topic:
+    examples_message = f"""
+For additional context, here are a couple example papers from each topic:
 
 <example_papers_by_topic>
 {examples_str}
 </example_papers_by_topic>
 """
 
+    return f"""
+{"This table shows how many papers were sorted into each topic, ordered by frequency" if first else "Here are how many papers were sorted into each topic"}:
+
+{table_str}
+
+{examples_message if first else ""}
+"""
+
 
 @prompt
-def resolve_get_topics_prompt(eval_result: EvalResult) -> str:
+def resolve_get_topics_prompt(eval_result: EvalResult, first=False) -> str:
     return f"""
-The evaluation script ran successfully on your proposed breakdown. Here are the results:
+The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 
 A random sample of {eval_result.sample_len} papers from the corpus were categorized by an LLM.
 
@@ -246,25 +261,23 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 
 {get_not_placed_str(eval_result)}
 
-{get_overlap_str(eval_result)}
+{get_overlap_str(eval_result, first)}
 
-{get_topic_papers_str(eval_result)}
+{get_topic_papers_str(eval_result, first)}
 
-For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:
+{get_overview_results_str(eval_result, first)}
 
-{tabulate(((title, "YES" if papers else "NO") for title, papers in eval_result.overview_papers.items()), headers=["Topic", "Found Overview Paper"])}
-
-In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:
+{f"In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:" if first else "Here are the LLM-generated feedback results:"}
 
 <helpfulness_feedback>
 {format_topics_feedbacks(eval_result.topics_feedbacks)}
 </helpfulness_feedback>
 
-As this is LLM-generated feedback, use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+{"As this is LLM-generated feedback," if first else "Remember to"} use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
 
-These metrics have been combined to produce an overall score of {eval_result.overall_score:.2f} for this taxonomy.
+{f"These metrics have been combined to produce an overall score of {eval_result.overall_score:.2f} for this taxonomy." if first else f"The overall score for this taxonomy comes out to {eval_result.overall_score:.2f}"}
 
-Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field.
+{"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field." if first else ""}
 
-Please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+{"Please present" if first else "Output"} your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
 """

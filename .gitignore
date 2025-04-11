@@ -178,6 +178,7 @@ cython_debug/
 
 # This project
 anything*.py
+anything*.md
 data/
 .chat_cache/
 .func_cache/
