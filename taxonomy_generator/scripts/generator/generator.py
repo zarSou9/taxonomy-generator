@@ -256,7 +256,7 @@ def evaluate_topics(
 def main(
     init_sample_len: int = 100,
     sort_sample_len: int = 400,
-    num_iterations: int = 8,
+    num_iterations: int = 5,
     samples_seed: int = 12,
 ):
     topic = Topic(
@@ -270,49 +270,49 @@ def main(
     eval_result: EvalResult | None = None
     topics: list[Topic] | None = None
 
-    for i in range(num_iterations):
-        if eval_result:
-            prompt = resolve_get_topics_prompt(eval_result)
-        else:
-            prompt = INIT_GET_TOPICS.format(
-                field=FIELD,
-                field_cap=cap_words(FIELD),
-                sample_len=f"{init_sample_len:,}",
-                corpus_len=f"{len(topic.papers):,}",
-                sample=corpus.get_pretty_sample(init_sample_len, seed=1),
+    try:
+        for i in range(num_iterations):
+            if eval_result:
+                prompt = resolve_get_topics_prompt(eval_result)
+            else:
+                prompt = INIT_GET_TOPICS.format(
+                    field=FIELD,
+                    field_cap=cap_words(FIELD),
+                    sample_len=f"{init_sample_len:,}",
+                    corpus_len=f"{len(topic.papers):,}",
+                    sample=corpus.get_pretty_sample(init_sample_len, seed=1),
+                )
+
+            topics = resolve_topics(
+                chat.ask(
+                    prompt,
+                    use_thinking=True,
+                    verbose=True,
+                    thinking_budget=4000 if i else 2500,
+                )
             )
 
-        topics = resolve_topics(
-            chat.ask(
-                prompt,
-                use_thinking=True,
-                verbose=True,
-                thinking_budget=4000 if i else 2500,
-                use_cache=True,
+            eval_result = evaluate_topics(
+                topics,
+                sort_sample_len,
+                topic.papers,
+                sample_seed=samples_seed + i,
             )
+
+            print("--------------------------------")
+            print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
+            print(f"Overall Score: {eval_result.overall_score}")
+            print("--------------------------------")
+
+            results.append((topics, eval_result))
+    finally:
+        results_str = "\n\n".join(
+            f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
+            for topics, eval_result in results
         )
-
-        eval_result = evaluate_topics(
-            topics,
-            sort_sample_len,
-            topic.papers,
-            sample_seed=samples_seed + i,
-        )
-
-        print("--------------------------------")
-        print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
-        print(f"Overall Score: {eval_result.overall_score}")
-        print("--------------------------------")
-
-        results.append((topics, eval_result))
-
-    results_str = "\n\n".join(
-        f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
-        for topics, eval_result in results
-    )
-    print(f"\n\n{results_str}\n\n")
-    BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-    (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
+        print(f"\n\n{results_str}\n\n")
+        BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
+        (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 

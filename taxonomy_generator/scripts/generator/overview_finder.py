@@ -42,6 +42,7 @@ def find_overview_papers(topic: Topic, field: str) -> list[Paper]:
             )
             for paper in papers
         ],
+        max_workers=40,
         model="gemini-2.0-flash",
         temp=0,
     )
