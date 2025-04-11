@@ -28,6 +28,7 @@ from taxonomy_generator.utils.utils import (
     cache,
     cap_words,
     get_avg_deviation,
+    plot_list,
     random_sample,
     unique_file,
 )
@@ -256,17 +257,17 @@ def evaluate_topics(
 def main(
     init_sample_len: int = 80,
     sort_sample_len: int = 400,
-    num_iterations: int = 5,
+    num_iterations: int = 10,
     samples_seed: int = 12,
 ):
     topic = Topic(
         title=FIELD,
         description="...",
-        papers=resolve_topic_papers(corpus.papers),
+        papers=resolve_topic_papers(corpus.papers[:2931]),
     )
 
     results: list[tuple[list[Topic], EvalResult]] = []
-    chat = Chat()
+    chat = Chat(use_cache=True, use_thinking=True, verbose=True, thinking_budget=3000)
     eval_result: EvalResult | None = None
     topics: list[Topic] | None = None
 
@@ -283,15 +284,7 @@ def main(
             else:
                 prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
 
-            topics = resolve_topics(
-                chat.ask(
-                    prompt,
-                    use_cache=True,
-                    use_thinking=True,
-                    verbose=True,
-                    thinking_budget=3000,
-                )
-            )
+            topics = resolve_topics(chat.ask(prompt))
 
             eval_result = evaluate_topics(
                 topics,
@@ -307,13 +300,18 @@ def main(
 
             results.append((topics, eval_result))
     finally:
-        results_str = "\n\n".join(
-            f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
-            for topics, eval_result in results
-        )
-        print(f"\n\n{results_str}\n\n")
-        BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-        (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
+        if results:
+            results_str = "\n\n".join(
+                f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
+                for topics, eval_result in results
+            )
+            all_scores = [eval_result.overall_score for _, eval_result in results]
+            results_str += f"\n\nAll Overall Scores:\n```json\n{json.dumps(all_scores, indent=2)}\n```"
+            print(f"\n\n{results_str}\n\n")
+            plot_list(all_scores)
+
+            BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
+            (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 

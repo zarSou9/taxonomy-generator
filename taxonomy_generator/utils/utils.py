@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from typing import Callable, ParamSpec, Sequence, TypeVar
 
+import matplotlib.pyplot as plt
 from pydantic import BaseModel
 
 T = TypeVar("T")
@@ -117,3 +118,21 @@ def unique_file(file_name: str) -> str:
     return file_name.format(
         f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
     )
+
+
+def plot_list(arr: list[float], title="Results"):
+    x = [i for i in range(1, len(arr) + 1)]
+
+    # Create the plot
+    plt.plot(x, arr, marker="o")  # Added marker='o' to show dots at each point
+
+    # Add labels and title
+    plt.xlabel("X-axis")
+    plt.ylabel("Y-axis")
+    plt.title(title)
+
+    # Set x-axis ticks at each data point
+    plt.xticks(x)
+
+    # Display the plot
+    plt.show()
