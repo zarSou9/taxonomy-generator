@@ -3,12 +3,14 @@ import pickle
 import random
 import time
 from pathlib import Path
-from typing import Callable, ParamSpec, Sequence, TypeVar
+from typing import Callable, Iterable, ParamSpec, Sequence, TypeVar, overload
 
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
 
 T = TypeVar("T")
+R = TypeVar("R")
+D = TypeVar("D")
 P = ParamSpec("P")
 
 
@@ -136,3 +138,17 @@ def plot_list(arr: list[float], title="Results"):
 
     # Display the plot
     plt.show()
+
+
+@overload
+def switch(
+    var: T, options: Iterable[tuple[T, R]], default: None = None
+) -> R | None: ...
+
+
+@overload
+def switch(var: T, options: Iterable[tuple[T, R]], default: D) -> R | D: ...
+
+
+def switch(var: T, options: Iterable[tuple[T, R]], default: D | None = None):
+    return next((value for option, value in options if option == var), default)

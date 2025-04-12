@@ -30,7 +30,7 @@ class TopicsFeedback(BaseModel):
 
 class EvalScores(BaseModel):
     feedback_score: float
-    topics_overview_score: float
+    topics_overview_score: float | None
     not_placed_score: float
     deviation_score: float
     single_score: float

@@ -30,6 +30,7 @@ from taxonomy_generator.utils.utils import (
     get_avg_deviation,
     plot_list,
     random_sample,
+    switch,
     unique_file,
 )
 
@@ -132,10 +133,10 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
     return next((t for t in topics if t.title.lower() == title.lower()), None)
 
 
-def calculate_overall_score(scores: EvalScores) -> float:
+def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
     return (
         scores.feedback_score
-        + scores.topics_overview_score
+        + ((scores.topics_overview_score or 0) * switch(depth, [(0, 1), (1, 0.5)], 0))
         + scores.not_placed_score * 3
         + scores.deviation_score * 0.6
         + scores.single_score * 1.5
@@ -327,7 +328,7 @@ def main(
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 
-    # TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+    TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
 
 
 if __name__ == "__main__":
