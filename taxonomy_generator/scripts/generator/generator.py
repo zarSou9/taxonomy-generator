@@ -231,7 +231,7 @@ def evaluate_topics(
         + topics_overview_score
         + not_placed_score * 3
         + deviation_score * 0.5
-        + single_score * 2
+        + single_score * 1.7
     )
 
     return EvalResult(
