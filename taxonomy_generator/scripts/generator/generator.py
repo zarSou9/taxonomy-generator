@@ -301,18 +301,23 @@ def main(
             results.append((topics, eval_result))
     finally:
         if results:
-            results_str = "\n\n".join(
-                f"Topics:\n```json\n{topics_to_json(topics)}\n```\nAll Scores:\n```json\n{eval_result.all_scores.model_dump_json(indent=2)}\n```\nOverall Score: {eval_result.overall_score}"
+            results_data = [
+                {
+                    "topics": json.loads(topics_to_json(topics)),
+                    "scores": eval_result.all_scores.model_dump(),
+                    "overall_score": eval_result.overall_score,
+                }
                 for topics, eval_result in results
-            )
-            all_scores = [eval_result.overall_score for _, eval_result in results]
-            results_str += f"\n\nAll Overall Scores:\n```json\n{json.dumps(all_scores, indent=2)}\n```"
-            print(f"\n\n{results_str}\n\n")
+            ]
+
+            print(f"\n\nResults: {len(results_data)} iterations\n\n")
 
             BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-            (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
+            (BREAKDOWN_RESULTS / unique_file("results_{}.json")).write_text(
+                json.dumps(results_data, indent=2, ensure_ascii=False)
+            )
 
-            plot_list(all_scores)
+            plot_list([eval_result.overall_score for _, eval_result in results])
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 

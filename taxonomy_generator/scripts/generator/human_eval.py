@@ -8,16 +8,20 @@ from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
 
 TOPICS = [
     {
-        "title": "Present-Day AI Safety",
-        "description": "Research on making current AI systems robust, reliable, and aligned with human values. This includes adversarial defenses, formal verification, transparency methods, safety testing protocols, fairness evaluation, and techniques to ensure existing AI technologies operate safely and predictably.",
+        "title": "Technical Robustness and Safety Verification",
+        "description": "Research on methods to make AI systems reliable, resistant to attacks, and mathematically verified to meet safety specifications. This includes adversarial defenses, formal verification, testing frameworks, uncertainty quantification, and techniques to ensure systems behave as expected under various conditions.",
     },
     {
-        "title": "Emerging AI Safety Challenges",
-        "description": "Research addressing the evolving safety landscape as AI capabilities grow in sophistication and deployment scope. This includes scalable oversight mechanisms, value alignment frameworks, safety standards development, governance structures for increasingly powerful systems, and methods to handle increasingly complex AI behaviors.",
+        "title": "Safe Decision-Making and Learning",
+        "description": "Work focused on ensuring AI systems make safe decisions and learn safely, especially when interacting with environments or humans. This includes safe reinforcement learning, constrained optimization, safe exploration strategies, and methods for reliable decision-making under uncertainty.",
     },
     {
-        "title": "Long-Term AI Safety",
-        "description": "Research on foundational safety approaches for potentially transformative future AI capabilities. This includes theoretical frameworks for advanced AI alignment, power-seeking prevention, deceptive alignment, emergent capabilities, existential risk reduction, and ensuring safe development paths toward more capable AI systems.",
+        "title": "AI Alignment and Human Values",
+        "description": "Research on aligning AI systems with human values, preferences, intentions, and ethical considerations. This includes human feedback techniques, preference optimization, reward modeling, and methods to ensure AI systems understand and respect human objectives, including work on interpretability and explainability to make AI reasoning transparent.",
+    },
+    {
+        "title": "AI Governance and Societal Impact",
+        "description": "Studies addressing the governance, regulation, and broader social implications of AI systems. This includes policy frameworks, regulatory approaches, fairness and bias mitigation, and analyses of how AI systems affect different populations, institutional structures, and society as a whole.",
     },
 ]
 
@@ -27,7 +31,7 @@ def main():
     topics = [Topic.model_validate(t) for t in TOPICS]
 
     eval_result = evaluate_topics(
-        topics, 400, papers, sample_seed=122, no_overviews=True, no_feedback=True
+        topics, 400, papers, sample_seed=122, no_overviews=True
     )
 
     print("--------------------------------")
