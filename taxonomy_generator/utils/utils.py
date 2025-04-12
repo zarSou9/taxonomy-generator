@@ -116,10 +116,8 @@ def get_avg_deviation(nums: list[int]) -> float:
     return mean_deviation / mean
 
 
-def unique_file(file_name: str) -> str:
-    return file_name.format(
-        f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
-    )
+def unique_str() -> str:
+    return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
 
 
 def plot_list(arr: list[float], title="Results"):

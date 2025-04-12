@@ -31,10 +31,11 @@ from taxonomy_generator.utils.utils import (
     plot_list,
     random_sample,
     switch,
-    unique_file,
+    unique_str,
 )
 
 FIELD = "AI safety"
+DESCRIPTION = "AI safety is a field focused on preventing harm caused by unintended consequences of AI systems, ensuring they align with human values and operate reliably."
 TREE_PATH = Path("data/tree.json")
 BREAKDOWN_RESULTS = Path("data/breakdown_results")
 
@@ -265,66 +266,91 @@ def main(
     init_sample_len: int = 80,
     sort_sample_len: int = 400,
     num_iterations: int = 10,
-    seed: int = 2,
+    seed: int | list[int] | None = None,
+    thinking_budget: int | list[int] = 3100,
+    epochs: int = 1,
 ):
     topic = Topic(
-        title=FIELD,
-        description="...",
-        papers=resolve_topic_papers(corpus.papers[:2931]),
+        title=cap_words(FIELD),
+        description=DESCRIPTION,
+        papers=resolve_topic_papers(corpus.papers),
     )
 
+    BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
+    results_file = BREAKDOWN_RESULTS / f"{topic.title}_{unique_str()}.json"
+
     results: list[tuple[list[Topic], EvalResult]] = []
-    chat = Chat(use_cache=True, use_thinking=True, verbose=True, thinking_budget=3100)
-    eval_result: EvalResult | None = None
-    topics: list[Topic] | None = None
 
-    try:
-        for i in range(num_iterations):
-            if i == 0:
-                prompt = INIT_TOPICS.format(
-                    field=FIELD,
-                    field_cap=cap_words(FIELD),
-                    sample_len=f"{init_sample_len:,}",
-                    corpus_len=f"{len(topic.papers):,}",
-                    sample=corpus.get_pretty_sample(init_sample_len, seed=seed),
+    for epoch in range(epochs):
+        this_seed = seed[epoch] if isinstance(seed, list) else seed
+        this_thinking_budget = (
+            thinking_budget[epoch]
+            if isinstance(thinking_budget, list)
+            else thinking_budget
+        )
+
+        chat = Chat(
+            use_cache=True,
+            use_thinking=True,
+            verbose=True,
+            thinking_budget=this_thinking_budget,
+        )
+        eval_result: EvalResult | None = None
+        topics: list[Topic] | None = None
+
+        try:
+            for i in range(num_iterations):
+                if i == 0:
+                    prompt = INIT_TOPICS.format(
+                        field=FIELD,
+                        field_cap=cap_words(FIELD),
+                        sample_len=f"{init_sample_len:,}",
+                        corpus_len=f"{len(topic.papers):,}",
+                        sample=corpus.get_pretty_sample(
+                            init_sample_len, seed=this_seed
+                        ),
+                    )
+                else:
+                    prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
+
+                topics = resolve_topics(chat.ask(prompt))
+
+                eval_result = evaluate_topics(
+                    topics,
+                    sort_sample_len,
+                    topic.papers,
+                    sample_seed=None if this_seed is None else this_seed + i,
                 )
-            else:
-                prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
 
-            topics = resolve_topics(chat.ask(prompt))
+                print("--------------------------------")
+                print(
+                    f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}"
+                )
+                print(f"Overall Score: {eval_result.overall_score}")
+                print("--------------------------------")
 
-            eval_result = evaluate_topics(
-                topics,
-                sort_sample_len,
-                topic.papers,
-                sample_seed=seed + i,
-            )
+                results.append((topics, eval_result))
+        finally:
+            if results:
+                results_data = [
+                    {
+                        "topics": json.loads(topics_to_json(topics)),
+                        "scores": eval_result.all_scores.model_dump(),
+                        "overall_score": eval_result.overall_score,
+                    }
+                    for topics, eval_result in results
+                ]
 
-            print("--------------------------------")
-            print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
-            print(f"Overall Score: {eval_result.overall_score}")
-            print("--------------------------------")
+                results_file.write_text(
+                    json.dumps(results_data, indent=2, ensure_ascii=False)
+                )
 
-            results.append((topics, eval_result))
-    finally:
-        if results:
-            results_data = [
-                {
-                    "topics": json.loads(topics_to_json(topics)),
-                    "scores": eval_result.all_scores.model_dump(),
-                    "overall_score": eval_result.overall_score,
-                }
-                for topics, eval_result in results
-            ]
+                print("--------------------------------")
+                print(f"Epoch {epoch + 1} of {epochs} complete")
+                print(f"Results saved to {results_file}")
+                print("--------------------------------")
 
-            print(f"\n\nResults: {len(results_data)} iterations\n\n")
-
-            BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-            (BREAKDOWN_RESULTS / unique_file("results_{}.json")).write_text(
-                json.dumps(results_data, indent=2, ensure_ascii=False)
-            )
-
-            plot_list([eval_result.overall_score for _, eval_result in results])
+                plot_list([eval_result.overall_score for _, eval_result in results])
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 
