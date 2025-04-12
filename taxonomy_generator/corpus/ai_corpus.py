@@ -205,9 +205,10 @@ class AICorpus:
                 print(
                     f"Removed {len(paper_or_ids) - len(papers)} duplicates from input"
                 )
-            print(
-                f"Added {len(to_add)} papers to corpus - {round((len(to_add) / len(papers)) * 100)}% were new"
-            )
+            if papers:
+                print(
+                    f"Added {len(to_add)} papers to corpus - {round((len(to_add) / len(papers)) * 100)}% were new"
+                )
             print("-----------------------------------------------")
             if verbose == 2:
                 print()

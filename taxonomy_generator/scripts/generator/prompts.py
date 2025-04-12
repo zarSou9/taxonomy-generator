@@ -159,7 +159,7 @@ def get_overlap_str(eval_result: EvalResult, first: bool) -> str:
             sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
             examples.append(f"## {title}\n\n{sample_str}")
 
-    examples_str = "\n\n".join(examples[:3])
+    examples_str = "\n\n".join(examples[:4])
 
     if overlap_num == 0:
         return """
@@ -252,6 +252,11 @@ For additional context, here are a couple example papers from each topic:
 
 @prompt
 def get_iter_topics_prompt(eval_result: EvalResult, first: bool) -> str:
+    if first:
+        iterative_message = "Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field."
+    else:
+        iterative_message = "This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down the field. Get creative and don't try the same thing twice."
+
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 
@@ -277,7 +282,7 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 
 {f"These metrics have been combined to produce an overall score of {eval_result.overall_score:.2f} for this taxonomy." if first else f"The overall score for this taxonomy comes out to {eval_result.overall_score:.2f}"}
 
-{"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field." if first else ""}
+{iterative_message}
 
 {"Please present" if first else "Output"} your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
 """

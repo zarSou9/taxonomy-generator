@@ -231,7 +231,7 @@ def evaluate_topics(
         + topics_overview_score
         + not_placed_score * 3
         + deviation_score * 0.5
-        + single_score * 1.25
+        + single_score * 2
     )
 
     return EvalResult(
@@ -258,7 +258,7 @@ def main(
     init_sample_len: int = 80,
     sort_sample_len: int = 400,
     num_iterations: int = 10,
-    samples_seed: int = 12,
+    seed: int = 2,
 ):
     topic = Topic(
         title=FIELD,
@@ -267,7 +267,7 @@ def main(
     )
 
     results: list[tuple[list[Topic], EvalResult]] = []
-    chat = Chat(use_cache=True, use_thinking=True, verbose=True, thinking_budget=3000)
+    chat = Chat(use_cache=True, use_thinking=True, verbose=True, thinking_budget=3100)
     eval_result: EvalResult | None = None
     topics: list[Topic] | None = None
 
@@ -279,7 +279,7 @@ def main(
                     field_cap=cap_words(FIELD),
                     sample_len=f"{init_sample_len:,}",
                     corpus_len=f"{len(topic.papers):,}",
-                    sample=corpus.get_pretty_sample(init_sample_len, seed=samples_seed),
+                    sample=corpus.get_pretty_sample(init_sample_len, seed=seed),
                 )
             else:
                 prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
@@ -290,7 +290,7 @@ def main(
                 topics,
                 sort_sample_len,
                 topic.papers,
-                sample_seed=samples_seed + i,
+                sample_seed=seed + i,
             )
 
             print("--------------------------------")
@@ -308,10 +308,11 @@ def main(
             all_scores = [eval_result.overall_score for _, eval_result in results]
             results_str += f"\n\nAll Overall Scores:\n```json\n{json.dumps(all_scores, indent=2)}\n```"
             print(f"\n\n{results_str}\n\n")
-            plot_list(all_scores)
 
             BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
             (BREAKDOWN_RESULTS / unique_file("results_{}.md")).write_text(results_str)
+
+            plot_list(all_scores)
 
     topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
 
