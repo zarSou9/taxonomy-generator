@@ -354,7 +354,7 @@ def main(
     ):
         return
 
-    sort_papers(topic)
+    sort_papers(topic, save_to=TREE_PATH)
 
 
 if __name__ == "__main__":

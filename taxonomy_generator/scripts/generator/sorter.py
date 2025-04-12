@@ -1,9 +1,9 @@
 import json
+from pathlib import Path
 
 from tabulate import tabulate
 
 from taxonomy_generator.corpus.ai_corpus import AICorpus
-from taxonomy_generator.scripts.generator.generator import TREE_PATH
 from taxonomy_generator.scripts.generator.generator_types import Topic, TopicPaper
 from taxonomy_generator.scripts.generator.prompts import SORT_PAPER_SINGLE
 from taxonomy_generator.scripts.generator.utils import topics_to_json
@@ -13,7 +13,7 @@ from taxonomy_generator.utils.utils import format_perc, safe_lower
 corpus = AICorpus(papers_override=[])
 
 
-def sort_papers(topic: Topic, dry_run: bool = False):
+def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
     prompts = [
         SORT_PAPER_SINGLE.format(
             field=safe_lower(topic.title),
@@ -57,23 +57,14 @@ def sort_papers(topic: Topic, dry_run: bool = False):
 
         sub_topic.papers.append(paper)
 
-    if not dry_run:
-        TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
-
     print("--------------------------------")
-    print(
-        "Dry run complete - no changes were made"
-        if dry_run
-        else f"Papers sorted and saved to {TREE_PATH}"
-    )
     print(
         f"Num papers excluded from taxonomy: {len(excluded_papers)} ({format_perc(len(excluded_papers) / len(topic.papers))})"
     )
     print(
-        f"Num papers sorted into main topic: {len(new_topic_papers)} ({format_perc(len(new_topic_papers) / len(topic.papers))})"
+        f"Num papers sorted into main topic: {len(new_topic_papers)} ({format_perc(len(new_topic_papers) / len(topic.papers))})\n"
     )
 
-    print("Table showing the number of papers sorted into each topic:")
     print(
         tabulate(
             [
@@ -89,3 +80,9 @@ def sort_papers(topic: Topic, dry_run: bool = False):
         )
     )
     print("--------------------------------")
+
+    if not dry_run:
+        topic.papers = new_topic_papers
+
+        save_to.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+        print(f"Papers sorted and saved to {save_to}")

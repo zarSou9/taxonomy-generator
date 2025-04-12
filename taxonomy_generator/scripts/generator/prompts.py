@@ -55,7 +55,7 @@ AVAILABLE CATEGORIES:
 {topics}
 ```
 
-Note: If this paper is a broad overview or survey of {field}, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
+If, however, this paper is a broad overview or survey of {field} as a whole, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
 
 Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
 """
@@ -73,9 +73,9 @@ AVAILABLE CATEGORIES:
 {topics}
 ```
 
-Note: If this paper is a broad overview or survey of {field}, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
+If, however, this paper is a broad overview or survey of {field} as a whole, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
 
-Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If this is an overview or survey paper of {field}, respond with "{field_cap} Overview/Survey". If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
+Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If this is an overview or survey paper of {field} as a whole, respond with "{field_cap} Overview/Survey". If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
 """
 
 
