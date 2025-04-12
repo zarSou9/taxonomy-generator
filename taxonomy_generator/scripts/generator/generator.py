@@ -132,6 +132,16 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
     return next((t for t in topics if t.title.lower() == title.lower()), None)
 
 
+def calculate_overall_score(scores: EvalScores) -> float:
+    return (
+        scores.feedback_score
+        + scores.topics_overview_score
+        + scores.not_placed_score * 3
+        + scores.deviation_score * 0.6
+        + scores.single_score * 1.5
+    )
+
+
 def evaluate_topics(
     topics: list[Topic],
     sample_len: int,
@@ -226,22 +236,18 @@ def evaluate_topics(
         perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6, 0.92
     )
 
-    overall_score = (
-        feedback_score
-        + topics_overview_score
-        + not_placed_score * 3
-        + deviation_score * 0.5
-        + single_score * 1.7
+    scores = EvalScores(
+        feedback_score=feedback_score,
+        topics_overview_score=topics_overview_score,
+        not_placed_score=not_placed_score,
+        deviation_score=deviation_score,
+        single_score=single_score,
     )
 
+    overall_score = calculate_overall_score(scores)
+
     return EvalResult(
-        all_scores=EvalScores(
-            feedback_score=feedback_score,
-            topics_overview_score=topics_overview_score,
-            not_placed_score=not_placed_score,
-            deviation_score=deviation_score,
-            single_score=single_score,
-        ),
+        all_scores=scores,
         overall_score=overall_score,
         topics_feedbacks=topics_feedbacks,
         topic_papers=topic_papers,
