@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
 
+from InquirerPy import inquirer
+
 from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     EvalScores,
@@ -17,6 +18,16 @@ from taxonomy_generator.scripts.generator.prompts import (
     TOPICS_FEEDBACK,
     TOPICS_FEEDBACK_SYSTEM_PROMPTS,
     get_iter_topics_prompt,
+)
+from taxonomy_generator.scripts.generator.sorter import sort_papers
+from taxonomy_generator.scripts.generator.utils import (
+    Result,
+    get_results_data,
+    resolve_topic,
+    resolve_topic_papers,
+    resolve_topics,
+    select_topics,
+    topics_to_json,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import (
@@ -38,30 +49,6 @@ FIELD = "AI safety"
 DESCRIPTION = "AI safety is a field focused on preventing harm caused by unintended consequences of AI systems, ensuring they align with human values and operate reliably."
 TREE_PATH = Path("data/tree.json")
 BREAKDOWN_RESULTS = Path("data/breakdown_results")
-
-
-def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
-    return [
-        TopicPaper(
-            title=p.title,
-            arx=p.arxiv_id.split("v")[0],
-            published=p.published,
-            abstract=p.abstract,
-        )
-        for p in papers
-    ]
-
-
-def resolve_topics(response: str) -> list[Topic]:
-    return [Topic(**t) for t in parse_response_json(response, [], raise_on_fail=True)]
-
-
-def topics_to_json(topics: list[Topic]) -> str:
-    return json.dumps(
-        [{"title": t.title, "description": t.description} for t in topics],
-        indent=2,
-        ensure_ascii=False,
-    )
 
 
 @cache()
@@ -130,10 +117,6 @@ def process_sort_results(
     return results
 
 
-def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
-    return next((t for t in topics if t.title.lower() == title.lower()), None)
-
-
 def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
     return (
         scores.feedback_score
@@ -197,7 +180,7 @@ def evaluate_topics(
                 for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
             ],
             model="gemini-1.5-pro",
-            temp=1.55,
+            temp=1.5,
         )
         topics_feedbacks = [
             TopicsFeedback(
@@ -269,6 +252,7 @@ def main(
     seed: int | list[int] | None = None,
     thinking_budget: int | list[int] = 3100,
     epochs: int = 1,
+    auto=False,
 ):
     topic = Topic(
         title=cap_words(FIELD),
@@ -280,6 +264,7 @@ def main(
     results_file = BREAKDOWN_RESULTS / f"{topic.title}_{unique_str()}.json"
 
     results: list[tuple[list[Topic], EvalResult]] = []
+    results_data: list[Result] = []
 
     for epoch in range(epochs):
         this_seed = seed[epoch] if isinstance(seed, list) else seed
@@ -332,14 +317,7 @@ def main(
                 results.append((topics, eval_result))
         finally:
             if results:
-                results_data = [
-                    {
-                        "topics": json.loads(topics_to_json(topics)),
-                        "scores": eval_result.all_scores.model_dump(),
-                        "overall_score": eval_result.overall_score,
-                    }
-                    for topics, eval_result in results
-                ]
+                results_data = get_results_data(results)
 
                 results_file.write_text(
                     json.dumps(results_data, indent=2, ensure_ascii=False)
@@ -350,11 +328,33 @@ def main(
                 print(f"Results saved to {results_file}")
                 print("--------------------------------")
 
-                plot_list([eval_result.overall_score for _, eval_result in results])
+                if not auto:
+                    plot_list([eval_result.overall_score for _, eval_result in results])
 
-    topic.topics = max(results, key=lambda r: r[1].overall_score)[0]
+    if not results_data:
+        print("No results generated")
+        return
+
+    topic.topics = (
+        max(results, key=lambda r: r[1].overall_score)[0]
+        if auto
+        else select_topics(results_data)
+    )
 
     TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+
+    print(f"{topic.title} taxonomy saved to {TREE_PATH}")
+
+    if (
+        not auto
+        and not inquirer.confirm(
+            "Would you like to continue by sorting all papers into this taxonomy?",
+            default=True,
+        ).execute()
+    ):
+        return
+
+    sort_papers(topic)
 
 
 if __name__ == "__main__":

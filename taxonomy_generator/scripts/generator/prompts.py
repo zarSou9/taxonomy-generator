@@ -60,6 +60,25 @@ Note: If this paper is a broad overview or survey of {field}, categorize it as "
 Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
 """
 
+SORT_PAPER_SINGLE = """
+You are categorizing a paper into a taxonomy for {field} related research papers.
+
+PAPER:
+---
+{paper}
+---
+
+AVAILABLE CATEGORIES:
+```json
+{topics}
+```
+
+Note: If this paper is a broad overview or survey of {field}, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
+
+Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If this is an overview or survey paper of {field}, respond with "{field_cap} Overview/Survey". If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
+"""
+
+
 TOPICS_FEEDBACK = """
 Given the following topic breakdown for organizing {field} research papers:
 
