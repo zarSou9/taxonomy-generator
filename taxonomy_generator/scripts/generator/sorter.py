@@ -13,7 +13,17 @@ from taxonomy_generator.utils.utils import format_perc, safe_lower
 corpus = AICorpus(papers_override=[])
 
 
-def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
+def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = False):
+    topic = (
+        Topic.model_validate_json(topic_or_path.read_text())
+        if isinstance(topic_or_path, Path)
+        else topic_or_path
+    )
+
+    if not topic.papers:
+        print("No papers to sort")
+        return
+
     prompts = [
         SORT_PAPER_SINGLE.format(
             field=safe_lower(topic.title),
@@ -30,6 +40,7 @@ def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
 
     new_topic_papers: list[TopicPaper] = []
     excluded_papers: list[TopicPaper] = []
+    sub_topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topic.topics}
 
     for paper, response in zip(topic.papers, responses):
         if "none applicable" in response.lower():
@@ -55,7 +66,7 @@ def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
             )
             continue
 
-        sub_topic.papers.append(paper)
+        sub_topic_papers[sub_topic.title].append(paper)
 
     print("--------------------------------")
     print(
@@ -69,11 +80,11 @@ def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
         tabulate(
             [
                 (
-                    sub_topic.title,
-                    len(sub_topic.papers),
-                    format_perc(len(sub_topic.papers) / len(topic.papers), fill=True),
+                    title,
+                    len(papers),
+                    format_perc(len(papers) / len(topic.papers), fill=True),
                 )
-                for sub_topic in topic.topics
+                for title, papers in sub_topic_papers.items()
             ],
             headers=["Topic", "Num Papers", "Percent of Corpus"],
             colalign=["left", "right", "right"],
@@ -83,6 +94,8 @@ def sort_papers(topic: Topic, save_to: Path, dry_run: bool = False):
 
     if not dry_run:
         topic.papers = new_topic_papers
+        for sub_topic in topic.topics:
+            sub_topic.papers.extend(sub_topic_papers[sub_topic.title])
 
         save_to.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
         print(f"Papers sorted and saved to {save_to}")
