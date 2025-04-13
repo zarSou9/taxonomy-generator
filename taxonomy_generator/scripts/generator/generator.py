@@ -23,6 +23,7 @@ from taxonomy_generator.scripts.generator.sorter import sort_papers
 from taxonomy_generator.scripts.generator.utils import (
     Result,
     get_results_data,
+    paper_num_table,
     resolve_topic,
     resolve_topic_papers,
     resolve_topics,
@@ -39,8 +40,10 @@ from taxonomy_generator.utils.utils import (
     cache,
     cap_words,
     get_avg_deviation,
+    get_resolve_all_param,
     plot_list,
     random_sample,
+    resolve_all_param,
     switch,
     unique_str,
 )
@@ -245,21 +248,17 @@ def evaluate_topics(
     )
 
 
-def main(
-    init_sample_len: int = 80,
-    sort_sample_len: int = 400,
-    num_iterations: int = 10,
-    seed: int | list[int] | None = None,
-    thinking_budget: int | list[int] = 3100,
-    epochs: int = 1,
-    auto=False,
+def generate_topics(
+    topic: Topic,
+    num_iterations: int,
+    init_sample_len: int,
+    sort_sample_len: int,
+    epochs: int,
+    seed: int | None,
+    auto: bool,
+    depth: int,
+    thinking_budget: int | tuple[int],
 ):
-    topic = Topic(
-        title=cap_words(FIELD),
-        description=DESCRIPTION,
-        papers=resolve_topic_papers(corpus.papers),
-    )
-
     BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
     results_file = BREAKDOWN_RESULTS / f"{topic.title}_{unique_str()}.json"
 
@@ -267,18 +266,15 @@ def main(
     results_data: list[Result] = []
 
     for epoch in range(epochs):
-        this_seed = seed[epoch] if isinstance(seed, list) else seed
-        this_thinking_budget = (
-            thinking_budget[epoch]
-            if isinstance(thinking_budget, list)
-            else thinking_budget
-        )
+        epoch_seed = resolve_all_param(seed, epoch, tuple)
+        epoch_seed = epoch_seed and epoch_seed + depth
+        epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
         chat = Chat(
             use_cache=True,
             use_thinking=True,
             verbose=True,
-            thinking_budget=this_thinking_budget,
+            thinking_budget=epoch_thinking_budget,
         )
         eval_result: EvalResult | None = None
         topics: list[Topic] | None = None
@@ -292,7 +288,7 @@ def main(
                         sample_len=f"{init_sample_len:,}",
                         corpus_len=f"{len(topic.papers):,}",
                         sample=corpus.get_pretty_sample(
-                            init_sample_len, seed=this_seed
+                            init_sample_len, seed=epoch_seed
                         ),
                     )
                 else:
@@ -304,7 +300,7 @@ def main(
                     topics,
                     sort_sample_len,
                     topic.papers,
-                    sample_seed=None if this_seed is None else this_seed + i,
+                    sample_seed=None if epoch_seed is None else epoch_seed + i,
                 )
 
                 print("--------------------------------")
@@ -335,27 +331,106 @@ def main(
         print("No results generated")
         return
 
-    topic.topics = (
+    return (
         max(results, key=lambda r: r[1].overall_score)[0]
         if auto
         else select_topics(results_data)
     )
 
-    TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
 
-    print(f"{topic.title} taxonomy saved to {TREE_PATH}")
+def generate(
+    init_sample_len_all: int | list[int] = [80, 60, 30],
+    sort_sample_len_all: int | list[int] = [400, 250, 100],
+    num_iterations_all: int | list[int] = [10, 8, 3],
+    thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
+        (3100, 2600),
+        2000,
+        1300,
+    ],
+    epochs_all: int | list[int] = [2, 1],
+    seed: int | None | tuple[int | None] = None,
+    auto=False,
+    depth: int = 0,
+    root: Topic | None = None,
+    topic: Topic | None = None,
+):
+    resolver = get_resolve_all_param(depth)
+
+    init_sample_len = resolver(init_sample_len_all)
+    sort_sample_len = resolver(sort_sample_len_all)
+    num_iterations = resolver(num_iterations_all)
+    thinking_budget = resolver(thinking_budget_all)
+    epochs = resolver(epochs_all)
+
+    if depth == 0:
+        topic = Topic(
+            title=cap_words(FIELD),
+            description=DESCRIPTION,
+            papers=resolve_topic_papers(corpus.papers),
+        )
+        if TREE_PATH.exists():
+            topic = Topic.model_validate_json(TREE_PATH.read_text())
+    else:
+        assert root
+        assert topic
+
+    if not topic.topics:
+        topic.topics = generate_topics(
+            topic=topic,
+            num_iterations=num_iterations,
+            init_sample_len=init_sample_len,
+            sort_sample_len=sort_sample_len,
+            epochs=epochs,
+            seed=seed,
+            auto=auto,
+            depth=depth,
+            thinking_budget=thinking_budget,
+        )
+
+        TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+        print(f"{topic.title} taxonomy saved to {TREE_PATH}")
+
+    sort_flag = False
+    already_sorted = any(sub_topic.papers for sub_topic in topic.topics)
+
+    if auto:
+        sort_flag = not already_sorted
+    elif already_sorted:
+        print(
+            f"It looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
+        )
+        sort_flag = inquirer.confirm(
+            f"Would you still like to sort the {len(topic.papers)} papers under the {topic.title} topic?",
+            default=False,
+        ).execute()
+    else:
+        sort_flag = inquirer.confirm(
+            f"Would you like to continue by sorting all {len(topic.papers)} papers into this taxonomy?",
+            default=True,
+        ).execute()
+
+        if not sort_flag:
+            return
+
+    if sort_flag:
+        sort_papers(topic, save_to=TREE_PATH)
 
     if (
         not auto
         and not inquirer.confirm(
-            "Would you like to continue by sorting all papers into this taxonomy?",
+            "Shall I continue to generate taxonomies for the subtopics?",
             default=True,
         ).execute()
     ):
         return
 
-    sort_papers(topic, save_to=TREE_PATH)
+    for sub_topic in topic.topics:
+        generate(
+            root=topic,
+            topic=sub_topic,
+            auto=auto,
+        )
 
 
 if __name__ == "__main__":
-    main()
+    generate()

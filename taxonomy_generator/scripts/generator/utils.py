@@ -2,6 +2,7 @@ import json
 from typing import TypedDict
 
 from InquirerPy import inquirer
+from tabulate import tabulate
 
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
@@ -10,6 +11,7 @@ from taxonomy_generator.scripts.generator.generator_types import (
     TopicPaper,
 )
 from taxonomy_generator.utils.parse_llm import parse_response_json
+from taxonomy_generator.utils.utils import format_perc
 
 
 class TopicDict(TypedDict):
@@ -104,3 +106,32 @@ def select_topics(results_data: list[Result]) -> list[Topic]:
             displayed_count = display_top_results(results_data, start=displayed_count)
         else:
             return [Topic(**t) for t in results_data[selection]["topics"]]
+
+
+def paper_num_table(topic: Topic, include_main: bool = True):
+    num_papers = (len(topic.papers) if include_main else 0) + sum(
+        len(sub_topic.papers) for sub_topic in topic.topics
+    )
+    return tabulate(
+        (
+            [
+                (
+                    topic.title,
+                    len(topic.papers),
+                    format_perc(len(topic.papers) / num_papers, fill=True),
+                )
+            ]
+            if include_main
+            else []
+        )
+        + [
+            (
+                sub_topic.title,
+                len(sub_topic.papers),
+                format_perc(len(sub_topic.papers) / num_papers, fill=True),
+            )
+            for sub_topic in topic.topics
+        ],
+        headers=["Topic", "Num Papers", "Percent of Total"],
+        colalign=["left", "right", "right"],
+    )
