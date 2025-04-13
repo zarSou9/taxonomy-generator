@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Generator
 
 from InquirerPy import inquirer
 
@@ -22,12 +23,14 @@ from taxonomy_generator.scripts.generator.prompts import (
 from taxonomy_generator.scripts.generator.sorter import sort_papers
 from taxonomy_generator.scripts.generator.utils import (
     Result,
+    get_parents,
     get_results_data,
     paper_num_table,
     resolve_topic,
     resolve_topic_papers,
     resolve_topics,
     select_topics,
+    topic_breadcrums,
     topics_to_json,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
@@ -250,6 +253,7 @@ def evaluate_topics(
 
 def generate_topics(
     topic: Topic,
+    root: Topic,
     num_iterations: int,
     init_sample_len: int,
     sort_sample_len: int,
@@ -271,6 +275,7 @@ def generate_topics(
         epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
         chat = Chat(
+            cache_file_name=f"{topic.title}_{unique_str()}",
             use_cache=True,
             use_thinking=True,
             verbose=True,
@@ -329,7 +334,7 @@ def generate_topics(
 
     if not results_data:
         print("No results generated")
-        return
+        return []
 
     return (
         max(results, key=lambda r: r[1].overall_score)[0]
@@ -351,8 +356,8 @@ def generate(
     seed: int | None | tuple[int | None] = None,
     auto=False,
     depth: int = 0,
-    root: Topic | None = None,
     topic: Topic | None = None,
+    root: Topic | None = None,
 ):
     resolver = get_resolve_all_param(depth)
 
@@ -363,20 +368,26 @@ def generate(
     epochs = resolver(epochs_all)
 
     if depth == 0:
-        topic = Topic(
-            title=cap_words(FIELD),
-            description=DESCRIPTION,
-            papers=resolve_topic_papers(corpus.papers),
+        topic = (
+            Topic.model_validate_json(TREE_PATH.read_text())
+            if TREE_PATH.exists()
+            else Topic(
+                title=cap_words(FIELD),
+                description=DESCRIPTION,
+                papers=resolve_topic_papers(corpus.papers),
+            )
         )
-        if TREE_PATH.exists():
-            topic = Topic.model_validate_json(TREE_PATH.read_text())
+        root = topic
     else:
-        assert root
         assert topic
+        assert root
+
+    parents = get_parents(topic, root)
 
     if not topic.topics:
         topic.topics = generate_topics(
             topic=topic,
+            root=root,
             num_iterations=num_iterations,
             init_sample_len=init_sample_len,
             sort_sample_len=sort_sample_len,
@@ -387,7 +398,12 @@ def generate(
             thinking_budget=thinking_budget,
         )
 
+        if not topic.topics:
+            print(f"Topics not generated for {topic.title} topic")
+            return
+
         TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+
         print(f"{topic.title} taxonomy saved to {TREE_PATH}")
 
     sort_flag = False
@@ -400,12 +416,12 @@ def generate(
             f"It looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
         )
         sort_flag = inquirer.confirm(
-            f"Would you still like to sort the {len(topic.papers)} papers under the {topic.title} topic?",
+            f"Would you still like to sort the {len(topic.papers):,} papers under the {topic.title} topic?",
             default=False,
         ).execute()
     else:
         sort_flag = inquirer.confirm(
-            f"Would you like to continue by sorting all {len(topic.papers)} papers into this taxonomy?",
+            f"Would you like to continue by sorting all {len(topic.papers):,} papers into this taxonomy?",
             default=True,
         ).execute()
 
@@ -415,22 +431,45 @@ def generate(
     if sort_flag:
         sort_papers(topic, save_to=TREE_PATH)
 
+    yield
+
+    print(
+        f"We are now on topic {topic_breadcrums(topic, parents)}.\n{paper_num_table(topic)}"
+    )
+
     if (
         not auto
         and not inquirer.confirm(
-            "Shall I continue to generate taxonomies for the subtopics?",
+            "Would you like to continue generating taxonomies for the subtopics?",
             default=True,
         ).execute()
     ):
         return
 
+    generators: list[Generator] = []
     for sub_topic in topic.topics:
-        generate(
-            root=topic,
-            topic=sub_topic,
-            auto=auto,
+        generators.append(
+            generate(
+                root=topic,
+                topic=sub_topic,
+                auto=auto,
+                depth=depth + 1,
+            )
         )
+        next(generators[-1], None)
+
+    print(
+        f"All sub-topics under {topic_breadcrums(topic, parents)} have completed generation"
+    )
+
+    for generator in generators:
+        next(generator, None)
+
+
+def run_generater(generator: Generator):
+    next(generator, None)
+    next(generator, None)
 
 
 if __name__ == "__main__":
-    generate()
+    run_generater(generate())

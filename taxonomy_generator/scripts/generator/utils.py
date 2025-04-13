@@ -1,5 +1,5 @@
 import json
-from typing import TypedDict
+from typing import Literal, TypedDict, overload
 
 from InquirerPy import inquirer
 from tabulate import tabulate
@@ -134,4 +134,38 @@ def paper_num_table(topic: Topic, include_main: bool = True):
         ],
         headers=["Topic", "Num Papers", "Percent of Total"],
         colalign=["left", "right", "right"],
+    )
+
+
+@overload
+def get_parents(
+    topic: Topic, root: Topic, parents: None = None
+) -> list[Topic] | None: ...
+
+
+@overload
+def get_parents(
+    topic: Topic, root: Topic, parents: list[Topic]
+) -> Literal[True] | None: ...
+
+
+def get_parents(topic: Topic, root: Topic, parents: list[Topic] | None = None):
+    is_root = False
+    if parents is None:
+        is_root = True
+        parents = []
+
+    if topic == root:
+        return [] if is_root else True
+
+    if any(get_parents(topic, sub_topic, parents) for sub_topic in root.topics):
+        parents.append(root)
+        return list(reversed(parents)) if is_root else True
+
+
+def topic_breadcrums(topic: Topic, parents: list[Topic]):
+    return (
+        f"{' -> '.join(t.title for t in parents)} -> *{topic.title}*"
+        if parents
+        else topic.title
     )
