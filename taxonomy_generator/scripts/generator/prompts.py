@@ -186,8 +186,8 @@ The LLM didn't classify any papers as fitting into more than one category. Your 
 """
 
     if overlap_num == 1:
-        return """
-The LLM only found one paper that was categorized into more than one category. Your topics are very well-separated (maybe even too separated?).
+        return f"""
+The LLM only found one paper that was categorized into more than one category. Your topics are very well-separated{" (maybe even too separated?)" if overlap_num / eval_result.sample_len < 0.015 else ""}.
 """
 
     return f"""
