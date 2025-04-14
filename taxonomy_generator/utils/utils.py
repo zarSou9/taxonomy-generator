@@ -194,7 +194,7 @@ def switch(var: T, options: Iterable[tuple[T, R]], default: D | None = None):
 
 
 def resolve_all_param(
-    param: T | Iterable[T], idx: int, iter_type: type[Iterable] = list
+    param: T | Sequence[T], idx: int, iter_type: type[Sequence] = list
 ) -> T:
     return (
         (param[idx] if 0 <= idx < len(param) else param[-1])
@@ -203,8 +203,8 @@ def resolve_all_param(
     )
 
 
-def get_resolve_all_param(idx: int, iter_type: type[Iterable] = list):
-    def resolver(param: T | Iterable[T]) -> T:
+def get_resolve_all_param(idx: int, iter_type: type[Sequence] = list):
+    def resolver(param: T | Sequence[T]) -> T:
         return resolve_all_param(param, idx, iter_type)
 
     return resolver

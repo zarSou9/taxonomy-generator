@@ -10,7 +10,7 @@ from taxonomy_generator.scripts.generator.utils import topics_to_json
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.utils import format_perc, safe_lower
 
-corpus = AICorpus(papers_override=[])
+empty_corpus = AICorpus(papers_override=[])
 
 
 def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = False):
@@ -28,7 +28,7 @@ def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = Fals
         SORT_PAPER_SINGLE.format(
             field=safe_lower(topic.title),
             field_cap=topic.title,
-            paper=corpus.get_pretty_paper(paper),
+            paper=empty_corpus.get_pretty_paper(paper),
             topics=topics_to_json(topic.topics),
         )
         for paper in topic.papers
@@ -62,7 +62,7 @@ def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = Fals
 
         if not sub_topic:
             print(
-                f"Unable to parse response for paper:\n---\n{corpus.get_pretty_paper(paper)}\n---\n\nResponse:\n---\n{response}\n---"
+                f"Unable to parse response for paper:\n---\n{empty_corpus.get_pretty_paper(paper)}\n---\n\nResponse:\n---\n{response}\n---"
             )
             continue
 

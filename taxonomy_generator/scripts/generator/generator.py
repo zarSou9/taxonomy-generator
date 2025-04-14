@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 from InquirerPy import inquirer
@@ -13,10 +14,10 @@ from taxonomy_generator.scripts.generator.generator_types import (
 )
 from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
 from taxonomy_generator.scripts.generator.prompts import (
-    INIT_TOPICS,
     SORT_PAPER,
     TOPICS_FEEDBACK,
     TOPICS_FEEDBACK_SYSTEM_PROMPTS,
+    get_init_topics_prompt,
     get_iter_topics_prompt,
 )
 from taxonomy_generator.scripts.generator.sorter import sort_papers
@@ -124,20 +125,11 @@ def process_sort_results(
     return results
 
 
-def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
-    return (
-        scores.feedback_score
-        + ((scores.topics_overview_score or 0) * switch(depth, [(0, 1), (1, 0.5)], 0))
-        + scores.not_placed_score * 3
-        + scores.deviation_score * 0.6
-        + scores.single_score * 1.5
-    )
-
-
 def evaluate_topics(
     topics: list[Topic],
     sample_len: int,
     all_papers: list[TopicPaper],
+    calculate_overall_score: Callable[[EvalScores, int], float],
     depth: int = 0,
     parents: list[Topic] = [],
     buffer_len: int = 50,
@@ -272,6 +264,8 @@ def generate_topics(
     num_iterations: int,
     init_sample_len: int,
     sort_sample_len: int,
+    find_overviews: bool,
+    calculate_overall_score: Callable[[EvalScores, int], float],
     epochs: int,
     seed: int | None,
     auto: bool,
@@ -302,18 +296,19 @@ def generate_topics(
         try:
             for i in range(num_iterations):
                 if i == 0:
-                    prompt = INIT_TOPICS.format(
-                        field=FIELD,
-                        field_cap=cap_words(FIELD),
-                        sample_len=f"{init_sample_len:,}",
-                        corpus_len=f"{len(topic.papers):,}",
-                        sample=corpus.get_pretty_sample(
-                            init_sample_len, seed=epoch_seed
-                        ),
+                    prompt = get_init_topics_prompt(
+                        topic,
+                        init_sample_len,
+                        epoch_seed,
+                        find_overviews,
+                        parents,
                     )
                 else:
                     prompt = get_iter_topics_prompt(
-                        eval_result, first=(i == 1), depth=depth, parents=parents
+                        eval_result,
+                        first=(i == 1),
+                        topic=topic,
+                        depth=depth,
                     )
 
                 topics = resolve_topics(chat.ask(prompt))
@@ -322,6 +317,7 @@ def generate_topics(
                     topics,
                     sort_sample_len,
                     topic.papers,
+                    calculate_overall_score,
                     depth=depth,
                     parents=parents,
                     sample_seed=None if epoch_seed is None else epoch_seed + i,
@@ -367,17 +363,32 @@ def generate_topics(
     )
 
 
+def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
+    return (
+        scores.feedback_score
+        + ((scores.topics_overview_score or 0) * switch(depth, [(0, 1), (1, 0.5)], 0))
+        + scores.not_placed_score * 3
+        + scores.deviation_score * 0.6
+        + scores.single_score * 1.5
+    )
+
+
 @recurse_even
 def generate(
     generate,
-    init_sample_len_all: int | list[int] = [80, 60, 30],
-    sort_sample_len_all: int | list[int] = [400, 250, 100],
-    num_iterations_all: int | list[int] = [10, 8, 3],
+    num_papers_threshold: int | None = None,
+    init_sample_len_all: int | list[int] = [80, 60, 40],
+    sort_sample_len_all: int | list[int] = [400, 200, 80],
+    num_iterations_all: int | list[int] = [10, 8, 5],
     thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
         (3100, 2600),
         2000,
-        1300,
+        1500,
     ],
+    find_overviews_all: bool | list[bool] = [True, True, True, False],
+    calculate_overall_score: Callable[
+        [EvalScores, int], float
+    ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
     seed: int | None | tuple[int | None] = None,
     auto=False,
@@ -385,14 +396,6 @@ def generate(
     topic: Topic | None = None,
     root: Topic | None = None,
 ):
-    resolver = get_resolve_all_param(depth)
-
-    init_sample_len = resolver(init_sample_len_all)
-    sort_sample_len = resolver(sort_sample_len_all)
-    num_iterations = resolver(num_iterations_all)
-    thinking_budget = resolver(thinking_budget_all)
-    epochs = resolver(epochs_all)
-
     if depth == 0:
         topic = (
             Topic.model_validate_json(TREE_PATH.read_text())
@@ -408,6 +411,21 @@ def generate(
         assert topic
         assert root
 
+    if len(topic.papers) < num_papers_threshold:
+        print(
+            f"Topic {topic.title} has less than {num_papers_threshold} papers. Skipping..."
+        )
+        return
+
+    resolver = get_resolve_all_param(depth)
+
+    init_sample_len = resolver(init_sample_len_all)
+    sort_sample_len = resolver(sort_sample_len_all)
+    num_iterations = resolver(num_iterations_all)
+    thinking_budget = resolver(thinking_budget_all)
+    find_overviews = resolver(find_overviews_all)
+    epochs = resolver(epochs_all)
+
     parents = get_parents(topic, root)
 
     if not topic.topics:
@@ -417,6 +435,8 @@ def generate(
             num_iterations=num_iterations,
             init_sample_len=init_sample_len,
             sort_sample_len=sort_sample_len,
+            find_overviews=find_overviews,
+            calculate_overall_score=calculate_overall_score,
             epochs=epochs,
             seed=seed,
             auto=auto,
@@ -460,7 +480,7 @@ def generate(
     yield
 
     print(
-        f"We are now on topic {topic_breadcrumbs(topic, parents)}.\n{paper_num_table(topic)}"
+        f"We are now at {topic_breadcrumbs(topic, parents)}.\n\n{paper_num_table(topic)}"
     )
 
     if (
@@ -474,10 +494,13 @@ def generate(
 
     for sub_topic in topic.topics:
         generate(
+            num_papers_threshold=num_papers_threshold,
             init_sample_len_all=init_sample_len_all,
             sort_sample_len_all=sort_sample_len_all,
             num_iterations_all=num_iterations_all,
             thinking_budget_all=thinking_budget_all,
+            find_overviews_all=find_overviews_all,
+            calculate_overall_score=calculate_overall_score,
             epochs_all=epochs_all,
             seed=seed,
             auto=auto,
@@ -488,4 +511,5 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate(max_depth=3)
+    # Num nodes == {avg branch factor} ^ {max_depth + 1}
+    generate(max_depth=4, num_papers_threshold=20)

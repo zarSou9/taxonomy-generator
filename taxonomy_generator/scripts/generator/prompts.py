@@ -6,42 +6,9 @@ from taxonomy_generator.scripts.generator.generator_types import (
     Topic,
     TopicsFeedback,
 )
+from taxonomy_generator.scripts.generator.utils import topic_breadcrumbs, topics_to_json
 from taxonomy_generator.utils.prompting import fps, prompt
-from taxonomy_generator.utils.utils import format_perc, random_sample
-
-INIT_TOPICS = """
-Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {corpus_len} papers, but to give some context, here are {sample_len} randomly chosen papers from the corpus:
-
----
-{sample}
----
-
-Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus. Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
-
-Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {field} as a whole (i.e., for papers like "{field_cap}: A Comprehensive Overview"). You don't need to consider these general overview papers for your taxonomy.
-
-After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
-
-You should strive for the following attributes:
-- Aim for MECE: Mutually Exclusive, Collectively Exaustive.
-    - Mutually Exclusive: An LLM will be used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
-    - Collectively Exaustive: All papers should fit into at least one topic.
-    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
-- Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
-- Your breakdown should provide a clear mental model of {field} that is valuable to both newcomers and experienced researchers.
-- Strive for topics that likely have existing survey or literature review papers. The evaluation system will reward topics for which it could find at least one associated overview/survey paper.
-
-Please present your topics as a JSON array without any other text or explanation. Example format:
-
-```json
-[
-    {{
-        "title": "Clear and concise title",
-        "description": "~2 sentence description of the topic"
-    }}
-]
-```
-"""
+from taxonomy_generator.utils.utils import format_perc, random_sample, safe_lower
 
 SORT_PAPER = """
 You are categorizing a paper into a taxonomy for {field} related research papers.
@@ -112,7 +79,108 @@ TOPICS_FEEDBACK_SYSTEM_PROMPTS: list[str | None] = [
 
 fps(globals())
 
-corpus = AICorpus(papers_override=[])
+empty_corpus = AICorpus(papers_override=[])
+
+
+@prompt
+def get_init_topics_prompt(
+    topic: Topic,
+    sample_len: int,
+    sample_seed: int,
+    overrview_checks: bool,
+    parents: list[Topic] = [],
+) -> str:
+    if not parents:
+        field = safe_lower(topic.title)
+        low_title = field
+
+        start = f"""
+Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {len(topic.papers):,} papers, but to give some context, here are {sample_len:,} randomly chosen papers from the corpus:
+
+<corpus_sample>
+{empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed))}
+</corpus_sample>
+
+Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus."""
+    else:
+        field = safe_lower(parents[0].title)
+        low_title = safe_lower(topic.title)
+        use_sample = sample_len / topic.papers < 0.8
+
+        parents_str = ""
+        if len(parents) > 1:
+            additional_breakdowns = ""
+            if len(parents) > 2:
+                next_breakdown_strs = [
+                    "And then {} has been broken down as follows:",
+                    *(
+                        ["Now zooming in on {}, here is its breakdown:"]
+                        if len(parents[2:]) >= 3
+                        else []
+                    ),
+                    "And here is the breakdown for {}:",
+                ]
+                for i, parent in enumerate(parents[2:]):
+                    additional_breakdowns += f"""
+{(next_breakdown_strs[i] if i < len(next_breakdown_strs) else next_breakdown_strs[-1]).format(f'"{parent.title}"')}
+
+```json
+{topics_to_json(parent)}
+```
+"""
+
+            parents_str = f"""at {topic_breadcrumbs(topic, parents[1:])}. So for context, here is the full breakdown of "{parents[1].title}":
+
+```json
+{parents[1]}
+```
+
+{additional_breakdowns}
+
+Now, your category of focus ({topic.title})"""
+
+        start = f"""
+You are developing a hierarchical taxonomy for organizing a corpus of {field} related research papers. You've already developed the root breakdown (of {field}) as the following set of categories:
+
+```json
+{topics_to_json(parents[0])}
+```
+
+The category you are currently focused on breaking down further is {parents_str if parents_str else f'"{topic.title}". This category'} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
+
+<papers{"_sample" if use_sample else ""}>
+{empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed) if use_sample else topic.papers)}
+</papers{"_sample" if use_sample else ""}>
+
+Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the "{topic.title}" category."""
+
+    return f"""
+{start} Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
+
+Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {low_title} as a whole. Thus, you don't need to consider these general overview papers for your taxonomy.
+
+After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
+
+You should strive for the following attributes:
+- Aim for MECE: Mutually Exclusive, Collectively Exaustive.
+    - Mutually Exclusive: An LLM will be used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
+    - Collectively Exaustive: All papers should fit into at least one topic.
+    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
+- Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
+- Your breakdown should provide a clear mental model of {low_title} that is valuable to both newcomers and experienced researchers.
+{f"- Strive for topics that likely have existing overview or literature review papers{' (if possible)' if parents else ''}. The evaluation system will reward topics for which it could find at least one associated overview/survey paper." if overrview_checks else ""}
+
+Please present your topics as a JSON array without any other text or explanation. Example format:
+
+```json
+[
+    {{
+        "title": "Clear and concise title",
+        "description": "~2 sentence description of the topic"
+    }}
+]
+```
+"""
 
 
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
@@ -127,7 +195,7 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
 @prompt
 def get_not_placed_str(eval_result: EvalResult) -> str:
     not_placed_num = len(eval_result.not_placed)
-    not_placed_examples = corpus.get_pretty_sample(
+    not_placed_examples = empty_corpus.get_pretty_sample(
         random_sample(eval_result.not_placed, 4, seed=1)
     )
     perc = not_placed_num / eval_result.sample_len
@@ -176,7 +244,9 @@ def get_overlap_str(eval_result: EvalResult, first: bool) -> str:
         )
 
         if len(papers) / overlap_num > 0.09:
-            sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
+            sample_str = empty_corpus.get_pretty_sample(
+                random_sample(papers, 3, seed=1)
+            )
             examples.append(f"## {title}\n\n{sample_str}")
 
     examples_str = "\n\n".join(examples[:4])
@@ -241,7 +311,7 @@ def get_topic_papers_str(eval_result: EvalResult, first: bool) -> str:
         papers = clean_papers if len(clean_papers) >= 3 else papers
         sample = random_sample(papers, 2, seed=1)
         pretty_sample = (
-            corpus.get_pretty_sample(sample)
+            empty_corpus.get_pretty_sample(sample)
             if sample
             else "No papers were categorized into this topic"
         )
@@ -272,12 +342,13 @@ For additional context, here are a couple example papers from each topic:
 
 @prompt
 def get_iter_topics_prompt(
-    eval_result: EvalResult, first: bool, depth: int = 0, parents: list[Topic] = []
+    eval_result: EvalResult, first: bool, topic: Topic, depth: int
 ) -> str:
+    title = "the field" if depth == 0 else f'"{topic.title}"'
     if first:
-        iterative_message = "Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field."
+        iterative_message = f"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing {title}."
     else:
-        iterative_message = "This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down the field."
+        iterative_message = f"This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down {title}."
 
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
