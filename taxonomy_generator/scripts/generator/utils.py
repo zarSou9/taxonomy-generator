@@ -163,7 +163,7 @@ def get_parents(topic: Topic, root: Topic, parents: list[Topic] | None = None):
         return list(reversed(parents)) if is_root else True
 
 
-def topic_breadcrums(topic: Topic, parents: list[Topic]):
+def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
     return (
         f"{' -> '.join(t.title for t in parents)} -> *{topic.title}*"
         if parents

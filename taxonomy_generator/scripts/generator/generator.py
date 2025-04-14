@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import Generator
 
 from InquirerPy import inquirer
 
@@ -30,7 +29,7 @@ from taxonomy_generator.scripts.generator.utils import (
     resolve_topic_papers,
     resolve_topics,
     select_topics,
-    topic_breadcrums,
+    topic_breadcrumbs,
     topics_to_json,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
@@ -46,6 +45,7 @@ from taxonomy_generator.utils.utils import (
     get_resolve_all_param,
     plot_list,
     random_sample,
+    recurse_even,
     resolve_all_param,
     switch,
     unique_str,
@@ -343,7 +343,9 @@ def generate_topics(
     )
 
 
+@recurse_even
 def generate(
+    generate,
     init_sample_len_all: int | list[int] = [80, 60, 30],
     sort_sample_len_all: int | list[int] = [400, 250, 100],
     num_iterations_all: int | list[int] = [10, 8, 3],
@@ -434,7 +436,7 @@ def generate(
     yield
 
     print(
-        f"We are now on topic {topic_breadcrums(topic, parents)}.\n{paper_num_table(topic)}"
+        f"We are now on topic {topic_breadcrumbs(topic, parents)}.\n{paper_num_table(topic)}"
     )
 
     if (
@@ -446,30 +448,14 @@ def generate(
     ):
         return
 
-    generators: list[Generator] = []
     for sub_topic in topic.topics:
-        generators.append(
-            generate(
-                root=topic,
-                topic=sub_topic,
-                auto=auto,
-                depth=depth + 1,
-            )
+        generate(
+            root=topic,
+            topic=sub_topic,
+            auto=auto,
+            depth=depth + 1,
         )
-        next(generators[-1], None)
-
-    print(
-        f"All sub-topics under {topic_breadcrums(topic, parents)} have completed generation"
-    )
-
-    for generator in generators:
-        next(generator, None)
-
-
-def run_generater(generator: Generator):
-    next(generator, None)
-    next(generator, None)
 
 
 if __name__ == "__main__":
-    run_generater(generate())
+    generate()
