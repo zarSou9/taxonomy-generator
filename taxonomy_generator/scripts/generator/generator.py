@@ -139,6 +139,7 @@ def evaluate_topics(
     sample_len: int,
     all_papers: list[TopicPaper],
     depth: int = 0,
+    parents: list[Topic] = [],
     buffer_len: int = 50,
     sample_seed: int | None = None,
     no_feedback=False,
@@ -311,7 +312,9 @@ def generate_topics(
                         ),
                     )
                 else:
-                    prompt = get_iter_topics_prompt(eval_result, first=(i == 1))
+                    prompt = get_iter_topics_prompt(
+                        eval_result, first=(i == 1), depth=depth, parents=parents
+                    )
 
                 topics = resolve_topics(chat.ask(prompt))
 
@@ -319,6 +322,8 @@ def generate_topics(
                     topics,
                     sort_sample_len,
                     topic.papers,
+                    depth=depth,
+                    parents=parents,
                     sample_seed=None if epoch_seed is None else epoch_seed + i,
                 )
 

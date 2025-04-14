@@ -3,6 +3,7 @@ from tabulate import tabulate
 from taxonomy_generator.corpus.ai_corpus import AICorpus
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
+    Topic,
     TopicsFeedback,
 )
 from taxonomy_generator.utils.prompting import fps, prompt
@@ -270,7 +271,9 @@ For additional context, here are a couple example papers from each topic:
 
 
 @prompt
-def get_iter_topics_prompt(eval_result: EvalResult, first: bool) -> str:
+def get_iter_topics_prompt(
+    eval_result: EvalResult, first: bool, depth: int = 0, parents: list[Topic] = []
+) -> str:
     if first:
         iterative_message = "Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing the field."
     else:
