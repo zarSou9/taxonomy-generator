@@ -43,6 +43,7 @@ from taxonomy_generator.utils.utils import (
     cap_words,
     get_avg_deviation,
     get_resolve_all_param,
+    join_items_english,
     plot_list,
     random_sample,
     recurse_even,
@@ -137,6 +138,7 @@ def evaluate_topics(
     topics: list[Topic],
     sample_len: int,
     all_papers: list[TopicPaper],
+    depth: int = 0,
     buffer_len: int = 50,
     sample_seed: int | None = None,
     no_feedback=False,
@@ -145,6 +147,8 @@ def evaluate_topics(
     sample = random_sample(all_papers, sample_len + buffer_len, sample_seed)
 
     sort_results = process_sort_results(topics, sample, sample_len)
+
+    invalid_reasons = []
 
     topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topics}
     overlap_topics_papers: dict[frozenset[str], list[TopicPaper]] = {}
@@ -169,6 +173,14 @@ def evaluate_topics(
                 overlap_topics_papers[chosen_topics] = [paper]
         else:
             single_papers.append(paper)
+
+    no_papers_topics = [
+        f'"{title}"' for title, papers in topic_papers.items() if not papers
+    ]
+    if no_papers_topics:
+        invalid_reasons.append(
+            f"No papers sorted into {join_items_english(no_papers_topics)}"
+        )
 
     # Overview Papers
     overview_papers = {
@@ -235,7 +247,7 @@ def evaluate_topics(
         single_score=single_score,
     )
 
-    overall_score = calculate_overall_score(scores)
+    overall_score = calculate_overall_score(scores, depth)
 
     return EvalResult(
         all_scores=scores,
@@ -248,12 +260,14 @@ def evaluate_topics(
         overlap_papers=overlap_papers,
         sample_len=len(sort_results),
         overview_papers=overview_papers,
+        invalid=bool(invalid_reasons),
+        invalid_reason=" * ".join(invalid_reasons),
     )
 
 
 def generate_topics(
     topic: Topic,
-    root: Topic,
+    parents: list[Topic] | None,
     num_iterations: int,
     init_sample_len: int,
     sort_sample_len: int,
@@ -313,9 +327,14 @@ def generate_topics(
                     f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}"
                 )
                 print(f"Overall Score: {eval_result.overall_score}")
+                if eval_result.invalid:
+                    print(
+                        f"This taxonomy is invalid{f': {eval_result.invalid_reason}' if eval_result.invalid_reason else ''}"
+                    )
                 print("--------------------------------")
 
-                results.append((topics, eval_result))
+                if not eval_result.invalid:
+                    results.append((topics, eval_result))
         finally:
             if results:
                 results_data = get_results_data(results)
@@ -389,7 +408,7 @@ def generate(
     if not topic.topics:
         topic.topics = generate_topics(
             topic=topic,
-            root=root,
+            parents=parents,
             num_iterations=num_iterations,
             init_sample_len=init_sample_len,
             sort_sample_len=sort_sample_len,
@@ -450,12 +469,18 @@ def generate(
 
     for sub_topic in topic.topics:
         generate(
-            root=topic,
-            topic=sub_topic,
+            init_sample_len_all=init_sample_len_all,
+            sort_sample_len_all=sort_sample_len_all,
+            num_iterations_all=num_iterations_all,
+            thinking_budget_all=thinking_budget_all,
+            epochs_all=epochs_all,
+            seed=seed,
             auto=auto,
             depth=depth + 1,
+            topic=sub_topic,
+            root=root,
         )
 
 
 if __name__ == "__main__":
-    generate()
+    generate(max_depth=3)

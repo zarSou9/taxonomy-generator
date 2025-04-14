@@ -47,3 +47,5 @@ class EvalResult(BaseModel):
     overlap_papers: list[TopicPaper]
     sample_len: int
     overview_papers: dict[str, list[Paper]]
+    invalid: bool = False
+    invalid_reason: str = ""

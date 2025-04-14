@@ -3,17 +3,6 @@ import re
 from typing import Any
 
 
-def join_items_english(items: list[str]) -> str:
-    meta_str = ""
-    for i in range(len(items) - 1):
-        if i < len(items) - 2:
-            meta_str += items[i] + ", "
-        else:
-            meta_str += items[i] + " and "
-
-    return meta_str + items[-1]
-
-
 def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
     prompt = prompt.strip()
 

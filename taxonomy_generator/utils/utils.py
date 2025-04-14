@@ -23,20 +23,20 @@ class Recursor(BaseModel):
 
 
 def recurse_even(func: Callable[P, GR]):
-    def wrapper(*args: P.args, max_depth: int = 3, **kwargs: P.kwargs):
+    def wrapper(max_depth: int = 3, *args: P.args, **kwargs: P.kwargs):
         recursors: list[Recursor] = []
 
         def call_child(
-            current_depth: int, *child_args: P.args, **child_kwargs: P.kwargs
+            _current_depth: int, *child_args: P.args, **child_kwargs: P.kwargs
         ):
             def this_call_child(*args: P.args, **kwargs: P.kwargs):
-                call_child(current_depth + 1, *args, **kwargs)
+                call_child(_current_depth + 1, *args, **kwargs)
 
             generator = func(this_call_child, *child_args, **child_kwargs)
             recursors.append(
                 Recursor(
                     gen=generator,
-                    depth=current_depth,
+                    depth=_current_depth,
                     complete=next(generator, -1) == -1,
                 )
             )
@@ -210,5 +210,12 @@ def get_resolve_all_param(idx: int, iter_type: type[Iterable] = list):
     return resolver
 
 
-def takes_list(lst: list):
-    return 23
+def join_items_english(items: list[str]) -> str:
+    meta_str = ""
+    for i in range(len(items) - 1):
+        if i < len(items) - 2:
+            meta_str += items[i] + ", "
+        else:
+            meta_str += items[i] + " and "
+
+    return meta_str + items[-1]
