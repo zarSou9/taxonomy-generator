@@ -385,7 +385,7 @@ def generate(
         2000,
         1500,
     ],
-    find_overviews_all: bool | list[bool] = [True, True, True, False],
+    find_overviews_all: bool | list[bool] = [True, True, False],
     calculate_overall_score: Callable[
         [EvalScores, int], float
     ] = calculate_overall_score,

@@ -169,3 +169,7 @@ def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
         if parents
         else topic.title
     )
+
+
+def list_titles(topics: list[Topic]):
+    return "\n".join(f"- {topic.title}" for topic in topics)

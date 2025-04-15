@@ -4,48 +4,16 @@ from taxonomy_generator.corpus.ai_corpus import AICorpus
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     Topic,
+    TopicPaper,
     TopicsFeedback,
 )
-from taxonomy_generator.scripts.generator.utils import topic_breadcrumbs, topics_to_json
+from taxonomy_generator.scripts.generator.utils import (
+    list_titles,
+    topic_breadcrumbs,
+    topics_to_json,
+)
 from taxonomy_generator.utils.prompting import fps, prompt
 from taxonomy_generator.utils.utils import format_perc, random_sample, safe_lower
-
-SORT_PAPER = """
-You are categorizing a paper into a taxonomy for {field} related research papers.
-
-PAPER:
----
-{paper}
----
-
-AVAILABLE CATEGORIES:
-```json
-{topics}
-```
-
-If, however, this paper is a broad overview or survey of {field} as a whole, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
-
-Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
-"""
-
-SORT_PAPER_SINGLE = """
-You are categorizing a paper into a taxonomy for {field} related research papers.
-
-PAPER:
----
-{paper}
----
-
-AVAILABLE CATEGORIES:
-```json
-{topics}
-```
-
-If, however, this paper is a broad overview or survey of {field} as a whole, categorize it as "{field_cap} Overview/Survey" instead of the categories above.
-
-Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If this is an overview or survey paper of {field} as a whole, respond with "{field_cap} Overview/Survey". If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
-"""
-
 
 TOPICS_FEEDBACK = """
 Given the following topic breakdown for organizing {field} research papers:
@@ -92,7 +60,7 @@ def get_init_topics_prompt(
 ) -> str:
     if not parents:
         field = safe_lower(topic.title)
-        low_title = field
+        title = field
 
         start = f"""
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {len(topic.papers):,} papers, but to give some context, here are {sample_len:,} randomly chosen papers from the corpus:
@@ -104,7 +72,7 @@ Your task is to develop a taxonomy for categorizing a corpus of {field} related 
 Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus."""
     else:
         field = safe_lower(parents[0].title)
-        low_title = safe_lower(topic.title)
+        title = topic.title
         use_sample = sample_len / topic.papers < 0.8
 
         parents_str = ""
@@ -118,46 +86,40 @@ Specifically, your job is to develop a list of sub-topics under {field} to effec
                         if len(parents[2:]) >= 3
                         else []
                     ),
-                    "And here is the breakdown for {}:",
+                    "And here's the breakdown for {}:",
                 ]
                 for i, parent in enumerate(parents[2:]):
                     additional_breakdowns += f"""
 {(next_breakdown_strs[i] if i < len(next_breakdown_strs) else next_breakdown_strs[-1]).format(f'"{parent.title}"')}
 
-```json
-{topics_to_json(parent)}
-```
+{list_titles(parent.topics)}
 """
 
-            parents_str = f"""at {topic_breadcrumbs(topic, parents[1:])}. So for context, here is the full breakdown of "{parents[1].title}":
+            parents_str = f"""at {topic_breadcrumbs(topic, parents[1:])}. So for additionaly context, here are all the categories under {parents[1].title}:
 
-```json
-{parents[1]}
-```
+{list_titles(parents[1].topics)}
 
 {additional_breakdowns}
 
-Now, your category of focus ({topic.title})"""
+Now, your category of focus, {topic.title},"""
 
         start = f"""
-You are developing a hierarchical taxonomy for organizing a corpus of {field} related research papers. You've already developed the root breakdown (of {field}) as the following set of categories:
+You are developing a hierarchical taxonomy for organizing a corpus of {field} related research papers. You've already developed the root breakdown (of {field}). Here's the set of categories comprising this breakdown (titles only):
 
-```json
-{topics_to_json(parents[0])}
-```
+{list_titles(parents[0].topics)}
 
-The category you are currently focused on breaking down further is {parents_str if parents_str else f'"{topic.title}". This category'} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
+The category you're currently focused on breaking down further is {parents_str if parents_str else f"{topic.title}. This category"} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
 
 <papers{"_sample" if use_sample else ""}>
 {empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed) if use_sample else topic.papers)}
 </papers{"_sample" if use_sample else ""}>
 
-Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the "{topic.title}" category."""
+Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the {title} category."""
 
     return f"""
 {start} Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
 
-Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {low_title} as a whole. Thus, you don't need to consider these general overview papers for your taxonomy.
+Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {title} as a whole. Thus, you don't need to consider these general overview papers for your taxonomy.
 
 After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
 
@@ -167,7 +129,7 @@ You should strive for the following attributes:
     - Collectively Exaustive: All papers should fit into at least one topic.
     - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
 - Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
-- Your breakdown should provide a clear mental model of {low_title} that is valuable to both newcomers and experienced researchers.
+- Your breakdown should provide a clear mental model of {title} that is valuable to both newcomers and experienced researchers.
 {f"- Strive for topics that likely have existing overview or literature review papers{' (if possible)' if parents else ''}. The evaluation system will reward topics for which it could find at least one associated overview/survey paper." if overrview_checks else ""}
 
 Please present your topics as a JSON array without any other text or explanation. Example format:
@@ -180,6 +142,50 @@ Please present your topics as a JSON array without any other text or explanation
     }}
 ]
 ```
+"""
+
+
+def get_sort_prompt(
+    topic: Topic,
+    paper: TopicPaper,
+    topics: list[Topic],
+    multiple: bool,
+    parents: list[Topic] = [],
+) -> str:
+    root_topic = parents[0] if parents else topic
+
+    field = safe_lower(root_topic.title)
+    title = field if parents else topic.title
+
+    start = f"""
+You are categorizing a paper into a{" hierarchical" if parents else ""} taxonomy for{" organizing" if parents else ""} {field} related research papers.
+
+{f'The paper below is specifically under the topic {topic.title}{f", which can be found at {topic_breadcrumbs(topic, parents)}" if len(parents) > 1 else ""}. {topic.title} is defined as "{topic.description}" This topic has been broken down into the included list of categories.' if parents else ""}
+
+PAPER:
+---
+{empty_corpus.get_pretty_paper(paper)}
+---
+
+AVAILABLE CATEGORIES:
+```json
+{topics_to_json(topics)}
+```
+
+If, however, this paper is {"an" if parents else "a broad"} overview or survey of{" specifically" if parents else ""} {title} as a whole, categorize it as "{topic.title} Overview/Survey" instead of the categories above.
+"""
+
+    if multiple:
+        return f"""
+{start}
+
+Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
+"""
+    else:
+        return f"""
+{start}
+
+Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
 """
 
 
