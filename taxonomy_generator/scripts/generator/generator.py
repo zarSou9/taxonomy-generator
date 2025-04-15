@@ -89,6 +89,7 @@ def process_sort_results(
 
         for paper, response in zip(this_sample, responses):
             if not response:
+                print(f"No response for paper: {paper.title}")
                 continue
 
             try:
@@ -106,6 +107,7 @@ def process_sort_results(
                 continue
 
             if not all(resolve_topic(t, topics) for t in chosen_topics):
+                print(f"Invalid topic(s) for paper: {paper.title} - {chosen_topics}")
                 continue
 
             chosen_topics = frozenset(
@@ -174,7 +176,11 @@ def evaluate_topics(
 
     # Overview Papers
     overview_papers = {
-        t.title: ([] if no_overviews else find_overview_papers(t, parents + [topic]))
+        t.title: (
+            []
+            if no_overviews
+            else find_overview_papers(t, parents + [topic], add_to_corpus=True)
+        )
         for t in topics
     }
 
@@ -263,13 +269,14 @@ def generate_topics(
     find_overviews: bool,
     calculate_overall_score: Callable[[EvalScores, int], float],
     epochs: int,
-    seed: int | None,
+    seed: int | None | tuple[int | None],
     auto: bool,
     depth: int,
     thinking_budget: int | tuple[int],
 ):
     BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-    results_file = BREAKDOWN_RESULTS / f"{topic.title}_{unique_str()}.json"
+    cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{(f'_{seed if isinstance(seed, int) else "_".join(str(s) for s in seed if s is not None)}') if seed is not None else ''}"
+    results_file = BREAKDOWN_RESULTS / f"{cache_name}.json"
 
     results: list[tuple[list[Topic], EvalResult]] = []
     results_data: list[Result] = []
@@ -280,7 +287,7 @@ def generate_topics(
         epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
         chat = Chat(
-            cache_file_name=f"{topic.title}_{unique_str()}",
+            cache_file_name=f"{cache_name}_{epoch}",
             use_cache=True,
             use_thinking=True,
             verbose=True,
@@ -305,6 +312,7 @@ def generate_topics(
                         first=(i == 1),
                         topic=topic,
                         depth=depth,
+                        no_overviews=not find_overviews,
                     )
 
                 topics = resolve_topics(chat.ask(prompt))
@@ -318,6 +326,7 @@ def generate_topics(
                     depth=depth,
                     parents=parents,
                     sample_seed=None if epoch_seed is None else epoch_seed + i,
+                    no_overviews=not find_overviews,
                 )
 
                 print("--------------------------------")
@@ -387,7 +396,7 @@ def generate(
         [EvalScores, int], float
     ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
-    seed: int | None | tuple[int | None] = None,
+    seed: int | None | tuple[int | None] = 11,
     auto=False,
     depth: int = 0,
     topic: Topic | None = None,
@@ -408,11 +417,7 @@ def generate(
         assert topic
         assert root
 
-    if len(topic.papers) < num_papers_threshold:
-        print(
-            f"Topic {topic.title} has less than {num_papers_threshold} papers. Skipping..."
-        )
-        return
+    parents = get_parents(topic, root)
 
     resolver = get_resolve_all_param(depth)
 
@@ -423,7 +428,11 @@ def generate(
     find_overviews = resolver(find_overviews_all)
     epochs = resolver(epochs_all)
 
-    parents = get_parents(topic, root)
+    print(f"\nNow handling {topic_breadcrumbs(topic, parents)}\n")
+
+    if len(topic.papers) < num_papers_threshold:
+        print(f"This topic has less than {num_papers_threshold} papers. Skipping...")
+        return
 
     if not topic.topics:
         topic.topics = generate_topics(
@@ -456,7 +465,7 @@ def generate(
         sort_flag = not already_sorted
     elif already_sorted:
         print(
-            f"It looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
+            f"\nIt looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
         )
         sort_flag = inquirer.confirm(
             f"Would you still like to sort the {len(topic.papers):,} papers under the {topic.title} topic?",
@@ -477,7 +486,7 @@ def generate(
     yield
 
     print(
-        f"We are now at {topic_breadcrumbs(topic, parents)}.\n\n{paper_num_table(topic)}"
+        f"\nWe are now at {topic_breadcrumbs(topic, parents)}.\n\n{paper_num_table(topic)}\n"
     )
 
     if (

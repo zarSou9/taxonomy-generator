@@ -27,7 +27,9 @@ def get_exa_query(topic: Topic, parents: list[Topic]):
     return f"This research paper provides a comprehensive overview of {topic.title} in the context of {get_parents_context(parents)}. The paper covers: {description}. It's published on ArXiv here: "
 
 
-def find_overview_papers(topic: Topic, parents: list[Topic]) -> list[Paper]:
+def find_overview_papers(
+    topic: Topic, parents: list[Topic], add_to_corpus=False
+) -> list[Paper]:
     papers = fetch_papers_by_id(search_arxs(get_exa_query(topic, parents)))
 
     responses = run_in_parallel(
@@ -41,6 +43,7 @@ def find_overview_papers(topic: Topic, parents: list[Topic]) -> list[Paper]:
         paper for paper, response in zip(papers, responses) if "yes" in response.lower()
     ]
 
-    corpus.add_papers(overview_papers, verbose=1, assume_safe_papers=True)
+    if add_to_corpus:
+        corpus.add_papers(overview_papers, verbose=1, assume_safe_papers=True)
 
     return overview_papers

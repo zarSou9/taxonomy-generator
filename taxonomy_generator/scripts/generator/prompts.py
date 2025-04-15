@@ -41,7 +41,7 @@ Specifically, your job is to develop a list of sub-topics under {field} to effec
     else:
         field = safe_lower(parents[0].title)
         title = topic.title
-        use_sample = sample_len / topic.papers < 0.8
+        use_sample = sample_len / len(topic.papers) < 0.8
 
         parents_str = ""
         if len(parents) > 1:
@@ -95,7 +95,7 @@ You should strive for the following attributes:
 - Aim for MECE: Mutually Exclusive, Collectively Exaustive.
     - Mutually Exclusive: An LLM will be used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
     - Collectively Exaustive: All papers should fit into at least one topic.
-    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there are probably a few papers which shouldn't even be in the corpus.
+    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there {f"might be a couple papers which shouldn't even be under {title}" if parents else "are probably a few papers which shouldn't even be in the corpus"}.
 - Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
 - Your breakdown should provide a clear mental model of {title} that is valuable to both newcomers and experienced researchers.
 {f"- Strive for topics that likely have existing overview or literature review papers{' (if possible)' if parents else ''}. The evaluation system will reward topics for which it could find at least one associated overview/survey paper." if overrview_checks else ""}
@@ -113,6 +113,7 @@ Please present your topics as a JSON array without any other text or explanation
 """
 
 
+@prompt
 def get_sort_prompt(
     topic: Topic,
     paper: TopicPaper,
@@ -123,12 +124,12 @@ def get_sort_prompt(
     root_topic = parents[0] if parents else topic
 
     field = safe_lower(root_topic.title)
-    title = field if parents else topic.title
+    title = topic.title if parents else field
 
     start = f"""
 You are categorizing a paper into a{" hierarchical" if parents else ""} taxonomy for{" organizing" if parents else ""} {field} related research papers.
 
-{f'The paper below is specifically under the topic {topic.title}{f", which can be found at {topic_breadcrumbs(topic, parents)}" if len(parents) > 1 else ""}. {topic.title} is defined as "{topic.description}" This topic has been broken down into the included list of categories.' if parents else ""}
+{f'The paper is specifically under the topic {topic.title}{f", which can be found at {topic_breadcrumbs(topic, parents)}" if len(parents) > 1 else ""}. {topic.title} is defined as "{topic.description}" This topic has been broken down into the included list of categories, which you will use to categorize the paper further.' if parents else ""}
 
 PAPER:
 ---
@@ -157,6 +158,7 @@ Please identify which single category this paper belongs to. Respond with only t
 """
 
 
+@prompt
 def get_topics_feedback_prompt(topics: list[Topic], parents: list[Topic] = []) -> str:
     field = safe_lower(parents[0].title)
 
@@ -188,7 +190,7 @@ After providing feedback, please rate the overall usefulness of this taxonomy fr
 """
     else:
         return f"""
-You are reviewing part of a hierarchical taxonomy for organizing research papers related to {field}. Specifically you're reviewing a proposed breakdown of {f"{parents[-1]}, which is directly under {field}" if len(parents) == 2 else f"the {parents[-1]} topic, which can be found at {topic_breadcrumbs(parents[-1], parents[:-1])}"} in the taxonomy. Here's the proposed breakdown:
+You are reviewing part of a hierarchical taxonomy for organizing research papers related to {field}. Specifically you're reviewing a proposed breakdown of {f"{parents[-1].title}, which is directly under {field}" if len(parents) == 2 else f"the {parents[-1].title} topic, which can be found at {topic_breadcrumbs(parents[-1], parents[:-1])}"} in the taxonomy. Here's the proposed breakdown:
 
 ```json
 {topics_to_json(topics)}
@@ -197,7 +199,7 @@ You are reviewing part of a hierarchical taxonomy for organizing research papers
 Please provide your feedback on:
 - Do you feel you understand each of the categories? Are the descriptions clear?
 - Does it make sense conceptually? Is anything contradictory?
-- Does it satisfyingly capture the kinds of papers you'd expect to find under {field}?
+- Does it satisfyingly capture the kinds of papers you'd expect to find under {parents[-1].title}?
 - Do the categories seem sufficiently distinct with minimal overlap?
 
 Instead of offering suggestions for improvement, focus more on your experience: what you found helpful or unhelpful, clear or unclear, and why.
@@ -376,9 +378,9 @@ For additional context, here are a couple example papers from each topic:
 
 @prompt
 def get_iter_topics_prompt(
-    eval_result: EvalResult, first: bool, topic: Topic, depth: int
+    eval_result: EvalResult, first: bool, topic: Topic, depth: int, no_overviews=False
 ) -> str:
-    title = "the field" if depth == 0 else f'"{topic.title}"'
+    title = "the field" if depth == 0 else topic.title
     if first:
         iterative_message = f"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing {title}."
     else:
@@ -387,7 +389,7 @@ def get_iter_topics_prompt(
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 
-A random sample of {eval_result.sample_len} papers from the corpus were categorized by an LLM.
+{f"A random sample of {eval_result.sample_len:,} papers from the {'corpus' if depth == 0 else 'full list of papers'}" if eval_result.sample_len < len(topic.papers) else f"All {eval_result.sample_len:,} papers"} were categorized by an LLM.
 
 Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_papers) / eval_result.sample_len)}) papers were cleanly categorized into one category.
 
@@ -397,7 +399,7 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 
 {get_topic_papers_str(eval_result, first)}
 
-{get_overview_results_str(eval_result, first)}
+{"" if no_overviews else get_overview_results_str(eval_result, first)}
 
 {f"In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:" if first else "Here are the LLM-generated feedback results:"}
 

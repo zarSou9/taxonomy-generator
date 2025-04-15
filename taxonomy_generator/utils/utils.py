@@ -157,8 +157,11 @@ def get_avg_deviation(nums: list[int]) -> float:
     return mean_deviation / mean
 
 
-def unique_str() -> str:
-    return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
+def unique_str(only_date: bool = False) -> str:
+    if only_date:
+        return time.strftime("%Y-%m-%d")
+    else:
+        return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
 
 
 def plot_list(arr: list[float], title="Results"):
