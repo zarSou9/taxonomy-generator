@@ -58,7 +58,7 @@ TREE_PATH = Path("data/tree.json")
 BREAKDOWN_RESULTS = Path("data/breakdown_results")
 
 
-@cache()
+@cache(max_size=5)
 def process_sort_results(
     topic: Topic,
     topics: list[Topic],
@@ -100,7 +100,9 @@ def process_sort_results(
                 print(f"Error parsing response: {response}")
                 continue
 
-            if f"{FIELD} Overview/Survey".lower() in (t.lower() for t in chosen_topics):
+            if f"{topic.title} Overview/Survey".lower() in (
+                t.lower() for t in chosen_topics
+            ):
                 print(
                     f"Paper sorted as overview/survey:\n\n---\n{corpus.get_pretty_paper(paper)}\n---\n"
                 )
@@ -278,25 +280,40 @@ def generate_topics(
     cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{(f'_{seed if isinstance(seed, int) else "_".join(str(s) for s in seed if s is not None)}') if seed is not None else ''}"
     results_file = BREAKDOWN_RESULTS / f"{cache_name}.json"
 
-    results: list[tuple[list[Topic], EvalResult]] = []
-    results_data: list[Result] = []
+    cached_results: list[Result] = []
+    gen_results: list[Result] = []
+    generate_flag = True
 
-    for epoch in range(epochs):
-        epoch_seed = resolve_all_param(seed, epoch, tuple)
-        epoch_seed = epoch_seed and epoch_seed + depth
-        epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
-
-        chat = Chat(
-            cache_file_name=f"{cache_name}_{epoch}",
-            use_cache=True,
-            use_thinking=True,
-            verbose=True,
-            thinking_budget=epoch_thinking_budget,
-        )
-        eval_result: EvalResult | None = None
-        topics: list[Topic] | None = None
-
+    if results_file.exists():
         try:
+            cached_results = json.loads(results_file.read_text())
+        except json.JSONDecodeError:
+            print(f"Error parsing cached results file for {topic.title}")
+
+        if cached_results and not auto:
+            generate_flag = inquirer.confirm(
+                f"{len(cached_results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
+                default=False,
+            ).execute()
+
+    if generate_flag:
+        results: list[tuple[list[Topic], EvalResult]] = []
+
+        for epoch in range(epochs):
+            epoch_seed = resolve_all_param(seed, epoch, tuple)
+            epoch_seed = epoch_seed and epoch_seed + depth
+            epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
+
+            chat = Chat(
+                cache_file_name=f"{cache_name}_{epoch}",
+                use_cache=True,
+                use_thinking=True,
+                verbose=True,
+                thinking_budget=epoch_thinking_budget,
+            )
+            eval_result: EvalResult | None = None
+            topics: list[Topic] | None = None
+
             for i in range(num_iterations):
                 if i == 0:
                     prompt = get_init_topics_prompt(
@@ -342,31 +359,39 @@ def generate_topics(
 
                 if not eval_result.invalid:
                     results.append((topics, eval_result))
-        finally:
-            if results:
-                results_data = get_results_data(results)
 
-                results_file.write_text(
-                    json.dumps(results_data, indent=2, ensure_ascii=False)
-                )
+                    gen_results = get_results_data(results)
 
-                print("--------------------------------")
-                print(f"Epoch {epoch + 1} of {epochs} complete")
-                print(f"Results saved to {results_file}")
-                print("--------------------------------")
+                    results_file.write_text(
+                        json.dumps(
+                            cached_results + gen_results, indent=2, ensure_ascii=False
+                        )
+                    )
 
-                if not auto:
-                    plot_list([eval_result.overall_score for _, eval_result in results])
+                    print("--------------------------------")
+                    print(f"Iteration {i + 1} of {num_iterations} complete")
+                    print(f"Results saved to {results_file}")
+                    print("--------------------------------")
 
-    if not results_data:
-        print("No results generated")
-        return []
+            print("--------------------------------")
+            print(f"Epoch {epoch + 1} of {epochs} complete")
+            print(f"Results saved to {results_file}")
+            print("--------------------------------")
 
-    return (
-        max(results, key=lambda r: r[1].overall_score)[0]
-        if auto
-        else select_topics(results_data)
-    )
+            if not auto:
+                plot_list([eval_result.overall_score for _, eval_result in results])
+
+    all_results = cached_results + gen_results
+    assert all_results
+
+    return [
+        Topic(**t)
+        for t in (
+            max(all_results, key=lambda r: r["overall_score"])["topics"]
+            if auto
+            else select_topics(all_results)
+        )
+    ]
 
 
 def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
@@ -385,11 +410,11 @@ def generate(
     num_papers_threshold: int | None = None,
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
-    num_iterations_all: int | list[int] = [10, 8, 5],
+    num_iterations_all: int | list[int] = [10, 8, 6],
     thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
         (3100, 2600),
         2000,
-        1500,
+        1700,
     ],
     find_overviews_all: bool | list[bool] = [True, True, False],
     calculate_overall_score: Callable[

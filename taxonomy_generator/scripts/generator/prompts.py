@@ -58,7 +58,7 @@ Specifically, your job is to develop a list of sub-topics under {field} to effec
                 ]
                 for i, parent in enumerate(parents[2:]):
                     additional_breakdowns += f"""
-{(next_breakdown_strs[i] if i < len(next_breakdown_strs) else next_breakdown_strs[-1]).format(f'"{parent.title}"')}
+{(next_breakdown_strs[i] if i < len(next_breakdown_strs) else next_breakdown_strs[-1]).format(parent.title)}
 
 {list_titles(parent.topics)}
 """

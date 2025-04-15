@@ -167,18 +167,14 @@ def unique_str(only_date: bool = False) -> str:
 def plot_list(arr: list[float], title="Results"):
     x = [i for i in range(1, len(arr) + 1)]
 
-    # Create the plot
-    plt.plot(x, arr, marker="o")  # Added marker='o' to show dots at each point
+    plt.plot(x, arr, marker="o")  # marker='o' for dots
 
-    # Add labels and title
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
     plt.title(title)
 
-    # Set x-axis ticks at each data point
     plt.xticks(x)
 
-    # Display the plot
     plt.show()
 
 

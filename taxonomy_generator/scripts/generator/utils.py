@@ -85,7 +85,7 @@ def display_top_results(
     return end
 
 
-def select_topics(results_data: list[Result]) -> list[Topic]:
+def select_topics(results_data: list[Result]) -> list[TopicDict]:
     displayed_count = display_top_results(results_data)
 
     while True:
@@ -105,7 +105,7 @@ def select_topics(results_data: list[Result]) -> list[Topic]:
         if selection == "more":
             displayed_count = display_top_results(results_data, start=displayed_count)
         else:
-            return [Topic(**t) for t in results_data[selection]["topics"]]
+            return results_data[selection]["topics"]
 
 
 def paper_num_table(topic: Topic, include_main: bool = True):
