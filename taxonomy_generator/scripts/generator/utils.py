@@ -1,4 +1,6 @@
 import json
+from collections.abc import Callable
+from pathlib import Path
 from typing import Literal, TypedDict, overload
 
 from InquirerPy import inquirer
@@ -7,6 +9,7 @@ from tabulate import tabulate
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
+    EvalScores,
     Topic,
     TopicPaper,
 )
@@ -41,6 +44,31 @@ def get_results_data(results: list[tuple[list[Topic], EvalResult]]) -> list[Resu
         }
         for topics, eval_result in sorted_results
     ]
+
+
+def recalculate_scores(
+    results: list[Result],
+    calculate_overall_score: Callable[[EvalScores, int], float],
+    depth: int = 0,
+) -> list[Result]:
+    for result in results:
+        result["overall_score"] = calculate_overall_score(
+            EvalScores.model_validate(result["scores"]), depth
+        )
+
+    return sorted(results, key=lambda r: r["overall_score"], reverse=True)
+
+
+def recalculate_scores_file(
+    file: str,
+    calculate_overall_score: Callable[[EvalScores, int], float],
+    depth: int = 0,
+):
+    results = json.loads(Path(file).read_text())
+
+    results = recalculate_scores(results, calculate_overall_score, depth)
+
+    Path(file).write_text(json.dumps(results, indent=2, ensure_ascii=False))
 
 
 def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:

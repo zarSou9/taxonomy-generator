@@ -24,6 +24,7 @@ def get_init_topics_prompt(
     sample_len: int,
     sample_seed: int,
     overrview_checks: bool,
+    topics_len_bounds: tuple[int, int],
     parents: list[Topic] = [],
 ) -> str:
     if not parents:
@@ -85,7 +86,7 @@ The category you're currently focused on breaking down further is {parents_str i
 Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the {title} category."""
 
     return f"""
-{start} Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
+{start} Your breakdown may have anywhere from {topics_len_bounds[0]} to {topics_len_bounds[1]} topics with each topic defined by a title and brief description.
 
 Note: By default, there will already be a special category for papers that provide a broad overview or literature review of {title} as a whole. Thus, you don't need to consider these general overview papers for your taxonomy.
 

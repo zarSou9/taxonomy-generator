@@ -275,6 +275,7 @@ def generate_topics(
     auto: bool,
     depth: int,
     thinking_budget: int | tuple[int],
+    topics_len_bounds: tuple[int, int],
 ):
     BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
     cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{(f'_{seed if isinstance(seed, int) else "_".join(str(s) for s in seed if s is not None)}') if seed is not None else ''}"
@@ -321,6 +322,7 @@ def generate_topics(
                         init_sample_len,
                         epoch_seed,
                         find_overviews,
+                        topics_len_bounds,
                         parents,
                     )
                 else:
@@ -399,8 +401,8 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
         scores.feedback_score
         + ((scores.topics_overview_score or 0) * switch(depth, [(0, 1), (1, 0.5)], 0))
         + scores.not_placed_score * 3
-        + scores.deviation_score * 0.6
-        + scores.single_score * 1.5
+        + scores.deviation_score * 0.4
+        + scores.single_score * 1.6
     )
 
 
@@ -411,6 +413,7 @@ def generate(
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
     num_iterations_all: int | list[int] = [10, 8, 6],
+    topics_len_bounds_all: tuple[int, int] | list[tuple[int, int]] = (2, 6),
     thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
         (3100, 2600),
         2000,
@@ -449,6 +452,7 @@ def generate(
     init_sample_len = resolver(init_sample_len_all)
     sort_sample_len = resolver(sort_sample_len_all)
     num_iterations = resolver(num_iterations_all)
+    topics_len_bounds = resolver(topics_len_bounds_all)
     thinking_budget = resolver(thinking_budget_all)
     find_overviews = resolver(find_overviews_all)
     epochs = resolver(epochs_all)
@@ -473,6 +477,7 @@ def generate(
             auto=auto,
             depth=depth,
             thinking_budget=thinking_budget,
+            topics_len_bounds=topics_len_bounds,
         )
 
         if not topic.topics:
@@ -506,7 +511,7 @@ def generate(
             return
 
     if sort_flag:
-        sort_papers(topic, parents, save_to=TREE_PATH)
+        sort_papers(topic, root, parents, save_to=TREE_PATH)
 
     yield
 
@@ -529,6 +534,7 @@ def generate(
             init_sample_len_all=init_sample_len_all,
             sort_sample_len_all=sort_sample_len_all,
             num_iterations_all=num_iterations_all,
+            topics_len_bounds_all=topics_len_bounds_all,
             thinking_budget_all=thinking_budget_all,
             find_overviews_all=find_overviews_all,
             calculate_overall_score=calculate_overall_score,
