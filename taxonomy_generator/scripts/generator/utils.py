@@ -171,10 +171,6 @@ def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
     )
 
 
-def list_titles(topics: list[Topic]):
-    return "\n".join(f"- {topic.title}" for topic in topics)
-
-
 def get_parents_context(parents: list[Topic]):
     ptitles = [p.title for p in parents]
     return switch(
@@ -186,3 +182,7 @@ def get_parents_context(parents: list[Topic]):
         ],
         f"{' under '.join(reversed(ptitles[2:]))} as a part of {ptitles[1]} in the field of {ptitles[0]}",
     )
+
+
+def list_titles(topics: list[Topic]):
+    return "\n".join(f"- {topic.title}" for topic in topics)
