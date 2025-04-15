@@ -14,11 +14,11 @@ from taxonomy_generator.scripts.generator.generator_types import (
 )
 from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
 from taxonomy_generator.scripts.generator.prompts import (
-    SORT_PAPER,
-    TOPICS_FEEDBACK,
-    TOPICS_FEEDBACK_SYSTEM_PROMPTS,
     get_init_topics_prompt,
     get_iter_topics_prompt,
+    get_sort_prompt,
+    get_topics_feedback_prompt,
+    get_topics_feedback_system_prompts,
 )
 from taxonomy_generator.scripts.generator.sorter import sort_papers
 from taxonomy_generator.scripts.generator.utils import (
@@ -31,7 +31,6 @@ from taxonomy_generator.scripts.generator.utils import (
     resolve_topics,
     select_topics,
     topic_breadcrumbs,
-    topics_to_json,
 )
 from taxonomy_generator.utils.llm import Chat, run_in_parallel
 from taxonomy_generator.utils.parse_llm import (
@@ -61,10 +60,12 @@ BREAKDOWN_RESULTS = Path("data/breakdown_results")
 
 @cache()
 def process_sort_results(
-    topics: list[Topic], sample: list[TopicPaper], sample_len: int
+    topic: Topic,
+    topics: list[Topic],
+    sample: list[TopicPaper],
+    sample_len: int,
+    parents: list[Topic],
 ) -> list[tuple[TopicPaper, frozenset[str]]]:
-    topics_str = topics_to_json(topics)
-
     results = []
     parsed_sample_idx = 0
 
@@ -78,12 +79,7 @@ def process_sort_results(
 
         responses = run_in_parallel(
             [
-                SORT_PAPER.format(
-                    paper=corpus.get_pretty_paper(p),
-                    topics=topics_str,
-                    field=FIELD,
-                    field_cap=cap_words(FIELD),
-                )
+                get_sort_prompt(topic, p, topics, parents, multiple=True)
                 for p in this_sample
             ],
             max_workers=40,
@@ -126,6 +122,7 @@ def process_sort_results(
 
 
 def evaluate_topics(
+    topic: Topic,
     topics: list[Topic],
     sample_len: int,
     all_papers: list[TopicPaper],
@@ -139,7 +136,7 @@ def evaluate_topics(
 ) -> EvalResult:
     sample = random_sample(all_papers, sample_len + buffer_len, sample_seed)
 
-    sort_results = process_sort_results(topics, sample, sample_len)
+    sort_results = process_sort_results(topic, topics, sample, sample_len, parents)
 
     invalid_reasons = []
 
@@ -177,19 +174,18 @@ def evaluate_topics(
 
     # Overview Papers
     overview_papers = {
-        t.title: ([] if no_overviews else find_overview_papers(t, FIELD))
+        t.title: ([] if no_overviews else find_overview_papers(t, parents + [topic]))
         for t in topics
     }
 
     # Helpfulness Scores
     if not no_feedback:
-        prompt = TOPICS_FEEDBACK.format(field=FIELD, topics=topics_to_json(topics))
+        prompt = get_topics_feedback_prompt(topics, parents + [topic])
+        system_prompts = get_topics_feedback_system_prompts(FIELD)
+
         responses = run_in_parallel(
-            [prompt for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS],
-            [
-                {"system": system and system.format(FIELD)}
-                for system in TOPICS_FEEDBACK_SYSTEM_PROMPTS
-            ],
+            [prompt for _ in system_prompts],
+            [{"system": system} for system in system_prompts],
             model="gemini-1.5-pro",
             temp=1.5,
         )
@@ -197,9 +193,9 @@ def evaluate_topics(
             TopicsFeedback(
                 score=first_int(get_xml_content(response, "score")),
                 feedback=get_xml_content(response, "feedback"),
-                system=system and system.format(FIELD),
+                system=system,
             )
-            for system, response in zip(TOPICS_FEEDBACK_SYSTEM_PROMPTS, responses)
+            for system, response in zip(system_prompts, responses)
         ]
     else:
         topics_feedbacks = [
@@ -208,7 +204,7 @@ def evaluate_topics(
                 feedback="No feedback",
                 system="No feedback",
             )
-            for _ in TOPICS_FEEDBACK_SYSTEM_PROMPTS
+            for _ in system_prompts
         ]
 
     # Final Score
@@ -314,6 +310,7 @@ def generate_topics(
                 topics = resolve_topics(chat.ask(prompt))
 
                 eval_result = evaluate_topics(
+                    topic,
                     topics,
                     sort_sample_len,
                     topic.papers,
@@ -448,7 +445,7 @@ def generate(
             print(f"Topics not generated for {topic.title} topic")
             return
 
-        TREE_PATH.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+        TREE_PATH.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
 
         print(f"{topic.title} taxonomy saved to {TREE_PATH}")
 
@@ -475,7 +472,7 @@ def generate(
             return
 
     if sort_flag:
-        sort_papers(topic, save_to=TREE_PATH)
+        sort_papers(topic, parents, save_to=TREE_PATH)
 
     yield
 

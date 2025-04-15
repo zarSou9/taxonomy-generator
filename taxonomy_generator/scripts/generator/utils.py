@@ -11,7 +11,7 @@ from taxonomy_generator.scripts.generator.generator_types import (
     TopicPaper,
 )
 from taxonomy_generator.utils.parse_llm import parse_response_json
-from taxonomy_generator.utils.utils import format_perc
+from taxonomy_generator.utils.utils import format_perc, switch
 
 
 class TopicDict(TypedDict):
@@ -173,3 +173,16 @@ def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
 
 def list_titles(topics: list[Topic]):
     return "\n".join(f"- {topic.title}" for topic in topics)
+
+
+def get_parents_context(parents: list[Topic]):
+    ptitles = [p.title for p in parents]
+    return switch(
+        len(parents),
+        [
+            (1, ptitles[0]),
+            (2, f"{ptitles[1]} under {ptitles[0]}"),
+            (3, f"{ptitles[2]} under {ptitles[1]} in the field of {ptitles[0]}"),
+        ],
+        f"{' under '.join(reversed(ptitles[2:]))} as a part of {ptitles[1]} in the field of {ptitles[0]}",
+    )

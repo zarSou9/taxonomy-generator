@@ -12,40 +12,8 @@ from taxonomy_generator.scripts.generator.utils import (
     topic_breadcrumbs,
     topics_to_json,
 )
-from taxonomy_generator.utils.prompting import fps, prompt
+from taxonomy_generator.utils.prompting import prompt
 from taxonomy_generator.utils.utils import format_perc, random_sample, safe_lower
-
-TOPICS_FEEDBACK = """
-Given the following topic breakdown for organizing {field} research papers:
-
-```json
-{topics}
-```
-
-Please provide your feedback on:
-- Do you feel you understand each of the topics? Are the descriptions clear?
-- Does it make sense conceptually? Is anything contradictory?
-- Does it satisfyingly capture the breadth of {field}?
-- How useful would you find this breakdown for navigating the research area?
-- Do the categories seem sufficiently distinct to minimize overlap between topics?
-
-Instead of offering suggestions for improvement, focus more on your experience: what you found helpful or unhelpful, clear or unclear, and why.
-
-After providing feedback, please rate the overall usefulness of this taxonomy from 1-5 (where 5 is excellent).
-
-Please provide your feedback and score in `<feedback>` and `<score>` XML tags. Example response format:
-<feedback>Your feedback here.</feedback> <score>#</score>
-"""
-
-
-TOPICS_FEEDBACK_SYSTEM_PROMPTS: list[str | None] = [
-    None,
-    "You are an enthusiast of {} research",
-    "You are an experienced and prolific {} researcher who is well renown in the field",
-    "You are a newcomer to the field of {} and want to learn more",
-]
-
-fps(globals())
 
 empty_corpus = AICorpus(papers_override=[])
 
@@ -149,8 +117,8 @@ def get_sort_prompt(
     topic: Topic,
     paper: TopicPaper,
     topics: list[Topic],
-    multiple: bool,
     parents: list[Topic] = [],
+    multiple: bool = False,
 ) -> str:
     root_topic = parents[0] if parents else topic
 
@@ -187,6 +155,66 @@ Please identify which category/categories this paper belongs to. Respond with a 
 
 Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
 """
+
+
+def get_topics_feedback_prompt(topics: list[Topic], parents: list[Topic] = []) -> str:
+    field = safe_lower(parents[0].title)
+
+    output_format = """
+Please provide your feedback and score in `<feedback>` and `<score>` XML tags. Example response format:
+<feedback>Your feedback here.</feedback> <score>#</score>
+"""
+
+    if len(parents) == 1:
+        return f"""
+Given the following topic breakdown for organizing {field} research papers:
+
+```json
+{topics_to_json(topics)}
+```
+
+Please provide your feedback on:
+- Do you feel you understand each of the topics? Are the descriptions clear?
+- Does it make sense conceptually? Is anything contradictory?
+- Does it satisfyingly capture the breadth of {field}?
+- How useful would you find this breakdown for navigating the research area?
+- Do the categories seem sufficiently distinct to minimize overlap between topics?
+
+Instead of offering suggestions for improvement, focus more on your experience: what you found helpful or unhelpful, clear or unclear, and why.
+
+After providing feedback, please rate the overall usefulness of this taxonomy from 1-5 (where 5 is excellent).
+
+{output_format}
+"""
+    else:
+        return f"""
+You are reviewing part of a hierarchical taxonomy for organizing research papers related to {field}. Specifically you're reviewing a proposed breakdown of {f"{parents[-1]}, which is directly under {field}" if len(parents) == 2 else f"the {parents[-1]} topic, which can be found at {topic_breadcrumbs(parents[-1], parents[:-1])}"} in the taxonomy. Here's the proposed breakdown:
+
+```json
+{topics_to_json(topics)}
+```
+
+Please provide your feedback on:
+- Do you feel you understand each of the categories? Are the descriptions clear?
+- Does it make sense conceptually? Is anything contradictory?
+- Does it satisfyingly capture the kinds of papers you'd expect to find under {field}?
+- Do the categories seem sufficiently distinct with minimal overlap?
+
+Instead of offering suggestions for improvement, focus more on your experience: what you found helpful or unhelpful, clear or unclear, and why.
+
+After providing feedback, please rate the overall usefulness of this breakdown from 1-5 (where 5 is excellent).
+
+{output_format}
+"""
+
+
+def get_topics_feedback_system_prompts(field: str) -> list[str]:
+    return [
+        None,
+        f"You are an enthusiast of {field} research",
+        f"You are an experienced and prolific {field} researcher who is well renown in the field",
+        f"You are a newcomer to the field of {field} and want to learn more",
+    ]
 
 
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:

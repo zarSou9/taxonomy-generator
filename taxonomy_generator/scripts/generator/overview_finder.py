@@ -2,46 +2,36 @@ from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.scripts.generator.utils import get_parents_context
 from taxonomy_generator.utils.exa import search_arxs
 from taxonomy_generator.utils.llm import run_in_parallel
-from taxonomy_generator.utils.prompting import fps
 
-EXA_QUERY = 'This research paper provides a comprehensive overview of "{topic}" in the context of {field}. The paper covers: {description}. It\'s published on ArXiv here: '
 
-IS_OVERVIEW_PAPER = """
-Please determine if the included paper is an overview, survey, or literature review of *{topic}* research in the context of {field}.
+def get_is_overview_prompt(topic: Topic, parents: list[Topic], paper: Paper):
+    return f"""
+Please determine if the included paper is an overview, survey, or literature review of {topic.title} research in the context of {get_parents_context(parents)}.
 
-*{topic}* is defined as: {description}
+{topic.title} is defined as: {topic.description}
 
 <paper>
-{paper}
+{corpus.get_pretty_paper(paper)}
 </paper>
 
-Only respond with either YES or NO depending on whether this paper is an overview, survey, or literature review of specifically *{topic}*. If you are unsure, err on the side of NO.
+Only respond with either YES or NO depending on whether this paper is an overview, survey, or literature review of specifically {topic.title}. If you are unsure, err on the side of NO.
 """
 
-fps(globals())
+
+def get_exa_query(topic: Topic, parents: list[Topic]):
+    description = topic.description[0].lower() + topic.description[1:].rstrip(".")
+
+    return f"This research paper provides a comprehensive overview of {topic.title} in the context of {get_parents_context(parents)}. The paper covers: {description}. It's published on ArXiv here: "
 
 
-def find_overview_papers(topic: Topic, field: str) -> list[Paper]:
-    query = EXA_QUERY.format(
-        topic=topic.title,
-        field=field,
-        description=topic.description[0].lower() + topic.description[1:].rstrip("."),
-    )
-
-    papers = fetch_papers_by_id(search_arxs(query))
+def find_overview_papers(topic: Topic, parents: list[Topic]) -> list[Paper]:
+    papers = fetch_papers_by_id(search_arxs(get_exa_query(topic, parents)))
 
     responses = run_in_parallel(
-        [
-            IS_OVERVIEW_PAPER.format(
-                topic=topic.title,
-                description=topic.description,
-                field=field,
-                paper=corpus.get_pretty_paper(paper),
-            )
-            for paper in papers
-        ],
+        [get_is_overview_prompt(topic, parents, paper) for paper in papers],
         max_workers=40,
         model="gemini-2.0-flash",
         temp=0,

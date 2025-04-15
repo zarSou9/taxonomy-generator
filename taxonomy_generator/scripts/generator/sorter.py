@@ -5,33 +5,26 @@ from tabulate import tabulate
 
 from taxonomy_generator.corpus.ai_corpus import AICorpus
 from taxonomy_generator.scripts.generator.generator_types import Topic, TopicPaper
-from taxonomy_generator.scripts.generator.prompts import SORT_PAPER_SINGLE
-from taxonomy_generator.scripts.generator.utils import topics_to_json
+from taxonomy_generator.scripts.generator.prompts import get_sort_prompt
 from taxonomy_generator.utils.llm import run_in_parallel
-from taxonomy_generator.utils.utils import format_perc, safe_lower
+from taxonomy_generator.utils.utils import format_perc
 
 empty_corpus = AICorpus(papers_override=[])
 
 
-def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = False):
-    topic = (
-        Topic.model_validate_json(topic_or_path.read_text())
-        if isinstance(topic_or_path, Path)
-        else topic_or_path
-    )
-
+def sort_papers(
+    topic: Topic,
+    root: Topic,
+    parents: list[Topic],
+    save_to: Path,
+    dry_run: bool = False,
+):
     if not topic.papers:
         print("No papers to sort")
         return
 
     prompts = [
-        SORT_PAPER_SINGLE.format(
-            field=safe_lower(topic.title),
-            field_cap=topic.title,
-            paper=empty_corpus.get_pretty_paper(paper),
-            topics=topics_to_json(topic.topics),
-        )
-        for paper in topic.papers
+        get_sort_prompt(topic, paper, topic.topics, parents) for paper in topic.papers
     ]
 
     responses = run_in_parallel(
@@ -97,5 +90,5 @@ def sort_papers(topic_or_path: Topic | Path, save_to: Path, dry_run: bool = Fals
         for sub_topic in topic.topics:
             sub_topic.papers.extend(sub_topic_papers[sub_topic.title])
 
-        save_to.write_text(json.dumps(topic.model_dump(), ensure_ascii=False))
+        save_to.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
         print(f"Papers sorted and saved to {save_to}")
