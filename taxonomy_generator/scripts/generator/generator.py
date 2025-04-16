@@ -272,14 +272,14 @@ def generate_topics(
     find_overviews: bool,
     calculate_overall_score: Callable[[EvalScores, int], float],
     epochs: int,
-    seed: int | None | tuple[int | None],
+    seed: int | None,
     auto: bool,
     depth: int,
     thinking_budget: int | tuple[int],
     topics_len_bounds: tuple[int, int],
 ):
     BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
-    cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{(f'_{seed if isinstance(seed, int) else "_".join(str(s) for s in seed if s is not None)}') if seed is not None else ''}"
+    cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{'' if seed is None else f'_{seed}'}"
     results_file = BREAKDOWN_RESULTS / f"{cache_name}.json"
 
     cached_results: list[Result] = []
@@ -304,8 +304,7 @@ def generate_topics(
         results: list[tuple[list[Topic], EvalResult]] = []
 
         for epoch in range(epochs):
-            epoch_seed = resolve_all_param(seed, epoch, tuple)
-            epoch_seed = epoch_seed and epoch_seed + depth
+            epoch_seed = None if seed is None else seed + epoch
             epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
             chat = Chat(
@@ -432,7 +431,7 @@ def generate(
         [EvalScores, int], float
     ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
-    seed: int | None | tuple[int | None] = 11,
+    seed: int | None = 11,
     auto=False,
     depth: int = 0,
     topic: Topic | None = None,
