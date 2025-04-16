@@ -23,6 +23,7 @@ from taxonomy_generator.scripts.generator.prompts import (
 from taxonomy_generator.scripts.generator.sorter import sort_papers
 from taxonomy_generator.scripts.generator.utils import (
     Result,
+    get_all_papers_len,
     get_parents,
     get_results_data,
     paper_num_table,
@@ -285,6 +286,8 @@ def generate_topics(
     gen_results: list[Result] = []
     generate_flag = True
 
+    print()
+
     if results_file.exists():
         try:
             cached_results = json.loads(results_file.read_text())
@@ -331,6 +334,7 @@ def generate_topics(
                         first=(i == 1),
                         topic=topic,
                         depth=depth,
+                        topics_len_bounds=topics_len_bounds,
                         no_overviews=not find_overviews,
                     )
 
@@ -400,7 +404,7 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
     return (
         scores.feedback_score
         + ((scores.topics_overview_score or 0) * switch(depth, [(0, 1), (1, 0.5)], 0))
-        + scores.not_placed_score * 3
+        + scores.not_placed_score * 2
         + scores.deviation_score * 0.4
         + scores.single_score * 1.6
     )
@@ -457,10 +461,10 @@ def generate(
     find_overviews = resolver(find_overviews_all)
     epochs = resolver(epochs_all)
 
-    print(f"\nNow handling {topic_breadcrumbs(topic, parents)}\n")
+    print(f"\nNow handling {topic_breadcrumbs(topic, parents)}")
 
-    if len(topic.papers) < num_papers_threshold:
-        print(f"This topic has less than {num_papers_threshold} papers. Skipping...")
+    if get_all_papers_len(topic) < num_papers_threshold:
+        print(f"\nThis topic has less than {num_papers_threshold} papers. Skipping...")
         return
 
     if not topic.topics:
@@ -498,7 +502,7 @@ def generate(
             f"\nIt looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
         )
         sort_flag = inquirer.confirm(
-            f"Would you still like to sort the {len(topic.papers):,} papers under the {topic.title} topic?",
+            f"Would you still like to sort the {len(topic.papers):,} papers under {topic.title}?",
             default=False,
         ).execute()
     else:

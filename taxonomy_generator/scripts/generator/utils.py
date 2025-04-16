@@ -28,8 +28,12 @@ class Result(TypedDict):
     scores: dict[str, float]
 
 
-def get_results_data(results: list[tuple[list[Topic], EvalResult]]) -> list[Result]:
-    sorted_results = sorted(results, key=lambda r: r[1].overall_score, reverse=True)
+def get_results_data(
+    results: list[tuple[list[Topic], EvalResult]], sort=False
+) -> list[Result]:
+    if sort:
+        results = sorted(results, key=lambda r: r[1].overall_score, reverse=True)
+
     return [
         {
             "overall_score": eval_result.overall_score,
@@ -42,7 +46,7 @@ def get_results_data(results: list[tuple[list[Topic], EvalResult]]) -> list[Resu
             ],
             "scores": eval_result.all_scores.model_dump(),
         }
-        for topics, eval_result in sorted_results
+        for topics, eval_result in results
     ]
 
 
@@ -114,6 +118,7 @@ def display_top_results(
 
 
 def select_topics(results_data: list[Result]) -> list[TopicDict]:
+    results_data = sorted(results_data, key=lambda r: r["overall_score"], reverse=True)
     displayed_count = display_top_results(results_data)
 
     while True:
@@ -137,16 +142,15 @@ def select_topics(results_data: list[Result]) -> list[TopicDict]:
 
 
 def paper_num_table(topic: Topic, include_main: bool = True):
-    num_papers = (len(topic.papers) if include_main else 0) + sum(
-        len(sub_topic.papers) for sub_topic in topic.topics
-    )
+    num_all_papers = get_all_papers_len(topic, include_main)
+
     return tabulate(
         (
             [
                 (
                     topic.title,
                     len(topic.papers),
-                    format_perc(len(topic.papers) / num_papers, fill=True),
+                    format_perc(len(topic.papers) / num_all_papers, fill=True),
                 )
             ]
             if include_main
@@ -155,8 +159,8 @@ def paper_num_table(topic: Topic, include_main: bool = True):
         + [
             (
                 sub_topic.title,
-                len(sub_topic.papers),
-                format_perc(len(sub_topic.papers) / num_papers, fill=True),
+                get_all_papers_len(sub_topic),
+                format_perc(get_all_papers_len(sub_topic) / num_all_papers, fill=True),
             )
             for sub_topic in topic.topics
         ],
@@ -214,3 +218,9 @@ def get_parents_context(parents: list[Topic]):
 
 def list_titles(topics: list[Topic]):
     return "\n".join(f"- {topic.title}" for topic in topics)
+
+
+def get_all_papers_len(topic: Topic, include_main: bool = True):
+    return (len(topic.papers) if include_main else 0) + sum(
+        get_all_papers_len(sub_topic) for sub_topic in topic.topics
+    )

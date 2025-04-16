@@ -223,8 +223,9 @@ def get_topics_feedback_system_prompts(field: str) -> list[str]:
 def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
     return "\n\n".join(
         [
-            f"System Prompt: {tf.system or 'No system prompt'}\nScore: {tf.score}\nFeedback:\n---\n{tf.feedback}\n---"
+            f"System Prompt: {tf.system}\nScore: {tf.score}\nFeedback:\n---\n{tf.feedback}\n---"
             for tf in topics_feedbacks
+            if tf.system
         ]
     )
 
@@ -379,18 +380,23 @@ For additional context, here are a couple example papers from each topic:
 
 @prompt
 def get_iter_topics_prompt(
-    eval_result: EvalResult, first: bool, topic: Topic, depth: int, no_overviews=False
+    eval_result: EvalResult,
+    first: bool,
+    topic: Topic,
+    depth: int,
+    topics_len_bounds: tuple[int, int],
+    no_overviews=False,
 ) -> str:
     title = "the field" if depth == 0 else topic.title
     if first:
-        iterative_message = f"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (smaller with 2-3 topics, medium with 4-6 topics, or larger with 7-8 topics) or alternative ways of conceptualizing {title}."
+        iterative_message = f"Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (anywhere from {topics_len_bounds[0]} to {topics_len_bounds[1]} topics) or alternative ways of conceptualizing {title}."
     else:
         iterative_message = f"This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down {title}."
 
     return f"""
 The evaluation script ran successfully on your {"proposed breakdown" if first else "latest taxonomy"}. Here are the results:
 
-{f"A random sample of {eval_result.sample_len:,} papers from the {'corpus' if depth == 0 else 'full list of papers'}" if eval_result.sample_len < len(topic.papers) else f"All {eval_result.sample_len:,} papers"} were categorized by an LLM.
+{f"A random sample of {eval_result.sample_len:,} papers from the {'corpus' if depth == 0 else 'full list'}" if eval_result.sample_len < len(topic.papers) else f"All {eval_result.sample_len:,} papers"} were categorized by an LLM.
 
 Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_papers) / eval_result.sample_len)}) papers were cleanly categorized into one category.
 
