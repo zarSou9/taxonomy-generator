@@ -4,7 +4,7 @@ import random
 import time
 from collections.abc import Callable, Generator, Iterable, Sequence
 from pathlib import Path
-from typing import Any, ParamSpec, TypeVar, overload
+from typing import Any, Literal, ParamSpec, TypeVar, overload
 
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
@@ -164,10 +164,25 @@ def unique_str(only_date: bool = False) -> str:
         return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
 
 
-def plot_list(arr: list[float], title="Results"):
-    x = [i for i in range(1, len(arr) + 1)]
+def plot_list(
+    data: list[float] | dict[int, float],
+    title="Results",
+    kind: Literal["line", "bar"] = "line",
+):
+    if isinstance(data, dict):
+        x = list(data.keys())
+        y = list(data.values())
+    else:
+        x = [i for i in range(1, len(data) + 1)]
+        y = data
 
-    plt.plot(x, arr, marker="o")  # marker='o' for dots
+    match kind:
+        case "line":
+            plt.plot(x, y, marker="o")  # marker='o' for dots
+        case "bar":
+            plt.bar(x, y)
+        case _:
+            raise ValueError(f"Invalid kind: {kind}")
 
     plt.xlabel("X-axis")
     plt.ylabel("Y-axis")
@@ -175,6 +190,35 @@ def plot_list(arr: list[float], title="Results"):
 
     plt.xticks(x)
 
+    plt.show()
+
+
+def compare_datas(
+    data1: dict[int, float],
+    data2: dict[int, float],
+    ylabel: str,
+    data1_label: str,
+    data2_label: str,
+):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    ax1.bar(data1.keys(), data1.values())
+    ax1.set_title(data1_label)
+    ax1.set_ylabel(ylabel)
+    ax2.bar(data2.keys(), data2.values())
+    ax2.set_title(data2_label)
+    ax2.set_ylabel(ylabel)
+    plt.tight_layout()
+    plt.show()
+
+    # Plot on same graph
+    plt.figure(figsize=(10, 6))
+    plt.bar(data1.keys(), data1.values(), alpha=0.7, label=data1_label)
+    plt.bar(data2.keys(), data2.values(), alpha=0.7, label=data2_label)
+    plt.legend()
+    plt.title("Comparison")
+    plt.xlabel("Number of Topics")
+    plt.ylabel(ylabel)
+    plt.tight_layout()
     plt.show()
 
 
