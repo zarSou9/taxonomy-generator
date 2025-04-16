@@ -26,12 +26,17 @@ def parse_response_json(
             raise ValueError("Invalid JSON response")
         return fallback
 
+    json_str = response[json_start:json_end]
+
     try:
-        return json.loads(_clean_json_str(response[json_start:json_end]))
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            return json.loads(_clean_json_str(json_str))
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"LLM JSON parse error: {str(e)}")
         if raise_on_fail:
-            raise ValueError("Invalid JSON response")
+            raise
         return fallback
 
 
@@ -68,7 +73,16 @@ def _clean_json_str(json_str: str) -> str:
     result = ""
     for i, c in enumerate(json_str):
         if c == '"' and (i == 0 or json_str[i - 1] != "\\"):
-            in_string = not in_string
+            if in_string:
+                right_after = json_str[i + 1 :].lstrip()
+                if right_after and right_after[0] not in ["}", ",", "]", ":"]:
+                    result += '\\"'
+                    continue
+
+                in_string = False
+            else:
+                in_string = True
+
         if in_string and c == "\n":
             result += "\\n"
         else:
