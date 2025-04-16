@@ -1,31 +1,34 @@
-import json
 from pathlib import Path
 
-from taxonomy_generator.scripts.generator.generator import calculate_overall_score
-from taxonomy_generator.scripts.generator.generator_types import EvalScores
-from taxonomy_generator.utils.utils import plot_list
+from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
 
-all_results = json.loads(Path("data/breakdown_results/all_results.json").read_text())
+TREE_PATH = Path("data/tree.json")
+
+tree = Topic.model_validate_json(TREE_PATH.read_text())
 
 
-all_results = sorted(
-    all_results,
-    key=lambda x: calculate_overall_score(EvalScores.model_validate(x["scores"])),
-    reverse=True,
-)
+def find_ready_papers():
+    all_togo = 0
 
-for result in all_results[-1:]:
-    print("Topics:")
-    print(json.dumps(result["topics"], indent=2))
-    print("Scores:")
-    print(json.dumps(result["scores"], indent=2))
-    print("Overall Score:")
-    print(calculate_overall_score(EvalScores.model_validate(result["scores"])))
-    print("--------------------------------")
+    def _find_ready_papers(topic: Topic = tree, depth: int = 0):
+        nonlocal all_togo
 
-plot_list(
-    [
-        calculate_overall_score(EvalScores.model_validate(r["scores"]))
-        for r in all_results
-    ]
-)
+        parents = get_parents(topic, tree)
+        if not topic.topics and len(topic.papers) >= 20:
+            print(
+                f"{depth} - {len(topic.papers)} - {topic_breadcrumbs(topic, parents)}"
+            )
+            print()
+            all_togo += 1
+
+        for sub in topic.topics:
+            _find_ready_papers(sub, depth + 1)
+
+    _find_ready_papers()
+
+    print(all_togo)
+
+
+if __name__ == "__main__":
+    find_ready_papers()

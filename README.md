@@ -2,6 +2,22 @@
 
 This taxonomy is to be presented on [TRecursive.com](https://trecursive.com).
 
+## Codebase
+
+The main generator script is at `taxonomy_generator/scripts/generator/generator.py` , but here's a brief AI generated overview of the codebase (may be outdated):
+
+- `taxonomy_generator/` - Main package
+  - `scripts/generator/` - Core generation logic
+    - `generator.py` - Main entry point that orchestrates the taxonomy creation
+    - `prompts.py` - LLM prompt templates for taxonomy generation
+    - `sorter.py` - Handles paper categorization
+  - `corpus/` - Paper corpus management
+    - `ai_corpus.py` - Manages research paper corpus
+    - `arxiv_helper.py` - Tools for fetching papers from arXiv
+  - `utils/` - Shared utilities
+    - `llm.py` - LLM interaction helpers
+    - `parse_llm.py` - Functions for parsing LLM responses
+
 ## Developing
 
 ### Installing dependencies
