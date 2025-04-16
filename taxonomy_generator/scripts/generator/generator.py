@@ -297,7 +297,7 @@ def generate_topics(
         if cached_results and not auto:
             generate_flag = inquirer.confirm(
                 f"{len(cached_results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
-                default=False,
+                default=True,
             ).execute()
 
     if generate_flag:
@@ -431,8 +431,8 @@ def generate(
         [EvalScores, int], float
     ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
+    auto_all: bool | list[bool] = True,
     seed: int | None = 11,
-    auto=True,
     depth: int = 0,
     topic: Topic | None = None,
     root: Topic | None = None,
@@ -463,6 +463,7 @@ def generate(
     thinking_budget = resolver(thinking_budget_all)
     find_overviews = resolver(find_overviews_all)
     epochs = resolver(epochs_all)
+    auto = resolver(auto_all)
 
     print(f"\nNow handling {topic_breadcrumbs(topic, parents)}")
 
@@ -546,8 +547,8 @@ def generate(
             find_overviews_all=find_overviews_all,
             calculate_overall_score=calculate_overall_score,
             epochs_all=epochs_all,
+            auto_all=auto_all,
             seed=seed,
-            auto=auto,
             depth=depth + 1,
             topic=sub_topic,
             root=root,
