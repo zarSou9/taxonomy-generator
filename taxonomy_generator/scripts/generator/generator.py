@@ -432,7 +432,7 @@ def generate(
     ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
     seed: int | None = 11,
-    auto=False,
+    auto=True,
     depth: int = 0,
     topic: Topic | None = None,
     root: Topic | None = None,
