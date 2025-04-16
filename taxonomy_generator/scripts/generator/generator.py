@@ -417,7 +417,11 @@ def generate(
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
     num_iterations_all: int | list[int] = [10, 8, 6],
-    topics_len_bounds_all: tuple[int, int] | list[tuple[int, int]] = (2, 6),
+    topics_len_bounds_all: tuple[int, int] | list[tuple[int, int]] = [
+        (2, 6),
+        (2, 6),
+        (2, 8),
+    ],
     thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
         (3100, 2600),
         2000,

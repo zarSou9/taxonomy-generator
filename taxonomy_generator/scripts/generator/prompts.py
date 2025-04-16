@@ -64,7 +64,7 @@ Specifically, your job is to develop a list of sub-topics under {field} to effec
 {list_titles(parent.topics)}
 """
 
-            parents_str = f"""at {topic_breadcrumbs(topic, parents[1:])}. So for additionaly context, here are all the categories under {parents[1].title}:
+            parents_str = f"""at {topic_breadcrumbs(topic, parents[1:])}. So for additional context, here are all the categories under {parents[1].title}:
 
 {list_titles(parents[1].topics)}
 
@@ -149,7 +149,7 @@ If, however, this paper is {"an" if parents else "a broad"} overview or survey o
         return f"""
 {start}
 
-Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of matching categories. If none fit, return an empty array. Add no other text or explanation.
+Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of the matching category or categories. If none fit, return an empty array. Add no other text or explanation.
 """
     else:
         return f"""
