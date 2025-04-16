@@ -70,14 +70,14 @@ Specifically, your job is to develop a list of sub-topics under {field} to effec
 
 {additional_breakdowns}
 
-Now, your category of focus, {topic.title},"""
+Now, your category of focus, {topic.title}, is specifically defined as "{topic.description}" The category"""
 
         start = f"""
 You are developing a hierarchical taxonomy for organizing a corpus of {field} related research papers. You've already developed the root breakdown (of {field}). Here's the set of categories comprising this breakdown (titles only):
 
 {list_titles(parents[0].topics)}
 
-The category you're currently focused on breaking down further is {parents_str if parents_str else f"{topic.title}. This category"} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
+The category you're currently focused on breaking down further is {parents_str if parents_str else f'{topic.title}, which is defined as "{topic.description}" This category'} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
 
 <papers{"_sample" if use_sample else ""}>
 {empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed) if use_sample else topic.papers)}
