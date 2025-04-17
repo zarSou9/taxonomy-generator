@@ -5,9 +5,26 @@ from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
 from taxonomy_generator.utils.utils import compare_datas, normalize
 
-TREE_PATH = Path("data/tree copy.json")
+TREE_PATH = Path("data/tree.json")
 
 tree = Topic.model_validate_json(TREE_PATH.read_text())
+
+
+def get_total_num_topics():
+    total_topics = 0
+
+    def _count_topics(topic: Topic = tree):
+        nonlocal total_topics
+        total_topics += 1
+
+        for subtopic in topic.topics:
+            _count_topics(subtopic)
+
+    total_topics = -1  # Start at -1 to not count the root
+    _count_topics()
+
+    print(f"Total number of topics in the tree: {total_topics}")
+    return total_topics
 
 
 def print_topics_left():
@@ -74,4 +91,4 @@ def compare_num_topics():
 
 
 if __name__ == "__main__":
-    compare_num_topics()
+    get_total_num_topics()
