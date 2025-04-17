@@ -1,0 +1,22 @@
+name: Update Map
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "map.json"
+      - "meta.json"
+  workflow_dispatch:
+
+jobs:
+  update-fli-map:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call conversion endpoint
+        run: |
+          curl -X POST https://api.trecursive.com/update_map \
+          -H "Content-Type: application/json" \
+          -H "API_KEY: ${{ secrets.UPDATE_MAP_KEY }}" \
+          -d '{
+            "map_repo": "${{ github.repository }}"
+          }'
