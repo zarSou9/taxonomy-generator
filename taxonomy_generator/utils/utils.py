@@ -223,6 +223,25 @@ def compare_datas(
 
 
 @overload
+def normalize(data: list[float], out_of: int | float = 100) -> list[float]: ...
+
+
+@overload
+def normalize(data: dict[T, float], out_of: int | float = 100) -> dict[T, float]: ...
+
+
+def normalize(
+    data: list[float] | dict[T, float], out_of: int | float = 100
+) -> list[float] | dict[T, float]:
+    if isinstance(data, list):
+        total = sum(data)
+        return [v / total * out_of for v in data]
+
+    total = sum(data.values())
+    return {k: v / total * out_of for k, v in data.items()}
+
+
+@overload
 def switch(
     var: T, options: Iterable[tuple[T, R]], default: None = None
 ) -> R | None: ...

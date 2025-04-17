@@ -2,6 +2,10 @@
 
 This taxonomy is to be presented on [TRecursive.com](https://trecursive.com).
 
+## About
+
+This taxonomy organizes a corpus of over 3000 AI safety-related papers published on ArXiv (last updated: 2025-04-16). The taxonomy was created using a script that recursively orchestrates LLMs to generate sets of categories in an iterative process. These categories are evaluated at each iteration to maximize mutual exclusivity (by sorting a sample of papers to evaluate overlap) and clarity (by generating feedback from other LLM instances), among other metrics.
+
 ## Codebase
 
 The main generator script is at `taxonomy_generator/scripts/generator/generator.py` , but here's a brief AI generated overview of the codebase (may be outdated):
@@ -12,11 +16,12 @@ The main generator script is at `taxonomy_generator/scripts/generator/generator.
     - `prompts.py` - LLM prompt templates for taxonomy generation
     - `sorter.py` - Handles paper categorization
   - `corpus/` - Paper corpus management
-    - `ai_corpus.py` - Manages research paper corpus
+    - `ai_corpus.py` - Main corpus class
     - `arxiv_helper.py` - Tools for fetching papers from arXiv
   - `utils/` - Shared utilities
     - `llm.py` - LLM interaction helpers
     - `parse_llm.py` - Functions for parsing LLM responses
+    - `utils.py` - General utils
 
 ## Developing
 
