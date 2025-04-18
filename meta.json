@@ -2,16 +2,48 @@
   "sourceFile": "map.json",
   "title": "AI Safety Taxonomy",
   "disableExpandAll": true,
-  "note": "This taxonomy organizes a corpus of over 3000 AI safety-related papers published on ArXiv (last updated: 2025-04-16). The taxonomy was created using a script that recursively orchestrates LLMs to generate sets of categories in an iterative process. These categories are evaluated at each iteration to maximize mutual exclusivity (by sorting a sample of papers to evaluate overlap) and clarity (by generating feedback from other LLM instances), among other metrics. All code and prompts used can be found in [the GitHub repository](https://github.com/zarSou9/taxonomy-generator).",
+  "note": "This taxonomy organizes a corpus of over 3000 AI safety-related papers published on ArXiv (last updated: 2025-04-16). It was created using a script that recursively orchestrates LLMs to generate sets of categories in an iterative process. These categories are evaluated at each iteration to maximize mutual exclusivity (by sorting a sample of papers to evaluate overlap) and clarity (by generating feedback from other LLM instances), among other metrics. All code and prompts used can be found in [the GitHub repository](https://github.com/zarSou9/taxonomy-generator).",
   "coverRootDescription": "AI safety is a field focused on preventing harm caused by unintended consequences of AI systems, ensuring they align with human values and operate reliably.",
-  "papersBelow": true,
   "customSettings": {
+    "defaultMode": {
+      "cutDescriptionsForMinis": true,
+      "papersBelow": true
+    },
     "titlesMode": {
-      "horizontalSpacingAdditions": [0, 400],
-      "widthAddition": 800,
-      "horizontalSpacing": 900,
-      "depthLimit": 3,
-      "nodeGroupSpacingAdditions": [100, 100, 100, 100]
+      "widthAddition": 1000,
+      "horizontalSpacing": 1000,
+      "horizontalSpacingAdditions": [400, 1500, 700, 300],
+      "nodeGroupSpacing": 100,
+      "nodeGroupSpacingAdditions": [200, 150, 130, 130, 130],
+      "avgTextCharSizes": [
+        {
+          "textSize": 140,
+          "charW": 70
+        },
+        {
+          "textSize": 100,
+          "charW": 50
+        },
+        {
+          "textSize": 55,
+          "charW": 27.5,
+          "line_height": 2.5
+        },
+        {
+          "textSize": 30,
+          "charW": 15,
+          "line_height": 1.6
+        },
+        {
+          "textSize": 24,
+          "charW": 12,
+          "line_height": 1.4
+        },
+        {
+          "textSize": 18,
+          "charW": 9
+        }
+      ]
     }
   },
   "dropdownLinks": [
