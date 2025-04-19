@@ -7,10 +7,13 @@
   "customSettings": {
     "defaultMode": {
       "cutDescriptionsForMinis": true,
-      "papersBelow": true
+      "papersBelow": true,
+      "nodeHeight": 1300,
+      "verticalSpacing": 300
     },
     "titlesMode": {
       "widthAddition": 1000,
+      "cutDescriptions": true,
       "horizontalSpacing": 1000,
       "horizontalSpacingAdditions": [400, 1500, 700, 300],
       "nodeGroupSpacing": 100,
