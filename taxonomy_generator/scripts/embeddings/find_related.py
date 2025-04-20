@@ -107,9 +107,33 @@ def analyze_all_related(
     return lens
 
 
-def add_all_related(topic: Topic = tree, parents: list[Topic] = []):
+def add_all_related(
+    topic: Topic = tree,
+    parents: list[Topic] = [],
+    max_same_link: int = 8,
+    added_links: dict[str, int] = {},
+):
     if parents:
-        topic.links = [Link(id=get_tid(*r)) for r in get_related(topic, parents)]
+        related_with_tids = [(get_tid(*r), *r) for r in get_related(topic, parents)]
+        to_add = []
+        for rwt in related_with_tids:
+            tid = rwt[0]
+            added_links[tid] = added_links.get(tid, 0) + 1
+            if added_links[tid] <= max_same_link:
+                to_add.append(rwt)
+
+        this_tid = get_tid(topic, parents)
+        for _, rt, _ in related_with_tids:
+            if this_tid not in [tl.id for tl in rt.links]:
+                rt.links.append(Link(id=this_tid))
+
+        topic.links.extend(
+            [
+                Link(id=tid)
+                for tid, _, _ in to_add
+                if tid not in [tl.id for tl in topic.links]
+            ]
+        )
 
     for subtopic in topic.topics:
         add_all_related(subtopic, parents + [topic])
