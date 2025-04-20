@@ -45,7 +45,7 @@ def get_related_topics_off_limits(topic: Topic, parents: list[Topic]) -> list[To
 
 
 def get_related(
-    topic: Topic, parents: list[Topic], sim_threshold=0.79, max_related=6
+    topic: Topic, parents: list[Topic], sim_threshold=0.793, max_related=5
 ) -> list[tuple[Topic, list[Topic]]]:
     similar_descs: list[str] = [
         s["text"]
@@ -110,7 +110,7 @@ def analyze_all_related(
 def add_all_related(
     topic: Topic = tree,
     parents: list[Topic] = [],
-    max_same_link: int = 8,
+    max_same_link: int = 5,
     added_links: dict[str, int] = {},
 ):
     if parents:
