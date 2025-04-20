@@ -10,6 +10,22 @@ from google import genai
 from tqdm import tqdm
 
 
+def load_embeddings(input_file: str) -> List[Dict[str, Any]]:
+    """Load embeddings from a file"""
+    with open(input_file, "r") as f:
+        topics = json.load(f)
+
+    # Convert embedding lists back to numpy arrays
+    for topic in topics:
+        if "embedding" in topic:
+            topic["embedding"] = np.array(topic["embedding"])
+
+    return topics
+
+
+loaded_topics = load_embeddings("data/topic_embeddings.json")
+
+
 def generate_embedding(
     client, topic: Dict[str, Any], max_retries: int = 5
 ) -> Dict[str, Any]:
@@ -163,28 +179,13 @@ def find_similar_topics(
         similarities, key=lambda x: x["similarity"], reverse=True
     )
 
-    # Return top n if specified
-    if n is not None:
-        return sorted_similarities[:n]
-
-    return sorted_similarities
-
-
-def load_embeddings(input_file: str) -> List[Dict[str, Any]]:
-    """Load embeddings from a file"""
-    with open(input_file, "r") as f:
-        topics = json.load(f)
-
-    # Convert embedding lists back to numpy arrays
-    for topic in topics:
-        if "embedding" in topic:
-            topic["embedding"] = np.array(topic["embedding"])
-
-    return topics
+    return sorted_similarities if n is None else sorted_similarities[:n]
 
 
 def find_similar_by_id(
-    topic_id: str, topics_with_embeddings: List[Dict[str, Any]], n: int = 10
+    topic_id: str,
+    n: int | None = None,
+    topics_with_embeddings: List[Dict[str, Any]] = loaded_topics,
 ) -> List[Dict[str, Any]]:
     """Find topics similar to the one with the specified ID"""
     # Find the target topic
@@ -199,13 +200,13 @@ def find_similar_by_id(
 
     # Find similar topics
     similar_topics = find_similar_topics(
-        target_topic["embedding"], topics_with_embeddings, n + 1
+        target_topic["embedding"], topics_with_embeddings
     )
 
     # Remove the target topic itself (which would be the most similar)
     similar_topics = [t for t in similar_topics if t["id"] != topic_id]
 
-    return similar_topics[:n]
+    return similar_topics if n is None else similar_topics[:n]
 
 
 def generate_and_save():
@@ -218,8 +219,7 @@ def generate_and_save():
 
 
 if __name__ == "__main__":
-    loaded_topics = load_embeddings("data/topic_embeddings.json")
-    similar_topics = find_similar_by_id(loaded_topics[0]["id"], loaded_topics)
+    similar_topics = find_similar_by_id(loaded_topics[0]["id"])
     print("Topics similar to 0:")
     for topic in similar_topics:
         print(f"Similarity: {topic['similarity']:.4f}")

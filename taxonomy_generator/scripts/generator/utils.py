@@ -224,3 +224,19 @@ def get_all_papers_len(topic: Topic, include_main: bool = True):
     return (len(topic.papers) if include_main else 0) + sum(
         get_all_papers_len(sub_topic) for sub_topic in topic.topics
     )
+
+
+def format_index(idx: int | str):
+    return f".{idx}." if int(idx) > 9 else str(idx)
+
+
+def get_tid(topic: Topic, parents: list[Topic]):
+    tid = "0"
+    for pi, t in enumerate(parents):
+        tid += "0"
+        for ci, ct in enumerate(t.topics):
+            if ct == (parents[pi + 1] if pi < len(parents) - 1 else topic):
+                tid += format_index(ci)
+                break
+
+    return tid

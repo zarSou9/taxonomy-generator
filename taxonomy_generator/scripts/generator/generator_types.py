@@ -15,11 +15,16 @@ class TopicPaper(BaseModel):
     abstract: str
 
 
+class Link(BaseModel):
+    id: str
+
+
 class Topic(BaseModel):
     title: str
     description: str
     papers: list[TopicPaper] = []
     topics: list["Topic"] = []
+    links: list[Link] = []
 
 
 class TopicsFeedback(BaseModel):
