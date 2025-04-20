@@ -90,5 +90,19 @@ def compare_num_topics():
     )
 
 
+def get_descriptions(topic: Topic = tree, descs: list = []):
+    descs.append(topic.description)
+    for subtopic in topic.topics:
+        get_descriptions(subtopic, descs)
+
+    return descs
+
+
+def save_descriptions():
+    descs = get_descriptions()
+    print(len(descs))
+    Path("data/descriptions.json").write_text(json.dumps(descs, ensure_ascii=False))
+
+
 if __name__ == "__main__":
-    get_total_num_topics()
+    save_descriptions()
