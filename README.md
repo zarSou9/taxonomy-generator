@@ -29,7 +29,7 @@ The main generator script is at `taxonomy_generator/scripts/generator/generator.
 
 For a super quick setup, you can run `python -m venv .venv` , activate the venv, and install all dependencies with `pip install -r requirements.txt` .
 
-For development use (added deps and such), you should ge setup with [poetry](https://python-poetry.org/docs/) which is what we use for dependency management. I recommend installing it through `pipx` :
+For development use (if adding deps and such), you should get setup with [poetry](https://python-poetry.org/docs/) which is what we use for dependency management. I recommend installing it through `pipx` :
 
 ```bash
 pipx install poetry
