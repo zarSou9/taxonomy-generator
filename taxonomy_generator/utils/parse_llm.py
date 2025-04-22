@@ -60,6 +60,18 @@ def get_xml_content(response: str, tag: str) -> str | None:
     return response[start + len(s) : end].strip()
 
 
+# FIXME:
+# LLM JSON parse error: Invalid \escape: line 3 column 19 (char 62)
+# Error parsing response: ```json
+# [
+#   "On the Paradox of Certified Training",
+#   "Is Certifying $\ell_p$ Robustness Still Worthwhile?",
+#   "Certified Robust Neural Networks: Generalization and Corruption Resistance",
+#   "A General Approach to Robust Controller Analysis and Synthesis"
+# ]
+# ```
+
+
 def _clean_json_str(json_str: str) -> str:
     """Clean a JSON string by removing invalid characters.
 

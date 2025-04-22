@@ -422,3 +422,64 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 
 {"Please present" if first else "Output"} your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
 """
+
+
+@prompt
+def get_order_papers_prompt(
+    topic: Topic,
+    papers: list[TopicPaper],
+    root: Topic,
+    parents: list[Topic] = [],
+) -> str:
+    """Generate a prompt to order all papers in a topic by relevance."""
+    field = safe_lower(root.title)
+
+    # Determine if this is a dead-end topic (no subtopics)
+    is_dead_end = len(topic.topics) == 0
+
+    # Build context based on the depth of the taxonomy
+    if not parents:
+        # Root level
+        taxonomy_context = f"""
+You are organizing papers in a corpus of {field} research. You need to order a list of papers by their relevance or centrality to the field of {field} as a whole.
+"""
+    else:
+        # Non-root level
+        taxonomy_context = f"""
+You are organizing papers in a hierarchical taxonomy of {field} research. You need to order a list of papers by their relevance or centrality to a specific topic in this taxonomy.
+
+The papers are categorized under the topic {topic.title}, which can be found at {topic_breadcrumbs(topic, parents)}. This topic is defined as: "{topic.description}"
+"""
+
+    # Add special instruction for non-dead-end topics (topics with subtopics)
+    overview_context = ""
+    if not is_dead_end:
+        overview_context = f"""
+Papers that provide broad overviews, surveys, or literature reviews of {topic.title} as a whole are particularly valuable and should be considered highly relevant to this topic.
+"""
+
+    # Full formatted prompt
+    return f"""
+{taxonomy_context}
+{overview_context}
+I'll provide you with a list of {len(papers)} papers that have been categorized under {topic.title}. Your task is to order these papers from most to least relevant to this topic.
+
+PAPERS:
+----
+{empty_corpus.get_pretty_sample(papers)}
+----
+
+Please respond with a JSON array of paper titles, ordered from most to least relevant to the topic {topic.title}. The array should include ALL paper titles from the list, with no omissions.
+
+Example response format:
+```json
+[
+  "Most relevant paper title",
+  "Second most relevant paper title",
+  "Third most relevant paper title",
+  ...
+]
+```
+
+Respond with ONLY the JSON array, no other text.
+"""
