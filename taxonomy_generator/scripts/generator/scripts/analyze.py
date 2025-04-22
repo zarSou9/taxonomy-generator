@@ -51,13 +51,11 @@ def print_topics_left():
 
 def print_total_papers():
     total_papers = 0
-    all_papers = []
 
     def _print_total_papers(topic: Topic = tree):
         nonlocal total_papers
 
         total_papers += len(topic.papers)
-        all_papers.extend(topic.papers)
 
         for sub in topic.topics:
             _print_total_papers(sub)
@@ -65,7 +63,6 @@ def print_total_papers():
     _print_total_papers()
 
     print(total_papers)
-    print(all_papers[-1])
 
 
 def get_num_topics(raw=False) -> dict[int, float]:
