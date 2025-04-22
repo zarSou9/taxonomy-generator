@@ -49,6 +49,25 @@ def print_topics_left():
     print(left_to_go)
 
 
+def print_total_papers():
+    total_papers = 0
+    all_papers = []
+
+    def _print_total_papers(topic: Topic = tree):
+        nonlocal total_papers
+
+        total_papers += len(topic.papers)
+        all_papers.extend(topic.papers)
+
+        for sub in topic.topics:
+            _print_total_papers(sub)
+
+    _print_total_papers()
+
+    print(total_papers)
+    print(all_papers[-1])
+
+
 def get_num_topics(raw=False) -> dict[int, float]:
     num_topics = {}
 
@@ -105,4 +124,4 @@ def save_descriptions():
 
 
 if __name__ == "__main__":
-    save_descriptions()
+    print_total_papers()

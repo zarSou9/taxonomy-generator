@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-ORIGIN_PATH = Path("data/tree_related.json")
+ORIGIN_PATH = Path("data/tree.json")
 DEST_PATH = Path("map.json")
 
 
