@@ -336,6 +336,7 @@ def run_in_parallel(
     histories: list[History],
     settingss: list[dict] | None = None,
     max_workers: int = 5,
+    test: bool = False,
     **kwargs,
 ) -> list[str | None]:
     """
@@ -349,6 +350,11 @@ def run_in_parallel(
     Returns:
         list[str | None]: Responses in the same order as the input prompts
     """
+    if test:
+        return [
+            f'TEST RESPONSE FROM PROMPT: "{h[:1000] + "..." if isinstance(h, str) else h}"'
+            for h in histories
+        ]
 
     results = [None] * len(histories)
 

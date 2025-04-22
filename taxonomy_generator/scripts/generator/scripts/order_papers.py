@@ -1,22 +1,22 @@
 import json
 from pathlib import Path
-from typing import Callable
+from typing import Generator
 
 from InquirerPy import inquirer
 
-from taxonomy_generator.scripts.generator.generator_types import Topic, TopicPaper
+from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.prompts import get_order_papers_prompt
 from taxonomy_generator.scripts.generator.utils import (
     get_parents,
     topic_breadcrumbs,
 )
-from taxonomy_generator.utils.llm import ask_llm
+from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
 
 TREE_PATH = Path("data/tree.json")
 
 
-def order_papers_for_topic(topic: Topic, root: Topic) -> list[TopicPaper]:
+def order_papers_for_topic(topic: Topic, root: Topic) -> Generator[str, str, list]:
     """Order papers within a topic by relevance using LLM."""
     if len(topic.papers) <= 1:
         return topic.papers
@@ -26,11 +26,11 @@ def order_papers_for_topic(topic: Topic, root: Topic) -> list[TopicPaper]:
     print(f"\nOrdering papers for {topic_breadcrumbs(topic, parents)}")
     print(f"Total papers to order: {len(topic.papers)}")
 
-    # Generate the prompt with all papers
-    prompt = get_order_papers_prompt(topic, topic.papers, root, parents)
+    # Send prompt
+    yield get_order_papers_prompt(topic, topic.papers, root, parents)
 
-    # Get the response
-    response = ask_llm(prompt, model="gemini-2.0-flash", temp=0)
+    # Get response
+    response = yield
 
     if not response:
         print(f"No response received for {topic.title}")
@@ -65,20 +65,33 @@ def order_papers_for_topic(topic: Topic, root: Topic) -> list[TopicPaper]:
     return ordered_papers
 
 
-def process_topic_recursively(
+def collect_prompts_recursively(
     topic: Topic,
     root: Topic,
-    process_fn: Callable[[Topic, Topic], None],
+    generators: list,
+    topics: list,
+    prompts: list,
 ) -> None:
-    """Process the current topic and recurse through its subtopics."""
-    process_fn(topic, root)
+    """Collect prompts from all topics."""
+    if len(topic.papers) > 1:
+        generator = order_papers_for_topic(topic, root)
+        try:
+            prompts.append(next(generator))
+            generators.append(generator)
+            topics.append(topic)
+        except StopIteration:
+            # Skip topics that don't need ordering
+            pass
 
     for subtopic in topic.topics:
-        process_topic_recursively(subtopic, root, process_fn)
+        collect_prompts_recursively(subtopic, root, generators, topics, prompts)
 
 
 def order_all_papers(
     tree_path: Path = TREE_PATH,
+    max_workers: int = 40,
+    model: str = "gemini-2.0-flash",
+    temp: float = 0,
 ) -> None:
     """Order papers for all topics in the taxonomy and save to file."""
     if not tree_path.exists():
@@ -91,11 +104,35 @@ def order_all_papers(
         print(f"Error loading taxonomy: {e}")
         return
 
-    def order_papers_in_topic(topic: Topic, root: Topic) -> None:
-        topic.papers = order_papers_for_topic(topic, root)
+    # Collect all prompts and generators
+    generators: list[Generator[str, str, list]] = []
+    topics: list[Topic] = []
+    prompts: list[str] = []
+    collect_prompts_recursively(root, root, generators, topics, prompts)
 
-    # Process root topic and all subtopics
-    process_topic_recursively(root, root, order_papers_in_topic)
+    if not generators:
+        print("No topics found with multiple papers to order.")
+        return
+
+    # Prime the generators
+    for generator in generators:
+        next(generator)
+
+    # Run all prompts in parallel
+    print(f"\nRunning {len(prompts)} prompts in parallel with {max_workers} workers...")
+    responses = run_in_parallel(
+        prompts, max_workers=max_workers, model=model, temp=temp
+    )
+
+    # Process responses and update paper orders
+    for topic, generator, response in zip(topics, generators, responses):
+        try:
+            generator.send(response)
+        except StopIteration as e:
+            if e.value:
+                topic.papers = e.value
+        except Exception as e:
+            print(f"Error processing response for {topic.title}: {e}")
 
     # Save updated taxonomy
     if not inquirer.confirm(
@@ -106,7 +143,3 @@ def order_all_papers(
 
     tree_path.write_text(json.dumps(root.model_dump(), ensure_ascii=False, indent=2))
     print(f"\nOrdered papers saved to {tree_path}")
-
-
-if __name__ == "__main__":
-    order_all_papers()
