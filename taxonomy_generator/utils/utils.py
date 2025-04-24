@@ -168,6 +168,8 @@ def plot_list(
     data: list[float] | dict[int, float],
     title="Results",
     kind: Literal["line", "bar"] = "line",
+    xlabel: str = "X-axis",
+    ylabel: str = "Y-axis",
 ):
     if isinstance(data, dict):
         x = list(data.keys())
@@ -184,8 +186,8 @@ def plot_list(
         case _:
             raise ValueError(f"Invalid kind: {kind}")
 
-    plt.xlabel("X-axis")
-    plt.ylabel("Y-axis")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(title)
 
     plt.xticks(x)

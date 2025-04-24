@@ -3,7 +3,7 @@ from pathlib import Path
 
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
-from taxonomy_generator.utils.utils import compare_datas, normalize
+from taxonomy_generator.utils.utils import compare_datas, normalize, plot_list
 
 TREE_PATH = Path("data/tree.json")
 
@@ -136,5 +136,29 @@ def save_descriptions():
     Path("data/descriptions.json").write_text(json.dumps(descs, ensure_ascii=False))
 
 
+def show_frequency_by_iteration(len_results: int = 6):
+    max_results = {}
+    for path in Path("data/breakdown_results").iterdir():
+        if path.is_file():
+            results = json.loads(path.read_text())
+            if len(results) == len_results:
+                max_idx = max(
+                    enumerate(results),
+                    key=lambda x: x[1]["overall_score"],
+                )[0]
+
+                max_results[max_idx] = max_results.get(max_idx, 0) + 1
+
+    print(sum(r for r in max_results.values()))
+
+    plot_list(
+        max_results,
+        kind="bar",
+        title="Frequency of Max Score by Iteration Index",
+        xlabel="Iteration Index",
+        ylabel="Frequency",
+    )
+
+
 if __name__ == "__main__":
-    print_total_related()
+    show_frequency_by_iteration()
