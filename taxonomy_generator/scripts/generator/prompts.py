@@ -408,7 +408,7 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 
 {"" if no_overviews else get_overview_results_str(eval_result, first)}
 
-{f"In an attempt to gauge *helpfulness*, {len(eval_result.topics_feedbacks)} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:" if first else "Here are the LLM-generated feedback results:"}
+{f"In an attempt to gauge *helpfulness*, {len([tf for tf in eval_result.topics_feedbacks if tf.system])} LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:" if first else "Here are the LLM-generated feedback results:"}
 
 <helpfulness_feedback>
 {format_topics_feedbacks(eval_result.topics_feedbacks)}
