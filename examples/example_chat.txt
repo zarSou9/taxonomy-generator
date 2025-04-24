@@ -1,0 +1,1216 @@
+============================== USER ==============================
+You are developing a hierarchical taxonomy for organizing a corpus of AI safety related research papers. You've already developed the root breakdown (of AI safety). Here's the set of categories comprising this breakdown (titles only):
+
+- Robustness and Adversarial Defense
+- Verification and Formal Methods
+- Interpretability and Explainability
+- AI Alignment and Value Learning
+- Human-AI Interaction and Collaboration
+- AI Governance, Ethics and Policy
+
+The category you're currently focused on breaking down further is at Robustness and Adversarial Defense -> Distribution Robustness -> Distribution-Invariant Learning -> *Reinforcement Learning Robustness*. So for additional context, here are all the categories under Robustness and Adversarial Defense:
+
+- Adversarial Machine Learning
+- Distribution Robustness
+- Robustness Assessment and Certification
+
+And then Distribution Robustness has been broken down as follows:
+
+- Uncertainty Detection and Quantification
+- Distribution-Invariant Learning
+- Target-Aware Adaptation
+- Test-Time Adaptation Techniques
+- Subpopulation and Fairness Robustness
+
+And here's the breakdown for Distribution-Invariant Learning:
+
+- Distributionally Robust Optimization (DRO)
+- Invariant Risk Minimization and Causal Approaches
+- Sharpness-Aware and Loss Landscape Methods
+- Constraint and Regularization Techniques
+- Reinforcement Learning Robustness
+- Federated and Collaborative Robustness
+- Evaluation and Benchmarking Frameworks
+
+Now, your category of focus, Reinforcement Learning Robustness, is specifically defined as "Distribution-invariant approaches specialized for reinforcement learning settings. This includes robust Markov Decision Processes, resilient multi-agent systems, and methods that handle uncertainty in state transitions or rewards." The category currently has 28 papers sorted into it. Here are those papers:
+
+<papers>
+Title: Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model
+Published: 2025-03-11
+Abstract: In this work, we study the sample complexity problem of risk-sensitive Reinforcement Learning (RL) with a generative model, where we aim to maximize the Conditional Value at Risk (CVaR) with risk tolerance level $\tau$ at each step, a criterion we refer to as Iterated CVaR. We first build a connection between Iterated CVaR RL and $(s, a)$-rectangular distributional robust RL with a specific uncertainty set for CVaR. We establish nearly matching upper and lower bounds on the sample complexity of this problem. Specifically, we first prove that a value iteration-based algorithm, ICVaR-VI, achieves an $\epsilon$-optimal policy with at most $\tilde{O} \left(\frac{SA}{(1-\gamma)^4\tau^2\epsilon^2} \right)$ samples, where $\gamma$ is the discount factor, and $S, A$ are the sizes of the state and action spaces. Furthermore, when $\tau \geq \gamma$, the sample complexity improves to $\tilde{O} \left( \frac{SA}{(1-\gamma)^3\epsilon^2} \right)$. We further show a minimax lower bound of $\tilde{O} \left(\frac{(1-\gamma \tau)SA}{(1-\gamma)^4\tau\epsilon^2} \right)$. For a fixed risk level $\tau \in (0,1]$, our upper and lower bounds match, demonstrating the tightness and optimality of our analysis. We also investigate a limiting case with a small risk level $\tau$, called Worst-Path RL, where the objective is to maximize the minimum possible cumulative reward. We develop matching upper and lower bounds of $\tilde{O} \left(\frac{SA}{p_{\min}} \right)$, where $p_{\min}$ denotes the minimum non-zero reaching probability of the transition kernel.
+
+Title: Distributionally Robust Constrained Reinforcement Learning under Strong Duality
+Published: 2024-06-22
+Abstract: We study the problem of Distributionally Robust Constrained RL (DRC-RL), where the goal is to maximize the expected reward subject to environmental distribution shifts and constraints. This setting captures situations where training and testing environments differ, and policies must satisfy constraints motivated by safety or limited budgets. Despite significant progress toward algorithm design for the separate problems of distributionally robust RL and constrained RL, there do not yet exist algorithms with end-to-end convergence guarantees for DRC-RL. We develop an algorithmic framework based on strong duality that enables the first efficient and provable solution in a class of environmental uncertainties. Further, our framework exposes an inherent structure of DRC-RL that arises from the combination of distributional robustness and constraints, which prevents a popular class of iterative methods from tractably solving DRC-RL, despite such frameworks being applicable for each of distributionally robust RL and constrained RL individually. Finally, we conduct experiments on a car racing benchmark to evaluate the effectiveness of the proposed algorithm.
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+Title: The Curious Price of Distributional Robustness in Reinforcement Learning with a Generative Model
+Published: 2023-05-26
+Abstract: This paper investigates model robustness in reinforcement learning (RL) to reduce the sim-to-real gap in practice. We adopt the framework of distributionally robust Markov decision processes (RMDPs), aimed at learning a policy that optimizes the worst-case performance when the deployed environment falls within a prescribed uncertainty set around the nominal MDP. Despite recent efforts, the sample complexity of RMDPs remained mostly unsettled regardless of the uncertainty set in use. It was unclear if distributional robustness bears any statistical consequences when benchmarked against standard RL. Assuming access to a generative model that draws samples based on the nominal MDP, we characterize the sample complexity of RMDPs when the uncertainty set is specified via either the total variation (TV) distance or $\chi^2$ divergence. The algorithm studied here is a model-based method called {\em distributionally robust value iteration}, which is shown to be near-optimal for the full range of uncertainty levels. Somewhat surprisingly, our results uncover that RMDPs are not necessarily easier or harder to learn than standard MDPs. The statistical consequence incurred by the robustness requirement depends heavily on the size and shape of the uncertainty set: in the case w.r.t.~the TV distance, the minimax sample complexity of RMDPs is always smaller than that of standard MDPs; in the case w.r.t.~the $\chi^2$ divergence, the sample complexity of RMDPs can often far exceed the standard MDP counterpart.
+
+Title: Group Distributionally Robust Reinforcement Learning with Hierarchical Latent Variables
+Published: 2022-10-21
+Abstract: One key challenge for multi-task Reinforcement learning (RL) in practice is the absence of task indicators. Robust RL has been applied to deal with task ambiguity, but may result in over-conservative policies. To balance the worst-case (robustness) and average performance, we propose Group Distributionally Robust Markov Decision Process (GDR-MDP), a flexible hierarchical MDP formulation that encodes task groups via a latent mixture model. GDR-MDP identifies the optimal policy that maximizes the expected return under the worst-possible qualified belief over task groups within an ambiguity set. We rigorously show that GDR-MDP's hierarchical structure improves distributional robustness by adding regularization to the worst possible outcomes. We then develop deep RL algorithms for GDR-MDP for both value-based and policy-based RL methods. Extensive experiments on Box2D control tasks, MuJoCo benchmarks, and Google football platforms show that our algorithms outperform classic robust training algorithms across diverse environments in terms of robustness under belief uncertainties. Demos are available on our project page (\url{https://sites.google.com/view/gdr-rl/home}).
+
+Title: Distributionally Adaptive Meta Reinforcement Learning
+Published: 2022-10-06
+Abstract: Meta-reinforcement learning algorithms provide a data-driven way to acquire policies that quickly adapt to many tasks with varying rewards or dynamics functions. However, learned meta-policies are often effective only on the exact task distribution on which they were trained and struggle in the presence of distribution shift of test-time rewards or transition dynamics. In this work, we develop a framework for meta-RL algorithms that are able to behave appropriately under test-time distribution shifts in the space of tasks. Our framework centers on an adaptive approach to distributional robustness that trains a population of meta-policies to be robust to varying levels of distribution shift. When evaluated on a potentially shifted test-time distribution of tasks, this allows us to choose the meta-policy with the most appropriate level of robustness, and use it to perform fast adaptation. We formally show how our framework allows for improved regret under distribution shift, and empirically show its efficacy on simulated robotics problems under a wide range of distribution shifts.
+
+Title: Robust $Q$-learning Algorithm for Markov Decision Processes under Wasserstein Uncertainty
+Published: 2022-09-30
+Abstract: We present a novel $Q$-learning algorithm tailored to solve distributionally robust Markov decision problems where the corresponding ambiguity set of transition probabilities for the underlying Markov decision process is a Wasserstein ball around a (possibly estimated) reference measure. We prove convergence of the presented algorithm and provide several examples also using real data to illustrate both the tractability of our algorithm as well as the benefits of considering distributional robustness when solving stochastic optimal control problems, in particular when the estimated distributions turn out to be misspecified in practice.
+
+Title: SAMBO-RL: Shifts-aware Model-based Offline Reinforcement Learning
+Published: 2024-08-23
+Abstract: Model-based offline reinforcement learning trains policies using pre-collected datasets and learned environment models, eliminating the need for direct real-world environment interaction. However, this paradigm is inherently challenged by distribution shift (DS). Existing methods address this issue by leveraging off-policy mechanisms and estimating model uncertainty, but they often result in inconsistent objectives and lack a unified theoretical foundation. This paper offers a comprehensive analysis that disentangles the problem into two fundamental components: model bias and policy shift. Our theoretical and empirical investigations reveal how these factors distort value estimation and restrict policy optimization. To tackle these challenges, we derive a novel Shifts-aware Reward (SAR) through a unified probabilistic inference framework, which modifies the vanilla reward to refine value learning and facilitate policy training. Building on this, we introduce Shifts-aware Model-based Offline Reinforcement Learning (SAMBO-RL), a practical framework that efficiently trains classifiers to approximate SAR for policy optimization. Empirical experiments show that SAR effectively mitigates DS, and SAMBO-RL achieves superior or comparable performance across various benchmarks, underscoring its effectiveness and validating our theoretical analysis.
+
+Title: ODICE: Revealing the Mystery of Distribution Correction Estimation via Orthogonal-gradient Update
+Published: 2024-02-01
+Abstract: In this study, we investigate the DIstribution Correction Estimation (DICE) methods, an important line of work in offline reinforcement learning (RL) and imitation learning (IL). DICE-based methods impose state-action-level behavior constraint, which is an ideal choice for offline learning. However, they typically perform much worse than current state-of-the-art (SOTA) methods that solely use action-level behavior constraint. After revisiting DICE-based methods, we find there exist two gradient terms when learning the value function using true-gradient update: forward gradient (taken on the current state) and backward gradient (taken on the next state). Using forward gradient bears a large similarity to many offline RL methods, and thus can be regarded as applying action-level constraint. However, directly adding the backward gradient may degenerate or cancel out its effect if these two gradients have conflicting directions. To resolve this issue, we propose a simple yet effective modification that projects the backward gradient onto the normal plane of the forward gradient, resulting in an orthogonal-gradient update, a new learning rule for DICE-based methods. We conduct thorough theoretical analyses and find that the projected backward gradient brings state-level behavior regularization, which reveals the mystery of DICE-based methods: the value learning objective does try to impose state-action-level constraint, but needs to be used in a corrected way. Through toy examples and extensive experiments on complex offline RL and IL tasks, we demonstrate that DICE-based methods using orthogonal-gradient updates (O-DICE) achieve SOTA performance and great robustness.
+
+Title: DOMAIN: MilDly COnservative Model-BAsed OfflINe Reinforcement Learning
+Published: 2023-09-16
+Abstract: Model-based reinforcement learning (RL), which learns environment model from offline dataset and generates more out-of-distribution model data, has become an effective approach to the problem of distribution shift in offline RL. Due to the gap between the learned and actual environment, conservatism should be incorporated into the algorithm to balance accurate offline data and imprecise model data. The conservatism of current algorithms mostly relies on model uncertainty estimation. However, uncertainty estimation is unreliable and leads to poor performance in certain scenarios, and the previous methods ignore differences between the model data, which brings great conservatism. Therefore, this paper proposes a milDly cOnservative Model-bAsed offlINe RL algorithm (DOMAIN) without estimating model uncertainty to address the above issues. DOMAIN introduces adaptive sampling distribution of model samples, which can adaptively adjust the model data penalty. In this paper, we theoretically demonstrate that the Q value learned by the DOMAIN outside the region is a lower bound of the true Q value, the DOMAIN is less conservative than previous model-based offline RL algorithms and has the guarantee of safety policy improvement. The results of extensive experiments show that DOMAIN outperforms prior RL algorithms on the D4RL dataset benchmark.
+
+Title: Improved Sample Complexity Bounds for Distributionally Robust Reinforcement Learning
+Published: 2023-03-05
+Abstract: We consider the problem of learning a control policy that is robust against the parameter mismatches between the training environment and testing environment. We formulate this as a distributionally robust reinforcement learning (DR-RL) problem where the objective is to learn the policy which maximizes the value function against the worst possible stochastic model of the environment in an uncertainty set. We focus on the tabular episodic learning setting where the algorithm has access to a generative model of the nominal (training) environment around which the uncertainty set is defined. We propose the Robust Phased Value Learning (RPVL) algorithm to solve this problem for the uncertainty sets specified by four different divergences: total variation, chi-square, Kullback-Leibler, and Wasserstein. We show that our algorithm achieves $\tilde{\mathcal{O}}(|\mathcal{S}||\mathcal{A}| H^{5})$ sample complexity, which is uniformly better than the existing results by a factor of $|\mathcal{S}|$, where $|\mathcal{S}|$ is number of states, $|\mathcal{A}|$ is the number of actions, and $H$ is the horizon length. We also provide the first-ever sample complexity result for the Wasserstein uncertainty set. Finally, we demonstrate the performance of our algorithm using simulation experiments.
+
+Title: HAD-Gen: Human-like and Diverse Driving Behavior Modeling for Controllable Scenario Generation
+Published: 2025-03-19
+Abstract: Simulation-based testing has emerged as an essential tool for verifying and validating autonomous vehicles (AVs). However, contemporary methodologies, such as deterministic and imitation learning-based driver models, struggle to capture the variability of human-like driving behavior. Given these challenges, we propose HAD-Gen, a general framework for realistic traffic scenario generation that simulates diverse human-like driving behaviors. The framework first clusters the vehicle trajectory data into different driving styles according to safety features. It then employs maximum entropy inverse reinforcement learning on each of the clusters to learn the reward function corresponding to each driving style. Using these reward functions, the method integrates offline reinforcement learning pre-training and multi-agent reinforcement learning algorithms to obtain general and robust driving policies. Multi-perspective simulation results show that our proposed scenario generation framework can simulate diverse, human-like driving behaviors with strong generalization capability. The proposed framework achieves a 90.96% goal-reaching rate, an off-road rate of 2.08%, and a collision rate of 6.91% in the generalization test, outperforming prior approaches by over 20% in goal-reaching performance. The source code is released at https://github.com/RoboSafe-Lab/Sim4AD.
+
+Title: Policy Constraint by Only Support Constraint for Offline Reinforcement Learning
+Published: 2025-03-07
+Abstract: Offline reinforcement learning (RL) aims to optimize a policy by using pre-collected datasets, to maximize cumulative rewards. However, offline reinforcement learning suffers challenges due to the distributional shift between the learned and behavior policies, leading to errors when computing Q-values for out-of-distribution (OOD) actions. To mitigate this issue, policy constraint methods aim to constrain the learned policy's distribution with the distribution of the behavior policy or confine action selection within the support of the behavior policy. However, current policy constraint methods tend to exhibit excessive conservatism, hindering the policy from further surpassing the behavior policy's performance. In this work, we present Only Support Constraint (OSC) which is derived from maximizing the total probability of learned policy in the support of behavior policy, to address the conservatism of policy constraint. OSC presents a regularization term that only restricts policies to the support without imposing extra constraints on actions within the support. Additionally, to fully harness the performance of the new policy constraints, OSC utilizes a diffusion model to effectively characterize the support of behavior policies. Experimental evaluations across a variety of offline RL benchmarks demonstrate that OSC significantly enhances performance, alleviating the challenges associated with distributional shifts and mitigating conservatism of policy constraints. Code is available at https://github.com/MoreanP/OSC.
+
+Title: AVG-DICE: Stationary Distribution Correction by Regression
+Published: 2025-03-03
+Abstract: Off-policy policy evaluation (OPE), an essential component of reinforcement learning, has long suffered from stationary state distribution mismatch, undermining both stability and accuracy of OPE estimates. While existing methods correct distribution shifts by estimating density ratios, they often rely on expensive optimization or backward Bellman-based updates and struggle to outperform simpler baselines. We introduce AVG-DICE, a computationally simple Monte Carlo estimator for the density ratio that averages discounted importance sampling ratios, providing an unbiased and consistent correction. AVG-DICE extends naturally to nonlinear function approximation using regression, which we roughly tune and test on OPE tasks based on Mujoco Gym environments and compare with state-of-the-art density-ratio estimators using their reported hyperparameters. In our experiments, AVG-DICE is at least as accurate as state-of-the-art estimators and sometimes offers orders-of-magnitude improvements. However, a sensitivity analysis shows that best-performing hyperparameters may vary substantially across different discount factors, so a re-tuning is suggested.
+
+Title: Offline Reinforcement Learning via Inverse Optimization
+Published: 2025-02-27
+Abstract: Inspired by the recent successes of Inverse Optimization (IO) across various application domains, we propose a novel offline Reinforcement Learning (ORL) algorithm for continuous state and action spaces, leveraging the convex loss function called ``sub-optimality loss" from the IO literature. To mitigate the distribution shift commonly observed in ORL problems, we further employ a robust and non-causal Model Predictive Control (MPC) expert steering a nominal model of the dynamics using in-hindsight information stemming from the model mismatch. Unlike the existing literature, our robust MPC expert enjoys an exact and tractable convex reformulation. In the second part of this study, we show that the IO hypothesis class, trained by the proposed convex loss function, enjoys ample expressiveness and achieves competitive performance comparing with the state-of-the-art (SOTA) methods in the low-data regime of the MuJoCo benchmark while utilizing three orders of magnitude fewer parameters, thereby requiring significantly fewer computational resources. To facilitate the reproducibility of our results, we provide an open-source package implementing the proposed algorithms and the experiments.
+
+Title: VEM: Environment-Free Exploration for Training GUI Agent with Value Environment Model
+Published: 2025-02-26
+Abstract: Training Vision-Language Models (VLMs) for Graphical User Interfaces (GUI) agents via Reinforcement Learning (RL) faces critical challenges: environment-based RL requires costly interactions, while environment-free methods struggle with distribution shift and reward generalization. We propose an environment-free RL framework that decouples value estimation from policy optimization by leveraging a pretrained Value Environment Model (VEM). VEM predicts state-action values directly from offline data, distilling human-like priors about GUI interaction outcomes without requiring next-state prediction or environmental feedback. This avoids compounding errors and enhances resilience to UI changes by focusing on semantic reasoning (e.g., Does this action advance the user's goal?). The framework operates in two stages: (1) pretraining VEM to estimate long-term action utilities and (2) guiding policy exploration with frozen VEM signals, enabling layout-agnostic GUI automation. Evaluated on Android-in-the-Wild benchmarks, VEM achieves state-of-the-art performance in both offline and online settings, outperforming environment-free baselines significantly and matching environment-based approaches without interaction costs. Importantly, VEM demonstrates that semantic-aware value estimation can achieve comparable performance with online-trained methods.
+
+Title: The Surprising Ineffectiveness of Pre-Trained Visual Representations for Model-Based Reinforcement Learning
+Published: 2024-11-15
+Abstract: Visual Reinforcement Learning (RL) methods often require extensive amounts of data. As opposed to model-free RL, model-based RL (MBRL) offers a potential solution with efficient data utilization through planning. Additionally, RL lacks generalization capabilities for real-world tasks. Prior work has shown that incorporating pre-trained visual representations (PVRs) enhances sample efficiency and generalization. While PVRs have been extensively studied in the context of model-free RL, their potential in MBRL remains largely unexplored. In this paper, we benchmark a set of PVRs on challenging control tasks in a model-based RL setting. We investigate the data efficiency, generalization capabilities, and the impact of different properties of PVRs on the performance of model-based agents. Our results, perhaps surprisingly, reveal that for MBRL current PVRs are not more sample efficient than learning representations from scratch, and that they do not generalize better to out-of-distribution (OOD) settings. To explain this, we analyze the quality of the trained dynamics model. Furthermore, we show that data diversity and network architecture are the most important contributors to OOD generalization performance.
+
+Title: FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL
+Published: 2024-10-21
+Abstract: Multi-agent reinforcement learning has demonstrated significant potential in addressing complex cooperative tasks across various real-world applications. However, existing MARL approaches often rely on the restrictive assumption that the number of entities (e.g., agents, obstacles) remains constant between training and inference. This overlooks scenarios where entities are dynamically removed or added during the inference trajectory -- a common occurrence in real-world environments like search and rescue missions and dynamic combat situations. In this paper, we tackle the challenge of intra-trajectory dynamic entity composition under zero-shot out-of-domain (OOD) generalization, where such dynamic changes cannot be anticipated beforehand. Our empirical studies reveal that existing MARL methods suffer significant performance degradation and increased uncertainty in these scenarios. In response, we propose FlickerFusion, a novel OOD generalization method that acts as a universally applicable augmentation technique for MARL backbone methods. FlickerFusion stochastically drops out parts of the observation space, emulating being in-domain when inferenced OOD. The results show that FlickerFusion not only achieves superior inference rewards but also uniquely reduces uncertainty vis-\`a-vis the backbone, compared to existing methods. Benchmarks, implementations, and model weights are organized and open-sourced at flickerfusion305.github.io, accompanied by ample demo video renderings.
+
+Title: Markov Decision Processes under External Temporal Processes
+Published: 2023-05-25
+Abstract: Most reinforcement learning algorithms treat the context under which they operate as a stationary, isolated, and undisturbed environment. However, in real world applications, environments constantly change due to a variety of external events. To address this problem, we study Markov Decision Processes (MDP) under the influence of an external temporal process. First, we formalize this notion and derive conditions under which the problem becomes tractable with suitable solutions. We propose a policy iteration algorithm to solve this problem and theoretically analyze its performance. Our analysis addresses the non-stationarity present in the MDP as a result of non-Markovian events, necessitating the formulation of policies that are contingent upon both the current state and a history of prior events. Additionally, we derive insights regarding the sample complexity of the algorithm and incorporate factors that define the exogenous temporal process into the established bounds. Finally, we perform experiments to demonstrate our findings within a traditional control environment.
+
+Title: Direct Random Search for Fine Tuning of Deep Reinforcement Learning Policies
+Published: 2021-09-12
+Abstract: Researchers have demonstrated that Deep Reinforcement Learning (DRL) is a powerful tool for finding policies that perform well on complex robotic systems. However, these policies are often unpredictable and can induce highly variable behavior when evaluated with only slightly different initial conditions. Training considerations constrain DRL algorithm designs in that most algorithms must use stochastic policies during training. The resulting policy used during deployment, however, can and frequently is a deterministic one that uses the Maximum Likelihood Action (MLA) at each step. In this work, we show that a direct random search is very effective at fine-tuning DRL policies by directly optimizing them using deterministic rollouts. We illustrate this across a large collection of reinforcement learning environments, using a wide variety of policies obtained from different algorithms. Our results show that this method yields more consistent and higher performing agents on the environments we tested. Furthermore, we demonstrate how this method can be used to extend our previous work on shrinking the dimensionality of the reachable state space of closed-loop systems run under Deep Neural Network (DNN) policies.
+
+Title: Never Worse, Mostly Better: Stable Policy Improvement in Deep Reinforcement Learning
+Published: 2019-10-02
+Abstract: In recent years, there has been significant progress in applying deep reinforcement learning (RL) for solving challenging problems across a wide variety of domains. Nevertheless, convergence of various methods has been shown to suffer from inconsistencies, due to algorithmic instability and variance, as well as stochasticity in the benchmark environments. Particularly, despite the fact that the agent's performance may be improving on average, it may abruptly deteriorate at late stages of training. In this work, we study methods for enhancing the agent's learning process, by providing conservative updates with respect to either the obtained history or a reference benchmark policy. Our method, termed EVEREST, obtains high confidence improvements via confidence bounds of a reference policy. Through extensive empirical analysis we demonstrate the benefit of our approach in terms of both performance and stabilization, with significant improvements in continuous control and Atari benchmarks.
+
+Title: Risk-Averse Decision Making Under Uncertainty
+Published: 2021-09-09
+Abstract: A large class of decision making under uncertainty problems can be described via Markov decision processes (MDPs) or partially observable MDPs (POMDPs), with application to artificial intelligence and operations research, among others. Traditionally, policy synthesis techniques are proposed such that a total expected cost or reward is minimized or maximized. However, optimality in the total expected cost sense is only reasonable if system behavior in the large number of runs is of interest, which has limited the use of such policies in practical mission-critical scenarios, wherein large deviations from the expected behavior may lead to mission failure. In this paper, we consider the problem of designing policies for MDPs and POMDPs with objectives and constraints in terms of dynamic coherent risk measures, which we refer to as the constrained risk-averse problem. For MDPs, we reformulate the problem into a infsup problem via the Lagrangian framework and propose an optimization-based method to synthesize Markovian policies. For MDPs, we demonstrate that the formulated optimization problems are in the form of difference convex programs (DCPs) and can be solved by the disciplined convex-concave programming (DCCP) framework. We show that these results generalize linear programs for constrained MDPs with total discounted expected costs and constraints. For POMDPs, we show that, if the coherent risk measures can be defined as a Markov risk transition mapping, an infinite-dimensional optimization can be used to design Markovian belief-based policies. For stochastic finite-state controllers (FSCs), we show that the latter optimization simplifies to a (finite-dimensional) DCP and can be solved by the DCCP framework. We incorporate these DCPs in a policy iteration algorithm to design risk-averse FSCs for POMDPs.
+
+Title: Risk Aversion to Parameter Uncertainty in Markov Decision Processes with an Application to Slow-Onset Disaster Relief
+Published: 2019-02-24
+Abstract: In classical Markov Decision Processes (MDPs), action costs and transition probabilities are assumed to be known, although an accurate estimation of these parameters is often not possible in practice. This study addresses MDPs under cost and transition probability uncertainty and aims to provide a mathematical framework to obtain policies minimizing the risk of high long-term losses due to not knowing the true system parameters. To this end, we utilize the risk measure value-at-risk associated with the expected performance of an MDP model with respect to parameter uncertainty. We provide mixed-integer linear and nonlinear programming formulations and heuristic algorithms for such risk-averse models of MDPs under a finite distribution of the uncertain parameters. Our proposed models and solution methods are illustrated on an inventory management problem for humanitarian relief operations during a slow-onset disaster. The results demonstrate the potential of our risk-averse modeling approach for reducing the risk of highly undesirable outcomes in uncertain/risky environments.
+
+Title: Emergency action termination for immediate reaction in hierarchical reinforcement learning
+Published: 2022-11-11
+Abstract: Hierarchical decomposition of control is unavoidable in large dynamical systems. In reinforcement learning (RL), it is usually solved with subgoals defined at higher policy levels and achieved at lower policy levels. Reaching these goals can take a substantial amount of time, during which it is not verified whether they are still worth pursuing. However, due to the randomness of the environment, these goals may become obsolete. In this paper, we address this gap in the state-of-the-art approaches and propose a method in which the validity of higher-level actions (thus lower-level goals) is constantly verified at the higher level. If the actions, i.e. lower level goals, become inadequate, they are replaced by more appropriate ones. This way we combine the advantages of hierarchical RL, which is fast training, and flat RL, which is immediate reactivity. We study our approach experimentally on seven benchmark environments.
+
+Title: Collaboration Promotes Group Resilience in Multi-Agent AI
+Published: 2021-11-12
+Abstract: AI agents need to be robust to unexpected changes in their environment in order to safely operate in real-world scenarios. While some work has been done on this type of robustness in the single-agent case, in this work we introduce the idea that collaboration with other agents can help agents adapt to environment perturbations in multi-agent reinforcement learning settings. We first formalize this notion of resilience of a group of agents. We then empirically evaluate different collaboration protocols and examine their effect on resilience. We see that all of the collaboration approaches considered lead to greater resilience compared to baseline, in line with our hypothesis. We discuss future direction and the general relevance of the concept of resilience introduced in this work.
+
+Title: Policy Gradient for Robust Markov Decision Processes
+Published: 2024-10-29
+Abstract: We develop a generic policy gradient method with the global optimality guarantee for robust Markov Decision Processes (MDPs). While policy gradient methods are widely used for solving dynamic decision problems due to their scalable and efficient nature, adapting these methods to account for model ambiguity has been challenging, often making it impractical to learn robust policies. This paper introduces a novel policy gradient method, Double-Loop Robust Policy Mirror Descent (DRPMD), for solving robust MDPs. DRPMD employs a general mirror descent update rule for the policy optimization with adaptive tolerance per iteration, guaranteeing convergence to a globally optimal policy. We provide a comprehensive analysis of DRPMD, including new convergence results under both direct and softmax parameterizations, and provide novel insights into the inner problem solution through Transition Mirror Ascent (TMA). Additionally, we propose innovative parametric transition kernels for both discrete and continuous state-action spaces, broadening the applicability of our approach. Empirical results validate the robustness and global convergence of DRPMD across various challenging robust MDP settings.
+
+Title: Stronger Generalization Guarantees for Robot Learning by Combining Generative Models and Real-World Data
+Published: 2021-11-16
+Abstract: We are motivated by the problem of learning policies for robotic systems with rich sensory inputs (e.g., vision) in a manner that allows us to guarantee generalization to environments unseen during training. We provide a framework for providing such generalization guarantees by leveraging a finite dataset of real-world environments in combination with a (potentially inaccurate) generative model of environments. The key idea behind our approach is to utilize the generative model in order to implicitly specify a prior over policies. This prior is updated using the real-world dataset of environments by minimizing an upper bound on the expected cost across novel environments derived via Probably Approximately Correct (PAC)-Bayes generalization theory. We demonstrate our approach on two simulated systems with nonlinear/hybrid dynamics and rich sensing modalities: (i) quadrotor navigation with an onboard vision sensor, and (ii) grasping objects using a depth sensor. Comparisons with prior work demonstrate the ability of our approach to obtain stronger generalization guarantees by utilizing generative models. We also present hardware experiments for validating our bounds for the grasping task.
+
+Title: Online MDP with Transition Prototypes: A Robust Adaptive Approach
+Published: 2024-12-18
+Abstract: In this work, we consider an online robust Markov Decision Process (MDP) where we have the information of finitely many prototypes of the underlying transition kernel. We consider an adaptively updated ambiguity set of the prototypes and propose an algorithm that efficiently identifies the true underlying transition kernel while guaranteeing the performance of the corresponding robust policy. To be more specific, we provide a sublinear regret of the subsequent optimal robust policy. We also provide an early stopping mechanism and a worst-case performance bound of the value function. In numerical experiments, we demonstrate that our method outperforms existing approaches, particularly in the early stage with limited data. This work contributes to robust MDPs by considering possible prior information about the underlying transition probability and online learning, offering both theoretical insights and practical algorithms for improved decision-making under uncertainty.
+</papers>
+
+Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the Reinforcement Learning Robustness category. Your breakdown may have anywhere from 2 to 8 topics with each topic defined by a title and brief description.
+
+Note: By default, there will already be a special category for papers that provide a broad overview or literature review of Reinforcement Learning Robustness as a whole. Thus, you don't need to consider these general overview papers for your taxonomy.
+
+After providing your breakdown, it will automatically be evaluated using LLMs and various metrics so that it can be iterated upon.
+
+You should strive for the following attributes:
+- Aim for MECE: Mutually Exclusive, Collectively Exaustive.
+    - Mutually Exclusive: An LLM will be used to categorize each paper. Minimize the chance of it identifying more than one suitable topic for a given paper.
+    - Collectively Exaustive: All papers should fit into at least one topic.
+    - Optimize for these as best you can, but don't strive for perfection. Mutual exclusivity is likely impossible, and there might be a couple papers which shouldn't even be under Reinforcement Learning Robustness.
+- Use semantically meaningful categories. E.g., don't categorize by non-content attributes like publication date.
+- Your breakdown should provide a clear mental model of Reinforcement Learning Robustness that is valuable to both newcomers and experienced researchers.
+
+Please present your topics as a JSON array without any other text or explanation. Example format:
+
+```json
+[
+    {
+        "title": "Clear and concise title",
+        "description": "~2 sentence description of the topic"
+    }
+]
+```
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+I need to analyze these papers and create 2-8 subcategories within Reinforcement Learning Robustness that are mutually exclusive and collectively exhaustive. Let me first identify the main themes across these papers:
+
+1. **Distributionally Robust Optimization/RL**: Many papers discuss approaches where the agent optimizes for the worst-case scenario within a specified uncertainty set (papers about RMDPs - Robust Markov Decision Processes). Examples include "Distributionally Robust Constrained Reinforcement Learning under Strong Duality", "The Curious Price of Distributional Robustness in Reinforcement Learning with a Generative Model", etc.
+
+2. **Sample Complexity and Theoretical Guarantees**: Several papers focus on theoretical aspects like sample complexity for robust RL algorithms. Examples: "Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model", "Improved Sample Complexity Bounds for Distributionally Robust Reinforcement Learning".
+
+3. **Offline RL Robustness**: Papers dealing with distribution shift challenges in offline RL where policies are learned from pre-collected datasets. Examples: "SAMBO-RL: Shifts-aware Model-based Offline Reinforcement Learning", "Policy Constraint by Only Support Constraint for Offline Reinforcement Learning".
+
+4. **Risk-Sensitive/Risk-Averse RL**: Papers focused on managing risk in the decision-making process, using measures like CVaR. Examples: "Risk-Averse Decision Making Under Uncertainty", "Risk Aversion to Parameter Uncertainty in Markov Decision Processes".
+
+5. **Multi-Agent System Robustness**: Papers on robustness in multi-agent environments. Examples: "FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL", "Collaboration Promotes Group Resilience in Multi-Agent AI".
+
+6. **Generalization in RL**: Papers dealing with the ability of RL policies to generalize to unseen environments or conditions. Examples: "Stronger Generalization Guarantees for Robot Learning", "Distributionally Adaptive Meta Reinforcement Learning".
+
+7. **Hierarchical RL Robustness**: Papers addressing robustness in hierarchical reinforcement learning structures. Examples: "Emergency action termination for immediate reaction in hierarchical reinforcement learning".
+
+Let me now refine these themes into a concise set of subcategories, aiming for MECE:
+
+1. **Distributionally Robust Optimization (DRO) in RL**: For papers focused on optimizing against worst-case scenarios within uncertainty sets around nominal MDPs.
+
+2. **Theoretical Analysis and Sample Complexity**: For papers focused on theoretical foundations and sample complexity guarantees for robust RL methods.
+
+3. **Offline RL and Distribution Shift Mitigation**: For papers addressing challenges related to distribution shifts in offline RL settings.
+
+4. **Risk-Aware and Risk-Sensitive RL**: For papers dealing with explicit risk considerations in the decision process.
+
+5. **Multi-Agent Robustness**: For papers focused on robustness in multi-agent systems.
+
+6. **Generalization Methods for RL**: For papers focused on improving generalization capabilities of RL policies to unseen environments or perturbations.
+
+These 6 categories seem to cover most of the papers. Some papers might fit into multiple categories, but we can assign them to their primary focus area. I'll now create formal definitions for each.
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Distributionally Robust Optimization in RL",
+        "description": "Methods that optimize policies for worst-case performance within uncertainty sets around nominal MDPs. Includes approaches using robust MDPs (RMDPs), uncertainty sets defined by various divergences, and algorithms that address model ambiguity."
+    },
+    {
+        "title": "Theoretical Foundations and Sample Complexity",
+        "description": "Research focused on theoretical aspects of robust RL including convergence guarantees, optimality conditions, and sample complexity bounds. This includes papers analyzing statistical efficiency of robust RL algorithms under various uncertainty models."
+    },
+    {
+        "title": "Offline RL and Distribution Shift Mitigation",
+        "description": "Approaches addressing distribution shift challenges in offline RL settings where policies are learned from static datasets. Includes techniques that constrain policy optimization, model corrections, and methods that handle out-of-distribution actions or states."
+    },
+    {
+        "title": "Risk-Aware and Risk-Sensitive Decision Making",
+        "description": "Methods explicitly incorporating risk measures (like CVaR) or risk-aversion in RL decision processes. Includes techniques for managing uncertainty in state transitions, rewards, or environmental parameters while prioritizing safety or reliability."
+    },
+    {
+        "title": "Multi-Agent Robustness and Collaboration",
+        "description": "Approaches focused on robustness in multi-agent reinforcement learning systems. Includes methods for resilient group behaviors, robust collaboration protocols, and techniques for handling dynamic agent composition."
+    },
+    {
+        "title": "Generalization and Adaptation Methods",
+        "description": "Techniques for improving RL policy generalization to unseen environments or conditions. Includes meta-learning approaches, domain adaptation methods, and techniques that ensure stable performance across distribution shifts or environment changes."
+    }
+]
+```
+====================================================================
+
+============================== USER ==============================
+The evaluation script ran successfully on your proposed breakdown. Here are the results:
+
+All 28 papers were categorized by an LLM.
+
+Of these, 14 (50%) papers were cleanly categorized into one category.
+
+The sorting LLM marked all papers as fitting into at least one category - nice!
+
+The LLM found overlap in 14 (50%) papers (those which it decided had multiple applicable categories).
+
+Here's a table showing the combinations of topics these papers were sorted into, ordered by frequency (highest to lowest).
+
+Topics                                                                                                                                        Num Papers    Percent of Sample
+------------------------------------------------------------------------------------------------------------------------------------------  ------------  -------------------
+Distributionally Robust Optimization in RL | Theoretical Foundations and Sample Complexity                                                             7               25.00%
+Multi-Agent Robustness and Collaboration | Generalization and Adaptation Methods                                                                       1                3.57%
+Generalization and Adaptation Methods | Distributionally Robust Optimization in RL                                                                     1                3.57%
+Risk-Aware and Risk-Sensitive Decision Making | Distributionally Robust Optimization in RL                                                             1                3.57%
+Generalization and Adaptation Methods | Offline RL and Distribution Shift Mitigation                                                                   1                3.57%
+Multi-Agent Robustness and Collaboration | Distributionally Robust Optimization in RL                                                                  1                3.57%
+Distributionally Robust Optimization in RL | Risk-Aware and Risk-Sensitive Decision Making | Theoretical Foundations and Sample Complexity             1                3.57%
+Generalization and Adaptation Methods | Theoretical Foundations and Sample Complexity                                                                  1                3.57%
+
+And here are a few examples from the top combinations:
+
+<overlap_examples>
+## Distributionally Robust Optimization in RL | Theoretical Foundations and Sample Complexity
+
+Title: Policy Gradient for Robust Markov Decision Processes
+Published: 2024-10-29
+Abstract: We develop a generic policy gradient method with the global optimality guarantee for robust Markov Decision Processes (MDPs). While policy gradient methods are widely used for solving dynamic decision problems due to their scalable and efficient nature, adapting these methods to account for model ambiguity has been challenging, often making it impractical to learn robust policies. This paper introduces a novel policy gradient method, Double-Loop Robust Policy Mirror Descent (DRPMD), for solving robust MDPs. DRPMD employs a general mirror descent update rule for the policy optimization with adaptive tolerance per iteration, guaranteeing convergence to a globally optimal policy. We provide a comprehensive analysis of DRPMD, including new convergence results under both direct and softmax parameterizations, and provide novel insights into the inner problem solution through Transition Mirror Ascent (TMA). Additionally, we propose innovative parametric transition kernels for both discrete and continuous state-action spaces, broadening the applicability of our approach. Empirical results validate the robustness and global convergence of DRPMD across various challenging robust MDP settings.
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+Title: Online MDP with Transition Prototypes: A Robust Adaptive Approach
+Published: 2024-12-18
+Abstract: In this work, we consider an online robust Markov Decision Process (MDP) where we have the information of finitely many prototypes of the underlying transition kernel. We consider an adaptively updated ambiguity set of the prototypes and propose an algorithm that efficiently identifies the true underlying transition kernel while guaranteeing the performance of the corresponding robust policy. To be more specific, we provide a sublinear regret of the subsequent optimal robust policy. We also provide an early stopping mechanism and a worst-case performance bound of the value function. In numerical experiments, we demonstrate that our method outperforms existing approaches, particularly in the early stage with limited data. This work contributes to robust MDPs by considering possible prior information about the underlying transition probability and online learning, offering both theoretical insights and practical algorithms for improved decision-making under uncertainty.
+</overlap_examples>
+
+This table shows how many papers were sorted into each topic, ordered by frequency:
+
+Topic                                            Num Papers    Percent of Sample
+---------------------------------------------  ------------  -------------------
+Distributionally Robust Optimization in RL               11               39.29%
+Theoretical Foundations and Sample Complexity            10               35.71%
+Generalization and Adaptation Methods                     9               32.14%
+Offline RL and Distribution Shift Mitigation              7               25.00%
+Risk-Aware and Risk-Sensitive Decision Making             3               10.71%
+Multi-Agent Robustness and Collaboration                  3               10.71%
+
+For additional context, here are a couple example papers from each topic:
+
+<example_papers_by_topic>
+## Distributionally Robust Optimization in RL
+
+Title: Robust $Q$-learning Algorithm for Markov Decision Processes under Wasserstein Uncertainty
+Published: 2022-09-30
+Abstract: We present a novel $Q$-learning algorithm tailored to solve distributionally robust Markov decision problems where the corresponding ambiguity set of transition probabilities for the underlying Markov decision process is a Wasserstein ball around a (possibly estimated) reference measure. We prove convergence of the presented algorithm and provide several examples also using real data to illustrate both the tractability of our algorithm as well as the benefits of considering distributional robustness when solving stochastic optimal control problems, in particular when the estimated distributions turn out to be misspecified in practice.
+
+Title: Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model
+Published: 2025-03-11
+Abstract: In this work, we study the sample complexity problem of risk-sensitive Reinforcement Learning (RL) with a generative model, where we aim to maximize the Conditional Value at Risk (CVaR) with risk tolerance level $\tau$ at each step, a criterion we refer to as Iterated CVaR. We first build a connection between Iterated CVaR RL and $(s, a)$-rectangular distributional robust RL with a specific uncertainty set for CVaR. We establish nearly matching upper and lower bounds on the sample complexity of this problem. Specifically, we first prove that a value iteration-based algorithm, ICVaR-VI, achieves an $\epsilon$-optimal policy with at most $\tilde{O} \left(\frac{SA}{(1-\gamma)^4\tau^2\epsilon^2} \right)$ samples, where $\gamma$ is the discount factor, and $S, A$ are the sizes of the state and action spaces. Furthermore, when $\tau \geq \gamma$, the sample complexity improves to $\tilde{O} \left( \frac{SA}{(1-\gamma)^3\epsilon^2} \right)$. We further show a minimax lower bound of $\tilde{O} \left(\frac{(1-\gamma \tau)SA}{(1-\gamma)^4\tau\epsilon^2} \right)$. For a fixed risk level $\tau \in (0,1]$, our upper and lower bounds match, demonstrating the tightness and optimality of our analysis. We also investigate a limiting case with a small risk level $\tau$, called Worst-Path RL, where the objective is to maximize the minimum possible cumulative reward. We develop matching upper and lower bounds of $\tilde{O} \left(\frac{SA}{p_{\min}} \right)$, where $p_{\min}$ denotes the minimum non-zero reaching probability of the transition kernel.
+
+## Theoretical Foundations and Sample Complexity
+
+Title: Markov Decision Processes under External Temporal Processes
+Published: 2023-05-25
+Abstract: Most reinforcement learning algorithms treat the context under which they operate as a stationary, isolated, and undisturbed environment. However, in real world applications, environments constantly change due to a variety of external events. To address this problem, we study Markov Decision Processes (MDP) under the influence of an external temporal process. First, we formalize this notion and derive conditions under which the problem becomes tractable with suitable solutions. We propose a policy iteration algorithm to solve this problem and theoretically analyze its performance. Our analysis addresses the non-stationarity present in the MDP as a result of non-Markovian events, necessitating the formulation of policies that are contingent upon both the current state and a history of prior events. Additionally, we derive insights regarding the sample complexity of the algorithm and incorporate factors that define the exogenous temporal process into the established bounds. Finally, we perform experiments to demonstrate our findings within a traditional control environment.
+
+Title: Policy Gradient for Robust Markov Decision Processes
+Published: 2024-10-29
+Abstract: We develop a generic policy gradient method with the global optimality guarantee for robust Markov Decision Processes (MDPs). While policy gradient methods are widely used for solving dynamic decision problems due to their scalable and efficient nature, adapting these methods to account for model ambiguity has been challenging, often making it impractical to learn robust policies. This paper introduces a novel policy gradient method, Double-Loop Robust Policy Mirror Descent (DRPMD), for solving robust MDPs. DRPMD employs a general mirror descent update rule for the policy optimization with adaptive tolerance per iteration, guaranteeing convergence to a globally optimal policy. We provide a comprehensive analysis of DRPMD, including new convergence results under both direct and softmax parameterizations, and provide novel insights into the inner problem solution through Transition Mirror Ascent (TMA). Additionally, we propose innovative parametric transition kernels for both discrete and continuous state-action spaces, broadening the applicability of our approach. Empirical results validate the robustness and global convergence of DRPMD across various challenging robust MDP settings.
+
+## Generalization and Adaptation Methods
+
+Title: Direct Random Search for Fine Tuning of Deep Reinforcement Learning Policies
+Published: 2021-09-12
+Abstract: Researchers have demonstrated that Deep Reinforcement Learning (DRL) is a powerful tool for finding policies that perform well on complex robotic systems. However, these policies are often unpredictable and can induce highly variable behavior when evaluated with only slightly different initial conditions. Training considerations constrain DRL algorithm designs in that most algorithms must use stochastic policies during training. The resulting policy used during deployment, however, can and frequently is a deterministic one that uses the Maximum Likelihood Action (MLA) at each step. In this work, we show that a direct random search is very effective at fine-tuning DRL policies by directly optimizing them using deterministic rollouts. We illustrate this across a large collection of reinforcement learning environments, using a wide variety of policies obtained from different algorithms. Our results show that this method yields more consistent and higher performing agents on the environments we tested. Furthermore, we demonstrate how this method can be used to extend our previous work on shrinking the dimensionality of the reachable state space of closed-loop systems run under Deep Neural Network (DNN) policies.
+
+Title: The Surprising Ineffectiveness of Pre-Trained Visual Representations for Model-Based Reinforcement Learning
+Published: 2024-11-15
+Abstract: Visual Reinforcement Learning (RL) methods often require extensive amounts of data. As opposed to model-free RL, model-based RL (MBRL) offers a potential solution with efficient data utilization through planning. Additionally, RL lacks generalization capabilities for real-world tasks. Prior work has shown that incorporating pre-trained visual representations (PVRs) enhances sample efficiency and generalization. While PVRs have been extensively studied in the context of model-free RL, their potential in MBRL remains largely unexplored. In this paper, we benchmark a set of PVRs on challenging control tasks in a model-based RL setting. We investigate the data efficiency, generalization capabilities, and the impact of different properties of PVRs on the performance of model-based agents. Our results, perhaps surprisingly, reveal that for MBRL current PVRs are not more sample efficient than learning representations from scratch, and that they do not generalize better to out-of-distribution (OOD) settings. To explain this, we analyze the quality of the trained dynamics model. Furthermore, we show that data diversity and network architecture are the most important contributors to OOD generalization performance.
+
+## Offline RL and Distribution Shift Mitigation
+
+Title: SAMBO-RL: Shifts-aware Model-based Offline Reinforcement Learning
+Published: 2024-08-23
+Abstract: Model-based offline reinforcement learning trains policies using pre-collected datasets and learned environment models, eliminating the need for direct real-world environment interaction. However, this paradigm is inherently challenged by distribution shift (DS). Existing methods address this issue by leveraging off-policy mechanisms and estimating model uncertainty, but they often result in inconsistent objectives and lack a unified theoretical foundation. This paper offers a comprehensive analysis that disentangles the problem into two fundamental components: model bias and policy shift. Our theoretical and empirical investigations reveal how these factors distort value estimation and restrict policy optimization. To tackle these challenges, we derive a novel Shifts-aware Reward (SAR) through a unified probabilistic inference framework, which modifies the vanilla reward to refine value learning and facilitate policy training. Building on this, we introduce Shifts-aware Model-based Offline Reinforcement Learning (SAMBO-RL), a practical framework that efficiently trains classifiers to approximate SAR for policy optimization. Empirical experiments show that SAR effectively mitigates DS, and SAMBO-RL achieves superior or comparable performance across various benchmarks, underscoring its effectiveness and validating our theoretical analysis.
+
+Title: Policy Constraint by Only Support Constraint for Offline Reinforcement Learning
+Published: 2025-03-07
+Abstract: Offline reinforcement learning (RL) aims to optimize a policy by using pre-collected datasets, to maximize cumulative rewards. However, offline reinforcement learning suffers challenges due to the distributional shift between the learned and behavior policies, leading to errors when computing Q-values for out-of-distribution (OOD) actions. To mitigate this issue, policy constraint methods aim to constrain the learned policy's distribution with the distribution of the behavior policy or confine action selection within the support of the behavior policy. However, current policy constraint methods tend to exhibit excessive conservatism, hindering the policy from further surpassing the behavior policy's performance. In this work, we present Only Support Constraint (OSC) which is derived from maximizing the total probability of learned policy in the support of behavior policy, to address the conservatism of policy constraint. OSC presents a regularization term that only restricts policies to the support without imposing extra constraints on actions within the support. Additionally, to fully harness the performance of the new policy constraints, OSC utilizes a diffusion model to effectively characterize the support of behavior policies. Experimental evaluations across a variety of offline RL benchmarks demonstrate that OSC significantly enhances performance, alleviating the challenges associated with distributional shifts and mitigating conservatism of policy constraints. Code is available at https://github.com/MoreanP/OSC.
+
+## Risk-Aware and Risk-Sensitive Decision Making
+
+Title: Risk Aversion to Parameter Uncertainty in Markov Decision Processes with an Application to Slow-Onset Disaster Relief
+Published: 2019-02-24
+Abstract: In classical Markov Decision Processes (MDPs), action costs and transition probabilities are assumed to be known, although an accurate estimation of these parameters is often not possible in practice. This study addresses MDPs under cost and transition probability uncertainty and aims to provide a mathematical framework to obtain policies minimizing the risk of high long-term losses due to not knowing the true system parameters. To this end, we utilize the risk measure value-at-risk associated with the expected performance of an MDP model with respect to parameter uncertainty. We provide mixed-integer linear and nonlinear programming formulations and heuristic algorithms for such risk-averse models of MDPs under a finite distribution of the uncertain parameters. Our proposed models and solution methods are illustrated on an inventory management problem for humanitarian relief operations during a slow-onset disaster. The results demonstrate the potential of our risk-averse modeling approach for reducing the risk of highly undesirable outcomes in uncertain/risky environments.
+
+Title: Risk-Averse Decision Making Under Uncertainty
+Published: 2021-09-09
+Abstract: A large class of decision making under uncertainty problems can be described via Markov decision processes (MDPs) or partially observable MDPs (POMDPs), with application to artificial intelligence and operations research, among others. Traditionally, policy synthesis techniques are proposed such that a total expected cost or reward is minimized or maximized. However, optimality in the total expected cost sense is only reasonable if system behavior in the large number of runs is of interest, which has limited the use of such policies in practical mission-critical scenarios, wherein large deviations from the expected behavior may lead to mission failure. In this paper, we consider the problem of designing policies for MDPs and POMDPs with objectives and constraints in terms of dynamic coherent risk measures, which we refer to as the constrained risk-averse problem. For MDPs, we reformulate the problem into a infsup problem via the Lagrangian framework and propose an optimization-based method to synthesize Markovian policies. For MDPs, we demonstrate that the formulated optimization problems are in the form of difference convex programs (DCPs) and can be solved by the disciplined convex-concave programming (DCCP) framework. We show that these results generalize linear programs for constrained MDPs with total discounted expected costs and constraints. For POMDPs, we show that, if the coherent risk measures can be defined as a Markov risk transition mapping, an infinite-dimensional optimization can be used to design Markovian belief-based policies. For stochastic finite-state controllers (FSCs), we show that the latter optimization simplifies to a (finite-dimensional) DCP and can be solved by the DCCP framework. We incorporate these DCPs in a policy iteration algorithm to design risk-averse FSCs for POMDPs.
+
+## Multi-Agent Robustness and Collaboration
+
+Title: FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL
+Published: 2024-10-21
+Abstract: Multi-agent reinforcement learning has demonstrated significant potential in addressing complex cooperative tasks across various real-world applications. However, existing MARL approaches often rely on the restrictive assumption that the number of entities (e.g., agents, obstacles) remains constant between training and inference. This overlooks scenarios where entities are dynamically removed or added during the inference trajectory -- a common occurrence in real-world environments like search and rescue missions and dynamic combat situations. In this paper, we tackle the challenge of intra-trajectory dynamic entity composition under zero-shot out-of-domain (OOD) generalization, where such dynamic changes cannot be anticipated beforehand. Our empirical studies reveal that existing MARL methods suffer significant performance degradation and increased uncertainty in these scenarios. In response, we propose FlickerFusion, a novel OOD generalization method that acts as a universally applicable augmentation technique for MARL backbone methods. FlickerFusion stochastically drops out parts of the observation space, emulating being in-domain when inferenced OOD. The results show that FlickerFusion not only achieves superior inference rewards but also uniquely reduces uncertainty vis-\`a-vis the backbone, compared to existing methods. Benchmarks, implementations, and model weights are organized and open-sourced at flickerfusion305.github.io, accompanied by ample demo video renderings.
+
+Title: Group Distributionally Robust Reinforcement Learning with Hierarchical Latent Variables
+Published: 2022-10-21
+Abstract: One key challenge for multi-task Reinforcement learning (RL) in practice is the absence of task indicators. Robust RL has been applied to deal with task ambiguity, but may result in over-conservative policies. To balance the worst-case (robustness) and average performance, we propose Group Distributionally Robust Markov Decision Process (GDR-MDP), a flexible hierarchical MDP formulation that encodes task groups via a latent mixture model. GDR-MDP identifies the optimal policy that maximizes the expected return under the worst-possible qualified belief over task groups within an ambiguity set. We rigorously show that GDR-MDP's hierarchical structure improves distributional robustness by adding regularization to the worst possible outcomes. We then develop deep RL algorithms for GDR-MDP for both value-based and policy-based RL methods. Extensive experiments on Box2D control tasks, MuJoCo benchmarks, and Google football platforms show that our algorithms outperform classic robust training algorithms across diverse environments in terms of robustness under belief uncertainties. Demos are available on our project page (\url{https://sites.google.com/view/gdr-rl/home}).
+</example_papers_by_topic>
+
+In an attempt to gauge *helpfulness*, 4 LLMs were asked to provide feedback on how helpful or useful they found the taxonomy. Each was given a different system prompt (to emulate different user groups), and asked to provide both open ended feedback, and an objective score from 1-5 (where 5 is excellent). Here are the results:
+
+<helpfulness_feedback>
+System Prompt: You are an enthusiast of AI safety research
+Score: 4
+Feedback:
+---
+I found this breakdown of Reinforcement Learning Robustness quite helpful and relatively clear.  The descriptions for each category were generally concise and easy to grasp. I particularly appreciated the inclusion of specific examples within the descriptions, such as mentioning RMDPs, divergences, and CVaR. This added context and helped me understand the intended scope of each category.
+
+The conceptual organization also seemed logical. The progression from theoretical foundations to more applied areas like offline RL and multi-agent scenarios makes sense. I didn't notice any immediate contradictions or inconsistencies.
+
+The categories, for the most part, appeared distinct, minimizing potential overlap. However, there might be some subtle blurring between "Generalization and Adaptation Methods" and "Offline RL and Distribution Shift Mitigation."  While both deal with performance in different distributions, the emphasis in offline RL seems to be on learning from fixed datasets, while generalization focuses on broader adaptation to unseen environments.  This distinction could perhaps be slightly clearer.
+
+One area where I initially struggled was with "Risk-Aware and Risk-Sensitive Decision Making." While the description mentions CVaR and managing uncertainty, it might be helpful to briefly elaborate on how this differs from "Distributionally Robust Optimization in RL."  Both appear to address uncertainty but from potentially different perspectives.  A clarifying sentence could be beneficial.
+
+Overall, I think this structure covers a good range of topics I'd expect to find within Reinforcement Learning Robustness, from foundational theory to practical applications.
+---
+
+System Prompt: You are an experienced and prolific AI safety researcher who is well renown in the field
+Score: 4
+Feedback:
+---
+As an AI safety researcher, I find this categorization of Reinforcement Learning Robustness mostly helpful.  The descriptions are generally clear and give me a good sense of what kind of papers would fall under each category.
+
+I particularly appreciate the inclusion of "Theoretical Foundations and Sample Complexity" as its own category. This is often overlooked but crucial for understanding the limitations and potential of robust RL algorithms. The "Offline RL and Distribution Shift Mitigation" category is also highly relevant given the increasing importance of offline RL in practical applications.
+
+The distinction between "Risk-Aware and Risk-Sensitive Decision Making" and "Distributionally Robust Optimization in RL" is a bit subtle but understandable.  I can see how focusing on explicit risk measures (like CVaR) versus general worst-case performance warrants separate categories, although there will likely be some overlap.
+
+I found the "Generalization and Adaptation Methods" category slightly less clear-cut. While generalization is undoubtedly a crucial aspect of robustness,  I wonder if some papers here might also fit under other categories (e.g.,  domain adaptation techniques related to distribution shift could also fall under "Offline RL..."). This isn't necessarily a problem, as some overlap is inevitable, but it's something to be mindful of.
+
+The category I found most helpful was "Multi-Agent Robustness and Collaboration."  The increasing focus on multi-agent systems makes this category timely and important.  It clearly outlines the specific robustness challenges that arise in multi-agent settings.
+
+Overall, the categorization is well-structured and covers the major aspects of Reinforcement Learning Robustness. I think researchers in the field would find it a helpful tool for navigating the literature.
+---
+
+System Prompt: You are a newcomer to the field of AI safety and want to learn more
+Score: 4
+Feedback:
+---
+As a newcomer to AI Safety, I found this breakdown quite helpful in understanding the different facets of Reinforcement Learning Robustness. The descriptions for each category were generally clear and concise, providing enough information to grasp the core concepts.  I especially appreciated the inclusion of examples within the descriptions (e.g., "robust MDPs (RMDPs)", "uncertainty sets defined by various divergences", "risk measures (like CVaR)"). This helped ground the abstract concepts and made them more accessible.
+
+The conceptual organization also seemed logical.  The categories appear to flow naturally from theoretical foundations to practical applications like offline RL and multi-agent scenarios. I didn't notice any immediate contradictions between the categories.
+
+I do wonder about the potential overlap between "Offline RL and Distribution Shift Mitigation" and "Generalization and Adaptation Methods".  Both seem to deal with scenarios where the training and deployment distributions differ.  While the former appears focused on mitigating the effects of this shift within the offline setting, and the latter on broader generalization, the line seems somewhat blurry. This wasn't a major impediment to understanding, but it did make me pause and consider the distinction.
+
+Overall, the categories seem to encompass a broad range of relevant topics within Reinforcement Learning Robustness. Based on my limited understanding, I would expect papers on these themes to fall under this topic.  It provided me with a good starting point for exploring this area further.
+---
+</helpfulness_feedback>
+
+As this is LLM-generated feedback, use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+
+These metrics have been combined to produce an overall score of 1.39 for this taxonomy.
+
+Depending on the results of this evaluation, you may decide to combine, split, update, or add topics. As this is an iterative process, you are encouraged to experiment with different approaches - try taxonomies of different sizes (anywhere from 2 to 8 topics) or alternative ways of conceptualizing Reinforcement Learning Robustness.
+
+Please present your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+Based on the evaluation results, my taxonomy achieved a score of 1.39. The biggest issue seems to be that 50% of papers had overlap between categories, particularly between "Distributionally Robust Optimization in RL" and "Theoretical Foundations and Sample Complexity" (7 papers, 25% of the sample). Additionally, there was some feedback about potential overlap between "Generalization and Adaptation Methods" and "Offline RL and Distribution Shift Mitigation."
+
+Let me revise the taxonomy to make it more MECE (Mutually Exclusive, Collectively Exhaustive). I'll consider:
+
+1. Combining "Distributionally Robust Optimization in RL" and "Theoretical Foundations and Sample Complexity" since they had the most overlap.
+2. Making clearer distinctions between "Generalization and Adaptation Methods" and "Offline RL and Distribution Shift Mitigation".
+3. Ensuring all categories have clear, distinct boundaries.
+
+Here's my revised approach:
+
+1. **Theoretical Foundations of Robust MDPs**: Combine the theoretical aspects and DRO approaches into a single category focused on the mathematical frameworks, theoretical properties, sample complexity, and optimization methods for robust MDPs.
+
+2. **Robust Offline Learning and Policy Constraints**: Focus specifically on offline RL methods that address distribution shift through policy constraints, model corrections, or support estimation.
+
+3. **Risk-Sensitive Decision Making**: Keep this category focused on explicit risk measures and risk-averse approaches.
+
+4. **Adaptation and Generalization to Environmental Changes**: Refine the generalization category to focus specifically on methods for adapting to environment changes, unseen conditions, or sim-to-real gaps.
+
+5. **Multi-Agent Robustness and Collaborative Systems**: Keep this category focused on multi-agent systems.
+
+6. **Hierarchical and Temporal Robustness**: Add a new category for approaches addressing robustness in hierarchical policies or against temporal changes.
+
+Let me develop the revised descriptions to minimize overlap.
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Distributionally Robust MDPs: Theoretical Foundations",
+        "description": "Theoretical approaches to robust MDPs with formal guarantees on sample complexity, convergence, and optimality. Includes methods that optimize for worst-case performance under various uncertainty sets, algorithms with provable convergence guarantees, and techniques that quantify robustness-efficiency tradeoffs."
+    },
+    {
+        "title": "Domain Shift in Offline Reinforcement Learning",
+        "description": "Methods addressing distribution shift challenges specific to offline RL settings where learning occurs from static datasets without environment interaction. Includes techniques that constrain policy optimization to dataset support, correct model or value estimates, and handle out-of-distribution actions or states in offline settings."
+    },
+    {
+        "title": "Risk-Sensitive RL Decision Making",
+        "description": "Methods incorporating explicit risk measures (such as CVaR, value-at-risk) or risk-aversion in RL to address uncertainty in critical applications. Focuses on approaches that go beyond expected returns to consider distributional properties of outcomes, particularly for safety-critical or high-reliability scenarios."
+    },
+    {
+        "title": "Adaptation and Transfer in Robust RL",
+        "description": "Techniques for adapting policies to environmental changes or transferring to novel conditions while maintaining robustness. Includes meta-learning approaches, domain adaptation techniques, fine-tuning methods, and approaches for handling sim-to-real gaps that aren't specifically tied to offline learning."
+    },
+    {
+        "title": "Multi-Agent Robustness",
+        "description": "Approaches specialized for robustness in multi-agent reinforcement learning systems with changing agent composition or uncertain interactions. Includes methods for resilient group behaviors, robust collaboration protocols, and techniques that handle distribution shifts specific to multi-agent dynamics."
+    },
+    {
+        "title": "Hierarchical and Temporal Robustness",
+        "description": "Methods addressing robustness through hierarchical decomposition or against temporal variations in the environment. Includes approaches that handle temporal distribution shifts, external temporal processes, and techniques that leverage hierarchical structures to improve resilience."
+    }
+]
+```
+====================================================================
+
+============================== USER ==============================
+The evaluation script ran successfully on your latest taxonomy. Here are the results:
+
+All 28 papers were categorized by an LLM.
+
+Of these, 21 (75%) papers were cleanly categorized into one category.
+
+The sorting LLM marked all papers as fitting into at least one category - nice!
+
+The LLM found overlap in 7 (25%) papers.
+
+Here are the combinations of topics these papers were sorted into:
+
+Topics                                                                                                                   Num Papers    Percent of Sample
+---------------------------------------------------------------------------------------------------------------------  ------------  -------------------
+Adaptation and Transfer in Robust RL | Multi-Agent Robustness                                                                     2                7.14%
+Distributionally Robust MDPs: Theoretical Foundations | Adaptation and Transfer in Robust RL                                      2                7.14%
+Domain Shift in Offline Reinforcement Learning | Adaptation and Transfer in Robust RL                                             1                3.57%
+Distributionally Robust MDPs: Theoretical Foundations | Hierarchical and Temporal Robustness | Multi-Agent Robustness             1                3.57%
+Risk-Sensitive RL Decision Making | Distributionally Robust MDPs: Theoretical Foundations                                         1                3.57%
+
+And here are a few examples from the top combinations:
+
+<overlap_examples>
+## Adaptation and Transfer in Robust RL | Multi-Agent Robustness
+
+Title: HAD-Gen: Human-like and Diverse Driving Behavior Modeling for Controllable Scenario Generation
+Published: 2025-03-19
+Abstract: Simulation-based testing has emerged as an essential tool for verifying and validating autonomous vehicles (AVs). However, contemporary methodologies, such as deterministic and imitation learning-based driver models, struggle to capture the variability of human-like driving behavior. Given these challenges, we propose HAD-Gen, a general framework for realistic traffic scenario generation that simulates diverse human-like driving behaviors. The framework first clusters the vehicle trajectory data into different driving styles according to safety features. It then employs maximum entropy inverse reinforcement learning on each of the clusters to learn the reward function corresponding to each driving style. Using these reward functions, the method integrates offline reinforcement learning pre-training and multi-agent reinforcement learning algorithms to obtain general and robust driving policies. Multi-perspective simulation results show that our proposed scenario generation framework can simulate diverse, human-like driving behaviors with strong generalization capability. The proposed framework achieves a 90.96% goal-reaching rate, an off-road rate of 2.08%, and a collision rate of 6.91% in the generalization test, outperforming prior approaches by over 20% in goal-reaching performance. The source code is released at https://github.com/RoboSafe-Lab/Sim4AD.
+
+Title: FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL
+Published: 2024-10-21
+Abstract: Multi-agent reinforcement learning has demonstrated significant potential in addressing complex cooperative tasks across various real-world applications. However, existing MARL approaches often rely on the restrictive assumption that the number of entities (e.g., agents, obstacles) remains constant between training and inference. This overlooks scenarios where entities are dynamically removed or added during the inference trajectory -- a common occurrence in real-world environments like search and rescue missions and dynamic combat situations. In this paper, we tackle the challenge of intra-trajectory dynamic entity composition under zero-shot out-of-domain (OOD) generalization, where such dynamic changes cannot be anticipated beforehand. Our empirical studies reveal that existing MARL methods suffer significant performance degradation and increased uncertainty in these scenarios. In response, we propose FlickerFusion, a novel OOD generalization method that acts as a universally applicable augmentation technique for MARL backbone methods. FlickerFusion stochastically drops out parts of the observation space, emulating being in-domain when inferenced OOD. The results show that FlickerFusion not only achieves superior inference rewards but also uniquely reduces uncertainty vis-\`a-vis the backbone, compared to existing methods. Benchmarks, implementations, and model weights are organized and open-sourced at flickerfusion305.github.io, accompanied by ample demo video renderings.
+
+## Distributionally Robust MDPs: Theoretical Foundations | Adaptation and Transfer in Robust RL
+
+Title: Online MDP with Transition Prototypes: A Robust Adaptive Approach
+Published: 2024-12-18
+Abstract: In this work, we consider an online robust Markov Decision Process (MDP) where we have the information of finitely many prototypes of the underlying transition kernel. We consider an adaptively updated ambiguity set of the prototypes and propose an algorithm that efficiently identifies the true underlying transition kernel while guaranteeing the performance of the corresponding robust policy. To be more specific, we provide a sublinear regret of the subsequent optimal robust policy. We also provide an early stopping mechanism and a worst-case performance bound of the value function. In numerical experiments, we demonstrate that our method outperforms existing approaches, particularly in the early stage with limited data. This work contributes to robust MDPs by considering possible prior information about the underlying transition probability and online learning, offering both theoretical insights and practical algorithms for improved decision-making under uncertainty.
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+## Domain Shift in Offline Reinforcement Learning | Adaptation and Transfer in Robust RL
+
+Title: VEM: Environment-Free Exploration for Training GUI Agent with Value Environment Model
+Published: 2025-02-26
+Abstract: Training Vision-Language Models (VLMs) for Graphical User Interfaces (GUI) agents via Reinforcement Learning (RL) faces critical challenges: environment-based RL requires costly interactions, while environment-free methods struggle with distribution shift and reward generalization. We propose an environment-free RL framework that decouples value estimation from policy optimization by leveraging a pretrained Value Environment Model (VEM). VEM predicts state-action values directly from offline data, distilling human-like priors about GUI interaction outcomes without requiring next-state prediction or environmental feedback. This avoids compounding errors and enhances resilience to UI changes by focusing on semantic reasoning (e.g., Does this action advance the user's goal?). The framework operates in two stages: (1) pretraining VEM to estimate long-term action utilities and (2) guiding policy exploration with frozen VEM signals, enabling layout-agnostic GUI automation. Evaluated on Android-in-the-Wild benchmarks, VEM achieves state-of-the-art performance in both offline and online settings, outperforming environment-free baselines significantly and matching environment-based approaches without interaction costs. Importantly, VEM demonstrates that semantic-aware value estimation can achieve comparable performance with online-trained methods.
+
+## Distributionally Robust MDPs: Theoretical Foundations | Hierarchical and Temporal Robustness | Multi-Agent Robustness
+
+Title: Group Distributionally Robust Reinforcement Learning with Hierarchical Latent Variables
+Published: 2022-10-21
+Abstract: One key challenge for multi-task Reinforcement learning (RL) in practice is the absence of task indicators. Robust RL has been applied to deal with task ambiguity, but may result in over-conservative policies. To balance the worst-case (robustness) and average performance, we propose Group Distributionally Robust Markov Decision Process (GDR-MDP), a flexible hierarchical MDP formulation that encodes task groups via a latent mixture model. GDR-MDP identifies the optimal policy that maximizes the expected return under the worst-possible qualified belief over task groups within an ambiguity set. We rigorously show that GDR-MDP's hierarchical structure improves distributional robustness by adding regularization to the worst possible outcomes. We then develop deep RL algorithms for GDR-MDP for both value-based and policy-based RL methods. Extensive experiments on Box2D control tasks, MuJoCo benchmarks, and Google football platforms show that our algorithms outperform classic robust training algorithms across diverse environments in terms of robustness under belief uncertainties. Demos are available on our project page (\url{https://sites.google.com/view/gdr-rl/home}).
+</overlap_examples>
+
+Here are how many papers were sorted into each topic:
+
+Topic                                                    Num Papers    Percent of Sample
+-----------------------------------------------------  ------------  -------------------
+Adaptation and Transfer in Robust RL                             10               35.71%
+Distributionally Robust MDPs: Theoretical Foundations             9               32.14%
+Domain Shift in Offline Reinforcement Learning                    7               25.00%
+Multi-Agent Robustness                                            4               14.29%
+Risk-Sensitive RL Decision Making                                 3               10.71%
+Hierarchical and Temporal Robustness                              3               10.71%
+
+Here are the LLM-generated feedback results:
+
+<helpfulness_feedback>
+System Prompt: You are an enthusiast of AI safety research
+Score: 4
+Feedback:
+---
+I found the categorization generally helpful and relatively clear.  The descriptions provided enough context to understand the intended scope of each category.  Specifically, I appreciated the inclusion of examples within the descriptions (e.g., "CVaR, value-at-risk").
+
+The distinction between "Domain Shift in Offline Reinforcement Learning" and "Adaptation and Transfer in Robust RL" was slightly unclear initially. While the description clarifies that the former focuses on *static datasets*, the relationship between these two categories could be further emphasized. For instance, mentioning that "Adaptation and Transfer" deals with online or interactive adaptation scenarios might help highlight the difference.
+
+I was also unsure about the placement of "Hierarchical and Temporal Robustness."  The "temporal" aspect seems to have potential overlap with "Domain Shift" (if the shift is temporal) and "Adaptation and Transfer" (adapting to temporal changes).  Perhaps providing more specific examples of temporal variations unrelated to shifts or adaptation would clarify this category further.  For instance, does this encompass situations with fluctuating reward functions or dynamic environment rules unrelated to distribution shifts?
+
+Overall, the categories seemed comprehensive, covering various aspects of robustness in RL.  I especially appreciated the inclusion of "Multi-Agent Robustness" and "Risk-Sensitive RL Decision Making," which addresses specific and crucial considerations in safety-critical applications.  I did not find any glaring omissions or conceptual contradictions.
+---
+
+System Prompt: You are an experienced and prolific AI safety researcher who is well renown in the field
+Score: 4
+Feedback:
+---
+I find the categorization mostly clear and comprehensive.  The descriptions are generally well-written and provide a good sense of what each category encompasses. Specifically, I appreciate the clear distinction made between "Domain Shift in Offline Reinforcement Learning" and "Adaptation and Transfer in Robust RL."  This separation acknowledges the unique challenges of offline settings while still providing a broader category for transfer and adaptation methods that aren't solely focused on offline data. The inclusion of "Risk-Sensitive RL Decision Making" is also valuable, as it highlights the critical role of risk awareness in safety-critical applications.
+
+However, I had some slight difficulty with "Hierarchical and Temporal Robustness." While the description mentions both hierarchical structures and temporal variations, the connection between the two isn't immediately apparent.  It makes me wonder whether these are truly two sides of the same coin or if they might be better separated. For instance, a hierarchical RL agent could be robust to perturbations *within* its hierarchy, which isn't necessarily related to temporal robustness. This left me a bit unclear on the intended scope.  Additionally, "Multi-Agent Robustness" is important but feels a bit broad. While agent composition and uncertain interactions are mentioned, there are many other sources of non-stationarity and robustness challenges in multi-agent settings (e.g., adversarial agents actively trying to exploit vulnerabilities). It might benefit from a slightly more detailed description or being split into subcategories based on the *source* of the robustness challenge (e.g., robust cooperation, robustness to adversarial agents).
+
+Overall, the structure seems largely logical.  The categories mostly cover the landscape of RL robustness research as I understand it. I didn't notice any obvious contradictions. Most papers in the field should fall cleanly into at least one category, if not a combination.  There’s potential overlap between some, such as "Risk-Sensitive RL Decision Making" and other categories if the risk stems from distribution shifts. This isn’t inherently problematic; some papers naturally bridge areas.
+
+The distinction between categories, particularly between adaptation/transfer and domain shift in offline RL, is helpful. I encountered the aforementioned concerns primarily with “Hierarchical and Temporal Robustness" and "Multi-Agent Robustness", specifically the potential broadness and ambiguity, as well as a potential need for more granular classification criteria as outlined earlier.
+---
+
+System Prompt: You are a newcomer to the field of AI safety and want to learn more
+Score: 4
+Feedback:
+---
+I found the categorization generally helpful and relatively easy to understand.  The descriptions are mostly clear, and I appreciate the specific examples included within each description, such as mentioning CVaR and value-at-risk in the Risk-Sensitive RL Decision Making category. This concreteness makes the categories feel more grounded.
+
+I especially appreciate the distinction made between "Domain Shift in Offline Reinforcement Learning" and "Adaptation and Transfer in Robust RL".  Initially, I thought there might be overlap, but the clarification that the former focuses specifically on static datasets without environment interaction makes the separation clearer.
+
+The "Multi-Agent Robustness" and "Hierarchical and Temporal Robustness" categories also seem well-defined and cover important aspects of robustness in more complex RL scenarios.
+
+However, I'm slightly less clear about the distinction between "Distributionally Robust MDPs: Theoretical Foundations" and some of the other categories. While it mentions "formal guarantees," many robustness approaches in other areas (like Offline RL or Risk-Sensitive RL) likely also have theoretical underpinnings. Perhaps clarifying that this category focuses on foundational theoretical work that might not be tied to a specific application area would be beneficial.  As it stands, I could envision a paper that develops a theoretically sound algorithm for risk-sensitive RL falling into either that category or "Distributionally Robust MDPs."
+
+Overall, the categories offer a good starting point for organizing papers. While there's potential for minor overlaps between categories, they provide a helpful structure for navigating a complex field.
+---
+</helpfulness_feedback>
+
+Remember to use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+
+The overall score for this taxonomy comes out to 1.77
+
+This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down Reinforcement Learning Robustness.
+
+Output your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+Let's analyze the feedback and results for the latest taxonomy:
+
+1. Clean categorization increased from 50% to 75% - this is a significant improvement!
+2. Papers with multiple categories decreased from 50% to 25% - another great improvement.
+3. The helpfulness score increased from 1.39 to 1.77, which is positive.
+
+Looking at the category distribution:
+- "Adaptation and Transfer in Robust RL" has the most papers (35.71%)
+- "Distributionally Robust MDPs: Theoretical Foundations" is second (32.14%)
+- "Domain Shift in Offline Reinforcement Learning" is third (25.00%)
+- The other three categories have significantly fewer papers
+
+From the feedback:
+1. There was some confusion about the connection between hierarchical and temporal robustness
+2. Some potential overlap between "Distributionally Robust MDPs" and other categories
+3. The distinction between "Domain Shift in Offline RL" and "Adaptation and Transfer" was a bit unclear to some reviewers
+
+Given these insights, I think I can further improve the taxonomy by:
+
+1. Potentially separating "Hierarchical and Temporal Robustness" into distinct categories
+2. Clarifying the scope of "Distributionally Robust MDPs: Theoretical Foundations"
+3. Better distinguishing "Domain Shift in Offline RL" from "Adaptation and Transfer"
+
+Let me design a revised taxonomy that addresses these issues:
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Theoretical Robustness in MDPs",
+        "description": "Formal analysis of robust Markov Decision Processes with rigorous guarantees on optimality, convergence, and sample complexity. Includes mathematical frameworks for robust optimization under various uncertainty sets, complexity bounds, and algorithmic innovations that provide theoretical insights into robustness-efficiency tradeoffs."
+    },
+    {
+        "title": "Offline RL Robustness",
+        "description": "Methods specifically addressing distribution shift challenges when learning from static datasets without environment interaction. Includes techniques for mitigating out-of-distribution errors, constraining policies to dataset support, and conservative value estimation approaches designed for the offline setting."
+    },
+    {
+        "title": "Risk-Sensitive Decision Processes",
+        "description": "Approaches incorporating explicit risk measures beyond expected returns to handle uncertainty in critical applications. Focuses on methods using conditional value-at-risk (CVaR), value-at-risk, and other distributional risk metrics to make more reliable decisions in high-stakes or safety-critical scenarios."
+    },
+    {
+        "title": "Generalization and Transfer in RL",
+        "description": "Techniques enabling reinforcement learning policies to adapt or perform well in novel environments or under changing conditions. Includes meta-learning approaches, domain adaptation methods, representation learning for transfer, and techniques addressing sim-to-real gaps that operate in online or interactive settings."
+    },
+    {
+        "title": "Multi-Agent System Robustness",
+        "description": "Methods addressing robustness challenges specific to environments with multiple interacting agents. Includes approaches for handling changing agent compositions, robust coordination protocols, resilience to non-stationarity from other agents, and techniques for maintaining performance under uncertain multi-agent dynamics."
+    }
+]
+```
+====================================================================
+
+============================== USER ==============================
+The evaluation script ran successfully on your latest taxonomy. Here are the results:
+
+All 28 papers were categorized by an LLM.
+
+Of these, 22 (78.57%) papers were cleanly categorized into one category.
+
+The sorting LLM marked all papers as fitting into at least one category - nice!
+
+The LLM found overlap in 6 (21.43%) papers.
+
+Here are the combinations of topics these papers were sorted into:
+
+Topics                                                                Num Papers    Percent of Sample
+------------------------------------------------------------------  ------------  -------------------
+Multi-Agent System Robustness | Generalization and Transfer in RL              2                7.14%
+Multi-Agent System Robustness | Theoretical Robustness in MDPs                 1                3.57%
+Generalization and Transfer in RL | Theoretical Robustness in MDPs             1                3.57%
+Risk-Sensitive Decision Processes | Theoretical Robustness in MDPs             1                3.57%
+Offline RL Robustness | Generalization and Transfer in RL                      1                3.57%
+
+And here are a few examples from the top combinations:
+
+<overlap_examples>
+## Multi-Agent System Robustness | Generalization and Transfer in RL
+
+Title: HAD-Gen: Human-like and Diverse Driving Behavior Modeling for Controllable Scenario Generation
+Published: 2025-03-19
+Abstract: Simulation-based testing has emerged as an essential tool for verifying and validating autonomous vehicles (AVs). However, contemporary methodologies, such as deterministic and imitation learning-based driver models, struggle to capture the variability of human-like driving behavior. Given these challenges, we propose HAD-Gen, a general framework for realistic traffic scenario generation that simulates diverse human-like driving behaviors. The framework first clusters the vehicle trajectory data into different driving styles according to safety features. It then employs maximum entropy inverse reinforcement learning on each of the clusters to learn the reward function corresponding to each driving style. Using these reward functions, the method integrates offline reinforcement learning pre-training and multi-agent reinforcement learning algorithms to obtain general and robust driving policies. Multi-perspective simulation results show that our proposed scenario generation framework can simulate diverse, human-like driving behaviors with strong generalization capability. The proposed framework achieves a 90.96% goal-reaching rate, an off-road rate of 2.08%, and a collision rate of 6.91% in the generalization test, outperforming prior approaches by over 20% in goal-reaching performance. The source code is released at https://github.com/RoboSafe-Lab/Sim4AD.
+
+Title: FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL
+Published: 2024-10-21
+Abstract: Multi-agent reinforcement learning has demonstrated significant potential in addressing complex cooperative tasks across various real-world applications. However, existing MARL approaches often rely on the restrictive assumption that the number of entities (e.g., agents, obstacles) remains constant between training and inference. This overlooks scenarios where entities are dynamically removed or added during the inference trajectory -- a common occurrence in real-world environments like search and rescue missions and dynamic combat situations. In this paper, we tackle the challenge of intra-trajectory dynamic entity composition under zero-shot out-of-domain (OOD) generalization, where such dynamic changes cannot be anticipated beforehand. Our empirical studies reveal that existing MARL methods suffer significant performance degradation and increased uncertainty in these scenarios. In response, we propose FlickerFusion, a novel OOD generalization method that acts as a universally applicable augmentation technique for MARL backbone methods. FlickerFusion stochastically drops out parts of the observation space, emulating being in-domain when inferenced OOD. The results show that FlickerFusion not only achieves superior inference rewards but also uniquely reduces uncertainty vis-\`a-vis the backbone, compared to existing methods. Benchmarks, implementations, and model weights are organized and open-sourced at flickerfusion305.github.io, accompanied by ample demo video renderings.
+
+## Multi-Agent System Robustness | Theoretical Robustness in MDPs
+
+Title: Group Distributionally Robust Reinforcement Learning with Hierarchical Latent Variables
+Published: 2022-10-21
+Abstract: One key challenge for multi-task Reinforcement learning (RL) in practice is the absence of task indicators. Robust RL has been applied to deal with task ambiguity, but may result in over-conservative policies. To balance the worst-case (robustness) and average performance, we propose Group Distributionally Robust Markov Decision Process (GDR-MDP), a flexible hierarchical MDP formulation that encodes task groups via a latent mixture model. GDR-MDP identifies the optimal policy that maximizes the expected return under the worst-possible qualified belief over task groups within an ambiguity set. We rigorously show that GDR-MDP's hierarchical structure improves distributional robustness by adding regularization to the worst possible outcomes. We then develop deep RL algorithms for GDR-MDP for both value-based and policy-based RL methods. Extensive experiments on Box2D control tasks, MuJoCo benchmarks, and Google football platforms show that our algorithms outperform classic robust training algorithms across diverse environments in terms of robustness under belief uncertainties. Demos are available on our project page (\url{https://sites.google.com/view/gdr-rl/home}).
+
+## Generalization and Transfer in RL | Theoretical Robustness in MDPs
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+## Risk-Sensitive Decision Processes | Theoretical Robustness in MDPs
+
+Title: Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model
+Published: 2025-03-11
+Abstract: In this work, we study the sample complexity problem of risk-sensitive Reinforcement Learning (RL) with a generative model, where we aim to maximize the Conditional Value at Risk (CVaR) with risk tolerance level $\tau$ at each step, a criterion we refer to as Iterated CVaR. We first build a connection between Iterated CVaR RL and $(s, a)$-rectangular distributional robust RL with a specific uncertainty set for CVaR. We establish nearly matching upper and lower bounds on the sample complexity of this problem. Specifically, we first prove that a value iteration-based algorithm, ICVaR-VI, achieves an $\epsilon$-optimal policy with at most $\tilde{O} \left(\frac{SA}{(1-\gamma)^4\tau^2\epsilon^2} \right)$ samples, where $\gamma$ is the discount factor, and $S, A$ are the sizes of the state and action spaces. Furthermore, when $\tau \geq \gamma$, the sample complexity improves to $\tilde{O} \left( \frac{SA}{(1-\gamma)^3\epsilon^2} \right)$. We further show a minimax lower bound of $\tilde{O} \left(\frac{(1-\gamma \tau)SA}{(1-\gamma)^4\tau\epsilon^2} \right)$. For a fixed risk level $\tau \in (0,1]$, our upper and lower bounds match, demonstrating the tightness and optimality of our analysis. We also investigate a limiting case with a small risk level $\tau$, called Worst-Path RL, where the objective is to maximize the minimum possible cumulative reward. We develop matching upper and lower bounds of $\tilde{O} \left(\frac{SA}{p_{\min}} \right)$, where $p_{\min}$ denotes the minimum non-zero reaching probability of the transition kernel.
+</overlap_examples>
+
+Here are how many papers were sorted into each topic:
+
+Topic                                Num Papers    Percent of Sample
+---------------------------------  ------------  -------------------
+Theoretical Robustness in MDPs               10               35.71%
+Generalization and Transfer in RL            10               35.71%
+Offline RL Robustness                         7               25.00%
+Multi-Agent System Robustness                 4               14.29%
+Risk-Sensitive Decision Processes             3               10.71%
+
+Here are the LLM-generated feedback results:
+
+<helpfulness_feedback>
+System Prompt: You are an enthusiast of AI safety research
+Score: 4
+Feedback:
+---
+I found the breakdown mostly clear and helpful.  The descriptions are generally well-written and give a good sense of what kind of research falls under each category. Specifically:
+
+* **Theoretical Robustness in MDPs**: This is a clear and well-defined category.  The description effectively conveys the focus on formal guarantees.
+* **Offline RL Robustness**: Also clear.  The focus on distribution shift and static datasets is well-articulated.
+* **Risk-Sensitive Decision Processes**: This category is understandable, though I initially wondered about the overlap with "Theoretical Robustness in MDPs".  However, the explicit mention of CVaR and other distributional risk metrics helps differentiate it.
+* **Generalization and Transfer in RL**: I found this category the least clear. While the description is understandable, it felt a bit broad. "Generalization and Transfer" is a large area of research, and its connection to "Robustness" isn't immediately obvious.  I can see the link - robust agents *should* generalize and transfer well - but more context explaining *why* this fits under Robustness would be beneficial.  As it stands, I felt this category was a bit less helpful than the others.
+* **Multi-Agent System Robustness**: This is another clear category.  The focus on the specific challenges of multi-agent environments, such as non-stationarity from other agents, is helpful.
+
+Overall, the categories seem reasonably distinct, though the "Generalization and Transfer" category feels like it could potentially overlap significantly with others, especially if "robustness" is interpreted broadly. The relatively narrow scope of the other categories helps minimize overlap in those cases.  For example, offline vs online/interactive context helps distinguish those categories.
+---
+
+System Prompt: You are an experienced and prolific AI safety researcher who is well renown in the field
+Score: 4
+Feedback:
+---
+Overall, this categorization is a good starting point, but some areas could benefit from clarification and restructuring for improved clarity and comprehensiveness.
+
+The "Theoretical Robustness in MDPs" category is well-defined and its description is clear. I appreciate the focus on formal guarantees and theoretical foundations, as this is a crucial aspect of robust RL.
+
+"Offline RL Robustness" is also well-defined, and its description resonates with current research trends.  Focusing on dataset limitations and out-of-distribution issues is essential for practical offline RL deployments.
+
+"Risk-Sensitive Decision Processes" is another clear category, with a good emphasis on risk metrics like CVaR and VaR.  However, it could benefit from mentioning the connection to distributional RL, as techniques from that area often play a role here.
+
+"Generalization and Transfer in RL" felt slightly less clear-cut.  While the concepts of meta-learning, domain adaptation, and sim-to-real transfer are relevant to robustness, they aren't exclusively about robustness.  A policy could generalize well but still be brittle to minor perturbations.  The description mentioning "online or interactive settings" makes the distinction with offline RL less clear. This category could benefit from a sharper focus on the specific ways generalization techniques contribute to robustness.  For instance, highlighting methods like robust meta-learning or domain randomization would strengthen the connection to the overarching robustness theme.
+
+"Multi-Agent System Robustness" is well-motivated. Robustness in multi-agent systems presents unique challenges, and this category appropriately addresses them. The description clearly outlines these challenges, making it a useful categorization.
+
+The distinction between "Offline RL Robustness" and "Generalization and Transfer in RL" feels somewhat artificial. Many techniques for generalization and transfer, particularly in online settings, could be seen as ways to enhance robustness by exposing the agent to a wider range of experiences during training. The current structure could lead to papers being inappropriately categorized if they combine offline and online training stages.
+---
+
+System Prompt: You are a newcomer to the field of AI safety and want to learn more
+Score: 4
+Feedback:
+---
+I found the categorization mostly clear and helpful in understanding the different facets of Reinforcement Learning Robustness.  The descriptions were generally well-written and provided enough context to grasp the core concepts of each category. Specifically, the descriptions for "Theoretical Robustness in MDPs," "Offline RL Robustness," and "Risk-Sensitive Decision Processes" were particularly clear due to their concise explanations and specific examples of techniques used within each category (e.g., mentioning CVaR).
+
+However, I found the distinction between "Generalization and Transfer in RL" and the other categories slightly less clear. While the description mentions "novel environments or under changing conditions," this could potentially overlap with aspects of robustness covered in other categories. For example, a paper focusing on robust performance under changing transition dynamics in a single environment might reasonably fit under both "Generalization and Transfer" and "Theoretical Robustness in MDPs." The inclusion of "sim-to-real" helped to clarify a specific application area within this category.
+
+The category on "Multi-Agent System Robustness" was understandable, and the description appropriately highlighted the unique challenges related to multi-agent dynamics. It effectively conveyed the robustness issues arising from agent interactions and the importance of coordination under uncertainty.
+
+Overall, the categorization provided a good starting point for understanding the landscape of Reinforcement Learning Robustness, though the potential overlap between "Generalization and Transfer in RL" and other categories introduced some ambiguity.
+---
+</helpfulness_feedback>
+
+Remember to use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+
+The overall score for this taxonomy comes out to 1.85
+
+This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down Reinforcement Learning Robustness.
+
+Output your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+I've made good progress with my taxonomy improvements, with a higher score of 1.85 and more papers being cleanly categorized (78.57%). The feedback suggests a few areas for further refinement:
+
+1. The "Generalization and Transfer in RL" category seems to be causing some confusion about its relation to robustness, and it might overlap with other categories.
+2. There may be an artificial distinction between offline RL robustness and generalization/transfer.
+
+Let me try to address these issues by:
+
+1. Making it clearer how generalization specifically relates to robustness
+2. Perhaps exploring a different organization that better separates the different aspects of robustness
+
+I could try:
+- Splitting or refining the generalization category to be more specific
+- Considering whether to combine some categories or create new ones
+- Potentially reducing the number of categories to make distinctions clearer
+
+Let me think about an alternative approach where I focus more on the key mechanisms or approaches to robustness rather than application domains.
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Robust MDP Theory and Algorithms",
+        "description": "Theoretical approaches to distributionally robust Markov Decision Processes with formal guarantees on optimality, convergence, and sample complexity. Focuses on methods that optimize policies for worst-case performance within uncertainty sets around nominal MDPs, including algorithms with provable bounds and mathematical frameworks for analyzing robustness-efficiency tradeoffs."
+    },
+    {
+        "title": "Offline Learning with Distribution Shift",
+        "description": "Methods addressing distribution shift challenges when learning from static datasets without environment interaction. Includes techniques that constrain policies to dataset support, correct value estimation errors for out-of-distribution actions, and approaches specifically designed to handle the limitations of fixed datasets in reinforcement learning."
+    },
+    {
+        "title": "Risk-Sensitive Reinforcement Learning",
+        "description": "Approaches incorporating explicit risk measures or risk-aversion in decision processes beyond expected returns. Focuses on methods using conditional value-at-risk (CVaR), value-at-risk, and other distributional risk metrics to ensure safety, reliability, and robustness against uncertainty in critical applications."
+    },
+    {
+        "title": "Robust Transfer and Environmental Adaptation",
+        "description": "Techniques enabling policies to maintain robust performance when facing novel conditions, variations, or environmental changes. Includes methods for domain adaptation, representation learning for robust transfer, fine-tuning approaches, and techniques specifically addressing sim-to-real gaps or environmental distribution shifts in interactive settings."
+    },
+    {
+        "title": "Multi-Agent Robustness",
+        "description": "Methods addressing robustness challenges specific to systems with multiple interacting agents. Focuses on approaches for handling changing agent compositions, robust coordination protocols, and techniques for maintaining performance under non-stationarity or uncertainty arising from multi-agent dynamics."
+    }
+]
+```
+====================================================================
+
+============================== USER ==============================
+The evaluation script ran successfully on your latest taxonomy. Here are the results:
+
+All 28 papers were categorized by an LLM.
+
+Of these, 21 (75%) papers were cleanly categorized into one category.
+
+The sorting LLM marked all papers as fitting into at least one category - nice!
+
+The LLM found overlap in 7 (25%) papers.
+
+Here are the combinations of topics these papers were sorted into:
+
+Topics                                                                                     Num Papers    Percent of Sample
+---------------------------------------------------------------------------------------  ------------  -------------------
+Risk-Sensitive Reinforcement Learning | Robust MDP Theory and Algorithms                            2                7.14%
+Robust Transfer and Environmental Adaptation | Multi-Agent Robustness                               2                7.14%
+Robust MDP Theory and Algorithms | Robust Transfer and Environmental Adaptation                     1                3.57%
+Robust MDP Theory and Algorithms | Multi-Agent Robustness                                           1                3.57%
+Offline Learning with Distribution Shift | Robust Transfer and Environmental Adaptation             1                3.57%
+
+And here are a few examples from the top combinations:
+
+<overlap_examples>
+## Risk-Sensitive Reinforcement Learning | Robust MDP Theory and Algorithms
+
+Title: Risk Aversion to Parameter Uncertainty in Markov Decision Processes with an Application to Slow-Onset Disaster Relief
+Published: 2019-02-24
+Abstract: In classical Markov Decision Processes (MDPs), action costs and transition probabilities are assumed to be known, although an accurate estimation of these parameters is often not possible in practice. This study addresses MDPs under cost and transition probability uncertainty and aims to provide a mathematical framework to obtain policies minimizing the risk of high long-term losses due to not knowing the true system parameters. To this end, we utilize the risk measure value-at-risk associated with the expected performance of an MDP model with respect to parameter uncertainty. We provide mixed-integer linear and nonlinear programming formulations and heuristic algorithms for such risk-averse models of MDPs under a finite distribution of the uncertain parameters. Our proposed models and solution methods are illustrated on an inventory management problem for humanitarian relief operations during a slow-onset disaster. The results demonstrate the potential of our risk-averse modeling approach for reducing the risk of highly undesirable outcomes in uncertain/risky environments.
+
+Title: Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model
+Published: 2025-03-11
+Abstract: In this work, we study the sample complexity problem of risk-sensitive Reinforcement Learning (RL) with a generative model, where we aim to maximize the Conditional Value at Risk (CVaR) with risk tolerance level $\tau$ at each step, a criterion we refer to as Iterated CVaR. We first build a connection between Iterated CVaR RL and $(s, a)$-rectangular distributional robust RL with a specific uncertainty set for CVaR. We establish nearly matching upper and lower bounds on the sample complexity of this problem. Specifically, we first prove that a value iteration-based algorithm, ICVaR-VI, achieves an $\epsilon$-optimal policy with at most $\tilde{O} \left(\frac{SA}{(1-\gamma)^4\tau^2\epsilon^2} \right)$ samples, where $\gamma$ is the discount factor, and $S, A$ are the sizes of the state and action spaces. Furthermore, when $\tau \geq \gamma$, the sample complexity improves to $\tilde{O} \left( \frac{SA}{(1-\gamma)^3\epsilon^2} \right)$. We further show a minimax lower bound of $\tilde{O} \left(\frac{(1-\gamma \tau)SA}{(1-\gamma)^4\tau\epsilon^2} \right)$. For a fixed risk level $\tau \in (0,1]$, our upper and lower bounds match, demonstrating the tightness and optimality of our analysis. We also investigate a limiting case with a small risk level $\tau$, called Worst-Path RL, where the objective is to maximize the minimum possible cumulative reward. We develop matching upper and lower bounds of $\tilde{O} \left(\frac{SA}{p_{\min}} \right)$, where $p_{\min}$ denotes the minimum non-zero reaching probability of the transition kernel.
+
+## Robust Transfer and Environmental Adaptation | Multi-Agent Robustness
+
+Title: FlickerFusion: Intra-trajectory Domain Generalizing Multi-Agent RL
+Published: 2024-10-21
+Abstract: Multi-agent reinforcement learning has demonstrated significant potential in addressing complex cooperative tasks across various real-world applications. However, existing MARL approaches often rely on the restrictive assumption that the number of entities (e.g., agents, obstacles) remains constant between training and inference. This overlooks scenarios where entities are dynamically removed or added during the inference trajectory -- a common occurrence in real-world environments like search and rescue missions and dynamic combat situations. In this paper, we tackle the challenge of intra-trajectory dynamic entity composition under zero-shot out-of-domain (OOD) generalization, where such dynamic changes cannot be anticipated beforehand. Our empirical studies reveal that existing MARL methods suffer significant performance degradation and increased uncertainty in these scenarios. In response, we propose FlickerFusion, a novel OOD generalization method that acts as a universally applicable augmentation technique for MARL backbone methods. FlickerFusion stochastically drops out parts of the observation space, emulating being in-domain when inferenced OOD. The results show that FlickerFusion not only achieves superior inference rewards but also uniquely reduces uncertainty vis-\`a-vis the backbone, compared to existing methods. Benchmarks, implementations, and model weights are organized and open-sourced at flickerfusion305.github.io, accompanied by ample demo video renderings.
+
+Title: HAD-Gen: Human-like and Diverse Driving Behavior Modeling for Controllable Scenario Generation
+Published: 2025-03-19
+Abstract: Simulation-based testing has emerged as an essential tool for verifying and validating autonomous vehicles (AVs). However, contemporary methodologies, such as deterministic and imitation learning-based driver models, struggle to capture the variability of human-like driving behavior. Given these challenges, we propose HAD-Gen, a general framework for realistic traffic scenario generation that simulates diverse human-like driving behaviors. The framework first clusters the vehicle trajectory data into different driving styles according to safety features. It then employs maximum entropy inverse reinforcement learning on each of the clusters to learn the reward function corresponding to each driving style. Using these reward functions, the method integrates offline reinforcement learning pre-training and multi-agent reinforcement learning algorithms to obtain general and robust driving policies. Multi-perspective simulation results show that our proposed scenario generation framework can simulate diverse, human-like driving behaviors with strong generalization capability. The proposed framework achieves a 90.96% goal-reaching rate, an off-road rate of 2.08%, and a collision rate of 6.91% in the generalization test, outperforming prior approaches by over 20% in goal-reaching performance. The source code is released at https://github.com/RoboSafe-Lab/Sim4AD.
+
+## Robust MDP Theory and Algorithms | Robust Transfer and Environmental Adaptation
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+## Robust MDP Theory and Algorithms | Multi-Agent Robustness
+
+Title: Group Distributionally Robust Reinforcement Learning with Hierarchical Latent Variables
+Published: 2022-10-21
+Abstract: One key challenge for multi-task Reinforcement learning (RL) in practice is the absence of task indicators. Robust RL has been applied to deal with task ambiguity, but may result in over-conservative policies. To balance the worst-case (robustness) and average performance, we propose Group Distributionally Robust Markov Decision Process (GDR-MDP), a flexible hierarchical MDP formulation that encodes task groups via a latent mixture model. GDR-MDP identifies the optimal policy that maximizes the expected return under the worst-possible qualified belief over task groups within an ambiguity set. We rigorously show that GDR-MDP's hierarchical structure improves distributional robustness by adding regularization to the worst possible outcomes. We then develop deep RL algorithms for GDR-MDP for both value-based and policy-based RL methods. Extensive experiments on Box2D control tasks, MuJoCo benchmarks, and Google football platforms show that our algorithms outperform classic robust training algorithms across diverse environments in terms of robustness under belief uncertainties. Demos are available on our project page (\url{https://sites.google.com/view/gdr-rl/home}).
+</overlap_examples>
+
+Here are how many papers were sorted into each topic:
+
+Topic                                           Num Papers    Percent of Sample
+--------------------------------------------  ------------  -------------------
+Robust MDP Theory and Algorithms                        11               39.29%
+Robust Transfer and Environmental Adaptation            10               35.71%
+Offline Learning with Distribution Shift                 7               25.00%
+Multi-Agent Robustness                                   4               14.29%
+Risk-Sensitive Reinforcement Learning                    3               10.71%
+
+Here are the LLM-generated feedback results:
+
+<helpfulness_feedback>
+System Prompt: You are an enthusiast of AI safety research
+Score: 4
+Feedback:
+---
+I found the categorization generally helpful and relatively clear.  The descriptions provided enough context to understand the intended scope of each category.  Specifically, I appreciated the inclusion of examples like CVaR and sim-to-real in the descriptions as they grounded the more abstract concepts.
+
+I found "Robust MDP Theory and Algorithms" and "Risk-Sensitive Reinforcement Learning" particularly well-defined. The theoretical focus of the former and the emphasis on specific risk metrics in the latter made them easy to grasp.
+
+"Offline Learning with Distribution Shift" also seemed reasonable, though I initially wondered how it differed from "Robust Transfer and Environmental Adaptation." The clarification about "static datasets without environment interaction" helped distinguish it. However, the boundary between these two categories still feels slightly fuzzy to me.  For example, a paper might address distribution shift in an offline setting but with the aim of transferring a learned policy to a new online environment. Determining which category would be most suitable for such a paper might be challenging.
+
+The "Multi-Agent Robustness" category felt a bit broader and less precise than the others. While the description mentions changing agent compositions and robust coordination, it could benefit from a few more concrete examples. The notion of non-stationarity in multi-agent settings, while important, felt a bit too general and could potentially overlap with other forms of robustness.
+
+Overall, the breakdown provides a good starting point, but the distinction between offline learning with distribution shift and robust transfer could be clearer, and multi-agent robustness might benefit from further refinement.  I didn't see any outright contradictions, and most categories align with my expectations for topics under Reinforcement Learning Robustness.
+---
+
+System Prompt: You are an experienced and prolific AI safety researcher who is well renown in the field
+Score: 3
+Feedback:
+---
+Overall, this breakdown is a solid start, but I have some concerns about clarity and overlap.
+
+The "Robust MDP Theory and Algorithms" category is the clearest to me.  The description specifying worst-case performance and uncertainty sets grounds it in familiar robust optimization concepts.
+
+"Offline Learning with Distribution Shift" is understandable but feels slightly narrow.  While dataset limitations are a key challenge, the description seems to overemphasize it compared to the core issue of generalizing beyond the training distribution in offline RL.  For example, methods based on importance sampling or uncertainty estimation, which don't explicitly constrain policies to the dataset, seem relevant but not fully captured.
+
+I found "Risk-Sensitive Reinforcement Learning" clear. The mention of specific risk metrics like CVaR helps a lot.
+
+"Robust Transfer and Environmental Adaptation" is understandable, but it has significant potential overlap with "Offline Learning with Distribution Shift".  Both address the issue of policy generalization beyond the training distribution, but the framing is different (offline vs. transfer). This distinction feels a little fuzzy in practice, especially given offline RL methods can be used for sim-to-real transfer.
+
+Finally, "Multi-Agent Robustness" is clear in its high-level goal but slightly less so in its details.  The phrase "changing agent compositions" doesn't immediately convey a clear picture of the problem.  It's understandable with some reflection, but more concrete examples could strengthen the description.  Also, the relationship between non-stationarity and multi-agent dynamics could be elaborated upon. Does the non-stationarity solely arise from other agents? Or does it encompass external environmental changes too?
+
+In general, I felt a consistent desire for more illustrative examples. Concisely mentioning a specific algorithm or technique, wherever possible, enhances clarity.
+
+Overall, I'd appreciate clearer distinctions about where robustness to changes in environment dynamics overlaps between categories.  Are different theoretical framings being highlighted (as hinted at by the inclusion of offline vs. transfer)?  Or should the focus be on different underlying sources of difficulty within broader shared categories of approaches?  Clarifying this structure is crucial for effective categorization.
+---
+
+System Prompt: You are a newcomer to the field of AI safety and want to learn more
+Score: 4
+Feedback:
+---
+I found this breakdown quite helpful as a newcomer. The descriptions are generally clear and give me a good sense of what kind of research falls under each category. Specifically, I appreciated the inclusion of examples like CVaR and the mention of sim-to-real gaps, as these helped ground the abstract concepts.
+
+The categories themselves also seem to make sense conceptually. I can see how each represents a distinct aspect of robustness in reinforcement learning.  For instance, "Offline Learning with Distribution Shift" clearly focuses on the challenges of static datasets, which is different from the theoretical guarantees explored in "Robust MDP Theory and Algorithms".  "Multi-Agent Robustness" also clearly carves out its own niche, dealing with the complexities that arise from multiple interacting agents.
+
+I particularly appreciated the distinction between "Robust Transfer and Environmental Adaptation" and "Offline Learning with Distribution Shift."  Initially, I might have thought they were similar, but the description clarifies that the former is about adapting to *new* environments, while the latter deals with the limitations of a *fixed* dataset.
+
+However, I did find myself slightly unsure about the distinction between "Robust MDP Theory and Algorithms" and "Risk-Sensitive Reinforcement Learning." I understand that the former deals with worst-case performance, while the latter considers risk measures, but I can envision scenarios where these could overlap.  For example, optimizing for CVaR might be considered a way to achieve robust performance in the worst-case scenarios. This slight ambiguity wasn't a major impediment to understanding, but it did make me pause.
+
+Overall, I think this categorization covers a broad range of research areas within reinforcement learning robustness. I believe most papers I'd expect to find in this area would fit comfortably within one of these categories.
+---
+</helpfulness_feedback>
+
+Remember to use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+
+The overall score for this taxonomy comes out to 1.73
+
+This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down Reinforcement Learning Robustness.
+
+Output your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+Let me analyze the feedback and consider how to improve the taxonomy.
+
+The feedback suggests:
+1. There's still some overlap between categories (25% of papers have multiple categories)
+2. The distinction between "Offline Learning with Distribution Shift" and "Robust Transfer and Environmental Adaptation" could be clearer
+3. The relationship between "Robust MDP Theory and Algorithms" and "Risk-Sensitive Reinforcement Learning" could be clarified
+4. The "Multi-Agent Robustness" category could benefit from more concrete examples
+
+Some approaches I could take:
+1. Merge some categories to reduce overlap (though this might make them too broad)
+2. Refine the descriptions to more clearly delineate boundaries
+3. Restructure the categories to focus on different dimensions of robustness
+
+Let me try a different approach. Instead of categorizing by application domain (offline, multi-agent, etc.), I could organize by the robustness challenge or mechanism:
+
+1. Distributional Robustness: Methods that optimize for worst-case performance across distributions
+2. Uncertainty-Based Robustness: Approaches that explicitly model uncertainty to achieve robustness
+3. Constraint-Based Robustness: Methods that enforce behavioral constraints to ensure robustness
+4. Representational Robustness: Techniques focused on learning robust representations
+5. Algorithmic Robustness: Methods that make the learning algorithm itself more robust
+
+Alternatively, I could try simplifying to just 4 categories to reduce overlap:
+
+1. Theoretical Foundations of Robust RL: Combining theory and risk-sensitive approaches
+2. Offline and Static Dataset Robustness: Focused on learning from fixed datasets
+3. Online Adaptation and Transfer: Methods for adaptation in interactive settings
+4. Multi-Agent and System Robustness: Approaches for multi-agent settings and complex systems
+
+Or I could try a different breakdown with 5 categories that more clearly separates different aspects of robustness:
+
+1. Theoretical Frameworks for Robust MDPs: Formal approaches to robustness in MDPs
+2. Risk-Aware Decision Making: Methods that explicitly incorporate risk measures
+3. Robustness to Distribution Shift: Approaches for handling shifts between training and deployment
+4. Interactive Adaptation Methods: Techniques for adapting during deployment
+5. Multi-Agent Robustness: Approaches specific to multi-agent settings
+
+I think I'll go with this last approach, as it seems to address the feedback while maintaining meaningful categories.
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Robust Decision Theory",
+        "description": "Theoretical frameworks for robust decision-making under uncertainty with formal guarantees. Includes distributionally robust MDPs, mathematically rigorous methods for optimizing worst-case performance within uncertainty sets, and algorithms with provable convergence and sample complexity bounds."
+    },
+    {
+        "title": "Risk-Aware Policy Optimization",
+        "description": "Methods explicitly incorporating risk measures beyond expected returns for critical applications. Focuses on techniques using conditional value-at-risk (CVaR), value-at-risk, and other distributional metrics to handle uncertainty in state transitions, rewards, or environment parameters while prioritizing safety and reliability."
+    },
+    {
+        "title": "Offline Robustness Techniques",
+        "description": "Approaches specifically addressing distribution shift challenges when learning from fixed datasets without environment interaction. Includes value function regularization methods, policy constraints, uncertainty estimation from static data, and techniques that handle the limitations of offline data while preventing out-of-distribution errors."
+    },
+    {
+        "title": "Interactive Adaptation Methods",
+        "description": "Techniques enabling policies to adapt or maintain robust performance when deployed in changing or novel environments through interaction. Encompasses domain adaptation approaches, rapid online adjustment methods, meta-learning for quick adaptation, and approaches that specifically address sim-to-real transfer challenges."
+    },
+    {
+        "title": "Multi-Agent System Robustness",
+        "description": "Methods addressing robustness in systems with multiple interacting agents or dynamic agent composition. Includes techniques for robust coordination under uncertainty, resilience to changing agent numbers or behaviors, and approaches that handle the non-stationarity inherent in multi-agent learning environments."
+    }
+]
+```
+====================================================================
+
+============================== USER ==============================
+The evaluation script ran successfully on your latest taxonomy. Here are the results:
+
+All 28 papers were categorized by an LLM.
+
+Of these, 20 (71.43%) papers were cleanly categorized into one category.
+
+The LLM marked only one paper as not fitting into any of the topics - nice! This was that paper:
+
+<paper_not_placed>
+Title: The Surprising Ineffectiveness of Pre-Trained Visual Representations for Model-Based Reinforcement Learning
+Published: 2024-11-15
+Abstract: Visual Reinforcement Learning (RL) methods often require extensive amounts of data. As opposed to model-free RL, model-based RL (MBRL) offers a potential solution with efficient data utilization through planning. Additionally, RL lacks generalization capabilities for real-world tasks. Prior work has shown that incorporating pre-trained visual representations (PVRs) enhances sample efficiency and generalization. While PVRs have been extensively studied in the context of model-free RL, their potential in MBRL remains largely unexplored. In this paper, we benchmark a set of PVRs on challenging control tasks in a model-based RL setting. We investigate the data efficiency, generalization capabilities, and the impact of different properties of PVRs on the performance of model-based agents. Our results, perhaps surprisingly, reveal that for MBRL current PVRs are not more sample efficient than learning representations from scratch, and that they do not generalize better to out-of-distribution (OOD) settings. To explain this, we analyze the quality of the trained dynamics model. Furthermore, we show that data diversity and network architecture are the most important contributors to OOD generalization performance.
+</paper_not_placed>
+
+The LLM found overlap in 7 (25%) papers.
+
+Here are the combinations of topics these papers were sorted into:
+
+Topics                                                           Num Papers    Percent of Sample
+-------------------------------------------------------------  ------------  -------------------
+Robust Decision Theory | Risk-Aware Policy Optimization                   3               10.71%
+Robust Decision Theory | Interactive Adaptation Methods                   3               10.71%
+Offline Robustness Techniques | Multi-Agent System Robustness             1                3.57%
+
+And here are a few examples from the top combinations:
+
+<overlap_examples>
+## Robust Decision Theory | Risk-Aware Policy Optimization
+
+Title: Near-Optimal Sample Complexity for Iterated CVaR Reinforcement Learning with a Generative Model
+Published: 2025-03-11
+Abstract: In this work, we study the sample complexity problem of risk-sensitive Reinforcement Learning (RL) with a generative model, where we aim to maximize the Conditional Value at Risk (CVaR) with risk tolerance level $\tau$ at each step, a criterion we refer to as Iterated CVaR. We first build a connection between Iterated CVaR RL and $(s, a)$-rectangular distributional robust RL with a specific uncertainty set for CVaR. We establish nearly matching upper and lower bounds on the sample complexity of this problem. Specifically, we first prove that a value iteration-based algorithm, ICVaR-VI, achieves an $\epsilon$-optimal policy with at most $\tilde{O} \left(\frac{SA}{(1-\gamma)^4\tau^2\epsilon^2} \right)$ samples, where $\gamma$ is the discount factor, and $S, A$ are the sizes of the state and action spaces. Furthermore, when $\tau \geq \gamma$, the sample complexity improves to $\tilde{O} \left( \frac{SA}{(1-\gamma)^3\epsilon^2} \right)$. We further show a minimax lower bound of $\tilde{O} \left(\frac{(1-\gamma \tau)SA}{(1-\gamma)^4\tau\epsilon^2} \right)$. For a fixed risk level $\tau \in (0,1]$, our upper and lower bounds match, demonstrating the tightness and optimality of our analysis. We also investigate a limiting case with a small risk level $\tau$, called Worst-Path RL, where the objective is to maximize the minimum possible cumulative reward. We develop matching upper and lower bounds of $\tilde{O} \left(\frac{SA}{p_{\min}} \right)$, where $p_{\min}$ denotes the minimum non-zero reaching probability of the transition kernel.
+
+Title: Risk Aversion to Parameter Uncertainty in Markov Decision Processes with an Application to Slow-Onset Disaster Relief
+Published: 2019-02-24
+Abstract: In classical Markov Decision Processes (MDPs), action costs and transition probabilities are assumed to be known, although an accurate estimation of these parameters is often not possible in practice. This study addresses MDPs under cost and transition probability uncertainty and aims to provide a mathematical framework to obtain policies minimizing the risk of high long-term losses due to not knowing the true system parameters. To this end, we utilize the risk measure value-at-risk associated with the expected performance of an MDP model with respect to parameter uncertainty. We provide mixed-integer linear and nonlinear programming formulations and heuristic algorithms for such risk-averse models of MDPs under a finite distribution of the uncertain parameters. Our proposed models and solution methods are illustrated on an inventory management problem for humanitarian relief operations during a slow-onset disaster. The results demonstrate the potential of our risk-averse modeling approach for reducing the risk of highly undesirable outcomes in uncertain/risky environments.
+
+Title: Risk-Averse Decision Making Under Uncertainty
+Published: 2021-09-09
+Abstract: A large class of decision making under uncertainty problems can be described via Markov decision processes (MDPs) or partially observable MDPs (POMDPs), with application to artificial intelligence and operations research, among others. Traditionally, policy synthesis techniques are proposed such that a total expected cost or reward is minimized or maximized. However, optimality in the total expected cost sense is only reasonable if system behavior in the large number of runs is of interest, which has limited the use of such policies in practical mission-critical scenarios, wherein large deviations from the expected behavior may lead to mission failure. In this paper, we consider the problem of designing policies for MDPs and POMDPs with objectives and constraints in terms of dynamic coherent risk measures, which we refer to as the constrained risk-averse problem. For MDPs, we reformulate the problem into a infsup problem via the Lagrangian framework and propose an optimization-based method to synthesize Markovian policies. For MDPs, we demonstrate that the formulated optimization problems are in the form of difference convex programs (DCPs) and can be solved by the disciplined convex-concave programming (DCCP) framework. We show that these results generalize linear programs for constrained MDPs with total discounted expected costs and constraints. For POMDPs, we show that, if the coherent risk measures can be defined as a Markov risk transition mapping, an infinite-dimensional optimization can be used to design Markovian belief-based policies. For stochastic finite-state controllers (FSCs), we show that the latter optimization simplifies to a (finite-dimensional) DCP and can be solved by the DCCP framework. We incorporate these DCPs in a policy iteration algorithm to design risk-averse FSCs for POMDPs.
+
+## Robust Decision Theory | Interactive Adaptation Methods
+
+Title: Stronger Generalization Guarantees for Robot Learning by Combining Generative Models and Real-World Data
+Published: 2021-11-16
+Abstract: We are motivated by the problem of learning policies for robotic systems with rich sensory inputs (e.g., vision) in a manner that allows us to guarantee generalization to environments unseen during training. We provide a framework for providing such generalization guarantees by leveraging a finite dataset of real-world environments in combination with a (potentially inaccurate) generative model of environments. The key idea behind our approach is to utilize the generative model in order to implicitly specify a prior over policies. This prior is updated using the real-world dataset of environments by minimizing an upper bound on the expected cost across novel environments derived via Probably Approximately Correct (PAC)-Bayes generalization theory. We demonstrate our approach on two simulated systems with nonlinear/hybrid dynamics and rich sensing modalities: (i) quadrotor navigation with an onboard vision sensor, and (ii) grasping objects using a depth sensor. Comparisons with prior work demonstrate the ability of our approach to obtain stronger generalization guarantees by utilizing generative models. We also present hardware experiments for validating our bounds for the grasping task.
+
+Title: Distributionally Robust Reinforcement Learning with Interactive Data Collection: Fundamental Hardness and Near-Optimal Algorithm
+Published: 2024-04-04
+Abstract: The sim-to-real gap, which represents the disparity between training and testing environments, poses a significant challenge in reinforcement learning (RL). A promising approach to addressing this challenge is distributionally robust RL, often framed as a robust Markov decision process (RMDP). In this framework, the objective is to find a robust policy that achieves good performance under the worst-case scenario among all environments within a pre-specified uncertainty set centered around the training environment. Unlike previous work, which relies on a generative model or a pre-collected offline dataset enjoying good coverage of the deployment environment, we tackle robust RL via interactive data collection, where the learner interacts with the training environment only and refines the policy through trial and error. In this robust RL paradigm, two main challenges emerge: managing distributional robustness while striking a balance between exploration and exploitation during data collection. Initially, we establish that sample-efficient learning without additional assumptions is unattainable owing to the curse of support shift; i.e., the potential disjointedness of the distributional supports between the training and testing environments. To circumvent such a hardness result, we introduce the vanishing minimal value assumption to RMDPs with a total-variation (TV) distance robust set, postulating that the minimal value of the optimal robust value function is zero. We prove that such an assumption effectively eliminates the support shift issue for RMDPs with a TV distance robust set, and present an algorithm with a provable sample complexity guarantee. Our work makes the initial step to uncovering the inherent difficulty of robust RL via interactive data collection and sufficient conditions for designing a sample-efficient algorithm accompanied by sharp sample complexity analysis.
+
+Title: Online MDP with Transition Prototypes: A Robust Adaptive Approach
+Published: 2024-12-18
+Abstract: In this work, we consider an online robust Markov Decision Process (MDP) where we have the information of finitely many prototypes of the underlying transition kernel. We consider an adaptively updated ambiguity set of the prototypes and propose an algorithm that efficiently identifies the true underlying transition kernel while guaranteeing the performance of the corresponding robust policy. To be more specific, we provide a sublinear regret of the subsequent optimal robust policy. We also provide an early stopping mechanism and a worst-case performance bound of the value function. In numerical experiments, we demonstrate that our method outperforms existing approaches, particularly in the early stage with limited data. This work contributes to robust MDPs by considering possible prior information about the underlying transition probability and online learning, offering both theoretical insights and practical algorithms for improved decision-making under uncertainty.
+
+## Offline Robustness Techniques | Multi-Agent System Robustness
+
+Title: HAD-Gen: Human-like and Diverse Driving Behavior Modeling for Controllable Scenario Generation
+Published: 2025-03-19
+Abstract: Simulation-based testing has emerged as an essential tool for verifying and validating autonomous vehicles (AVs). However, contemporary methodologies, such as deterministic and imitation learning-based driver models, struggle to capture the variability of human-like driving behavior. Given these challenges, we propose HAD-Gen, a general framework for realistic traffic scenario generation that simulates diverse human-like driving behaviors. The framework first clusters the vehicle trajectory data into different driving styles according to safety features. It then employs maximum entropy inverse reinforcement learning on each of the clusters to learn the reward function corresponding to each driving style. Using these reward functions, the method integrates offline reinforcement learning pre-training and multi-agent reinforcement learning algorithms to obtain general and robust driving policies. Multi-perspective simulation results show that our proposed scenario generation framework can simulate diverse, human-like driving behaviors with strong generalization capability. The proposed framework achieves a 90.96% goal-reaching rate, an off-road rate of 2.08%, and a collision rate of 6.91% in the generalization test, outperforming prior approaches by over 20% in goal-reaching performance. The source code is released at https://github.com/RoboSafe-Lab/Sim4AD.
+</overlap_examples>
+
+Here are how many papers were sorted into each topic:
+
+Topic                             Num Papers    Percent of Sample
+------------------------------  ------------  -------------------
+Robust Decision Theory                    13               46.43%
+Offline Robustness Techniques              8               28.57%
+Interactive Adaptation Methods             6               21.43%
+Risk-Aware Policy Optimization             4               14.29%
+Multi-Agent System Robustness              3               10.71%
+
+Here are the LLM-generated feedback results:
+
+<helpfulness_feedback>
+System Prompt: You are an enthusiast of AI safety research
+Score: 4
+Feedback:
+---
+I found the categorization mostly clear and helpful in organizing different facets of reinforcement learning robustness.  The descriptions were generally well-written and provided a good understanding of the type of research that would fall under each category.  Specifically, the descriptions for "Robust Decision Theory", "Risk-Aware Policy Optimization", and "Offline Robustness Techniques" were very clear.
+
+The category "Interactive Adaptation Methods" felt a little less precise. While the description mentions adaptation, it also includes "maintain robust performance," which seems slightly different.  The connection between maintaining performance and adapting wasn't immediately intuitive.  The examples helped clarify things, but the initial description felt a bit broader than the other categories.
+
+The category "Multi-Agent System Robustness" was also clear in terms of its focus on multi-agent systems. However, it felt like a distinct sub-area of RL rather than specifically a robustness technique, as if "multi-agent" was the primary classifier rather than "robustness".  For example, work on robust coordination could also fit under robust decision theory depending on the approach. This category seemed to introduce a different dimension for organization than the other categories did.
+
+Overall, the categories cover a good range of work in robust RL, but there seems to be some ambiguity at the edges. I would find it slightly difficult to determine where a paper sits if it falls under both offline robustness techniques and interactive adaptation methods, for example if it uses offline data for online adaptation.
+---
+
+System Prompt: You are an experienced and prolific AI safety researcher who is well renown in the field
+Score: 4
+Feedback:
+---
+Overall, I find this categorization quite helpful and relatively clear. The descriptions are generally well-written and informative. I particularly appreciate the explicit mention of theoretical guarantees in "Robust Decision Theory," the focus on specific risk measures in "Risk-Aware Policy Optimization," and the emphasis on data limitations in "Offline Robustness Techniques." These details help clarify the scope of each category.
+
+I also found the inclusion of "Interactive Adaptation Methods" to be useful.  Adaptability is a crucial aspect of robustness in real-world RL deployments, and this category captures that well. The "Multi-Agent System Robustness" category is also important, as multi-agent scenarios present unique robustness challenges.
+
+One point that was slightly less clear to me was the distinction between "Offline Robustness Techniques" and "Interactive Adaptation Methods."  While the descriptions help differentiate them, the line can be blurry.  For instance, some offline methods might involve learning a representation that facilitates later adaptation in an online setting. I understand that "Offline Robustness Techniques" focuses on making the best of a *fixed* dataset, while "Interactive Adaptation Methods" allow for continued data gathering *after* deployment. That nuance is key.
+
+I did briefly wonder if a separate category for "Robust Reward Function Design" should be included.  Issues with reward misspecification and shaping are often central to robustness problems in RL, and it may warrant independent investigation.  However, I can see how these concerns can sometimes fit within existing categories like “Risk-Aware Policy Optimization” or “Robust Decision Theory”, depending on the specific techniques. For example, an approach might focus on developing a risk averse policy optimization framework under reward uncertainty due to misspecification.
+
+I didn't find anything inherently contradictory within the presented categories, and it seems reasonably comprehensive based on my familiarity with the field.
+---
+
+System Prompt: You are a newcomer to the field of AI safety and want to learn more
+Score: 4
+Feedback:
+---
+I found the descriptions for each category mostly clear and understandable. The use of keywords like "CVaR," "value-at-risk," "domain adaptation," and "meta-learning" helps provide context and a more precise understanding of the topics covered.  "Robust Decision Theory" felt a little abstract, but I could generally understand the kind of work it encompasses.
+
+Conceptually, the breakdown seems sensible.  I can see the logical flow from theoretical foundations (Robust Decision Theory) to specific application areas like Offline Robustness and Interactive Adaptation.  Multi-Agent System Robustness also makes sense as a distinct category due to the unique challenges presented by multi-agent environments.  I didn't notice any contradictions.
+
+The categories seem to cover a good range of topics I'd associate with reinforcement learning robustness, from theoretical guarantees to practical methods for handling distribution shifts and adapting to changing environments.  I appreciate that both offline and online (interactive) learning are addressed.
+
+The distinction between "Offline Robustness Techniques" and "Interactive Adaptation Methods" was especially helpful. It clarifies the different approaches for tackling distribution shift depending on whether the agent can interact with the environment during deployment. I also appreciate that "Multi-Agent System Robustness" carved out considerations unique to these systems as that setting necessitates separate methods.
+
+While generally distinct, I foresee some potential overlap between "Risk-Aware Policy Optimization" and other categories. For instance, an offline RL method might also incorporate risk measures.  However, I believe this minor overlap is acceptable as papers could potentially fall into multiple categories.
+---
+</helpfulness_feedback>
+
+Remember to use your discretion and only incorporate suggestions or consider feedback that is reasonable and relevant.
+
+The overall score for this taxonomy comes out to 1.65
+
+This is an iterative process and you have many attempts to test out different taxonomies. Take advantage of this. Experiment with different sized taxonomies or different ways of breaking down Reinforcement Learning Robustness.
+
+Output your new set of topics in the same format as before: as a JSON array of objects with "title" and "description" keys. The titles should be clear and concise, and the descriptions around 2 sentences.
+====================================================================
+
+============================== ASSISTANT ==============================
+
+------- THINKING -------
+Let me analyze this last taxonomy's results to identify areas for improvement:
+
+1. We have one paper that wasn't categorized: "The Surprising Ineffectiveness of Pre-Trained Visual Representations for Model-Based Reinforcement Learning" - this is about representation learning and generalization.
+
+2. We're still seeing overlaps primarily between:
+   - Robust Decision Theory & Risk-Aware Policy Optimization (3 papers)
+   - Robust Decision Theory & Interactive Adaptation Methods (3 papers)
+   - Offline Robustness Techniques & Multi-Agent System Robustness (1 paper)
+
+3. Topic distribution is somewhat unbalanced:
+   - Robust Decision Theory: 46.43%
+   - Offline Robustness Techniques: 28.57%
+   - Interactive Adaptation Methods: 21.43%
+   - Risk-Aware Policy Optimization: 14.29%
+   - Multi-Agent System Robustness: 10.71%
+
+4. Feedback suggested some concerns:
+   - Some overlap between categories, especially Offline vs Interactive techniques
+   - Multi-Agent is categorized more by domain than robustness approach
+   - Interactive Adaptation category could be clearer
+   - Maybe missing a category for robust reward functions
+   - Some confusion about theoretical approaches in other categories
+
+Let me try a different approach that addresses these concerns:
+
+1. Split "Robust Decision Theory" since it's quite large (46.43%)
+2. Create a category for representation learning/generalization to catch the missed paper
+3. Clarify boundaries between offline and interactive methods
+4. Consider restructuring multi-agent robustness to focus on the robustness approach
+5. Make Interactive Adaptation more precise
+
+I'll try a taxonomy that focuses more on the technical approach to robustness rather than the setting:
+------- END THINKING -------
+
+```json
+[
+    {
+        "title": "Distributionally Robust Optimization",
+        "description": "Methods optimizing decision policies for worst-case performance within uncertainty sets around nominal models. Focuses on mathematical frameworks that provide formal guarantees for robustness against distribution shifts, including techniques using various divergence measures to define uncertainty sets and algorithms with provable bounds."
+    },
+    {
+        "title": "Risk-Sensitive Decision Making",
+        "description": "Approaches incorporating explicit risk measures beyond expected returns to handle uncertainty in critical applications. Includes methods using conditional value-at-risk (CVaR), value-at-risk, and other distributional metrics to manage performance variability, ensure safety, and maintain reliability under environmental uncertainty."
+    },
+    {
+        "title": "Policy Constraints and Regularization",
+        "description": "Techniques that constrain or regularize policy behavior to prevent exploitation of distributional mismatches. Includes methods limiting policy deviation from training distributions, constraining actions to dataset support in offline learning, and approaches that penalize behaviors that may perform poorly under distribution shift."
+    },
+    {
+        "title": "Robust Representation Learning",
+        "description": "Methods focusing on learning state, action, or value function representations that generalize effectively across distribution shifts. Encompasses techniques for invariant feature extraction, causal representation learning, transfer learning approaches, and methods that identify and leverage robust patterns across environments."
+    },
+    {
+        "title": "Adaptive and Meta-Learning Approaches",
+        "description": "Techniques enabling rapid adaptation to changing environments or uncertainties during deployment through active interaction. Includes methods for quick policy adjustment based on observed state transitions, meta-learning algorithms that generalize across task distributions, and approaches specifically designed for handling sim-to-real transfer challenges."
+    },
+    {
+        "title": "Multi-Agent Robustness Techniques",
+        "description": "Specialized methods addressing robustness challenges in systems with multiple interacting agents. Focuses on robust coordination mechanisms under uncertainty, techniques for handling changing agent compositions, and approaches that maintain performance despite the non-stationarity inherent in multi-agent environments."
+    }
+]
+```
+====================================================================
