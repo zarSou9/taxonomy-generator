@@ -65,6 +65,22 @@ def print_total_papers():
     print(total_papers)
 
 
+def print_total_related():
+    total_related = 0
+
+    def _print_total_related(topic: Topic = tree):
+        nonlocal total_related
+
+        total_related += int(bool(topic.links))
+
+        for sub in topic.topics:
+            _print_total_related(sub)
+
+    _print_total_related()
+
+    print(total_related)
+
+
 def get_num_topics(raw=False) -> dict[int, float]:
     num_topics = {}
 
@@ -121,4 +137,4 @@ def save_descriptions():
 
 
 if __name__ == "__main__":
-    print_total_papers()
+    print_total_related()
