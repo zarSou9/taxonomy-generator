@@ -160,5 +160,31 @@ def show_frequency_by_iteration(len_results: int = 6):
     )
 
 
+def show_avg_score_by_iteration(len_results: int = 6):
+    scores_by_iteration = {}
+    num_results = 0
+    for path in Path("data/breakdown_results").iterdir():
+        if path.is_file():
+            results = json.loads(path.read_text())
+            if len(results) == len_results:
+                for i, result in enumerate(results):
+                    scores_by_iteration[i] = (
+                        scores_by_iteration.get(i, 0) + result["overall_score"]
+                    )
+                num_results += 1
+
+    for i in scores_by_iteration:
+        scores_by_iteration[i] = scores_by_iteration[i] / num_results
+
+    plot_list(
+        scores_by_iteration,
+        kind="bar",
+        title="Average Score by Iteration Index",
+        xlabel="Iteration Index",
+        ylabel="Average Score",
+    )
+
+
 if __name__ == "__main__":
-    show_frequency_by_iteration()
+    show_frequency_by_iteration(8)
+    show_avg_score_by_iteration(8)
