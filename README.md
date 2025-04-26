@@ -1,10 +1,6 @@
 # Hierarchical Taxonomy Generator
 
-This repository contains logic to automatically generate a hierarchical taxonomy from a corpus of papers in a given field. The AI Safety Taxonomy is displayed on [TRecursive.com/ai-safety-taxonomy](https://trecursive.com/ai-safety-taxonomy).
-
-## About
-
-The AI safety taxonomy organizes a corpus of over 3000 AI safety-related papers published on ArXiv (last updated: 2025-04-16). It was created using a script that recursively orchestrates LLMs to generate sets of categories in an iterative process. These categories are evaluated at each iteration to maximize mutual exclusivity (by sorting a sample of papers to evaluate overlap) and clarity (by generating feedback from other LLM instances), among other metrics.
+This repository contains logic to automatically generate a hierarchical taxonomy from a corpus of papers in a given field. The AI Safety Taxonomy is displayed on [TRecursive.com/ai-safety-taxonomy](https://trecursive.com/ai-safety-taxonomy). You can read the full post [here](https://www.lesswrong.com/posts/mTByLDt8EuBiMDGMu/research-taxonomy-generator-and-visualizer).
 
 ## Codebase
 
