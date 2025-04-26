@@ -556,5 +556,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    # Num nodes == {avg branch factor} ^ {max_depth + 1}
     generate(max_depth=4, num_papers_threshold=20)
