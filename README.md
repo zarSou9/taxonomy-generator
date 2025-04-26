@@ -23,6 +23,10 @@ The main generator script is at `taxonomy_generator/scripts/generator/generator.
     - `parse_llm.py` - Functions for parsing LLM responses
     - `utils.py` - General utils
 
+## Contributing
+
+We track tasks using GitHub issues. If any sound interesting to work on (and are unassigned), please comment - especially if you have questions or find the description unclear (many are written as personal notes). Feel free to create new issues for bugs or feature ideas. PRs are always welcome - just fork the repo first and submit your changes.
+
 ## Developing
 
 ### Installing dependencies
