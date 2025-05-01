@@ -3,11 +3,6 @@ from pydantic import BaseModel
 from taxonomy_generator.corpus.corpus_types import Paper
 
 
-class SortTopic(BaseModel):
-    title: str
-    papers: list[str]
-
-
 class Link(BaseModel):
     id: str
 

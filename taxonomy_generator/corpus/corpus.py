@@ -50,9 +50,7 @@ class Corpus:
         return random_sample(self.papers, n, seed)
 
     def get_paper_by_id(self, paper_id: str) -> Paper | None:
-        for paper in self.papers:
-            if paper.id == paper_id:
-                return paper
+        return next(p for p in self.papers if p.id == paper_id)
 
     def get_pretty_paper(
         self,

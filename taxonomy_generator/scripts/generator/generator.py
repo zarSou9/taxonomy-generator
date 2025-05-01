@@ -415,7 +415,7 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
 
 @recurse_even
 def generate(
-    generate: Callable,
+    generate,
     num_papers_threshold: int | None = None,
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],

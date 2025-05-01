@@ -9,6 +9,41 @@ import pandas as pd
 
 from taxonomy_generator.corpus.corpus_types import Paper
 
+AI_SAFETY_SUBTOPICS = {
+    "alignment": ["AI alignment", "aligned AI", "value alignment"],
+    "interpretability": [
+        "interpretability",
+        "explainable AI",
+        "XAI",
+        "model understanding",
+    ],
+    "robustness": [
+        "AI robustness",
+        "adversarial robustness",
+        "distributional robustness",
+    ],
+    "value_learning": ["value learning", "human values", "preference learning"],
+    "catastrophic_risk": [
+        "existential risk",
+        "AI risk",
+        "catastrophic AI",
+        "x-risk",
+    ],
+    "monitoring": ["monitoring", "control", "oversight"],
+    "deception": ["AI deception", "model deception", "deceptive alignment"],
+    "distribution_shift": [
+        "distribution shift",
+        "out-of-distribution",
+        "OOD generalization",
+    ],
+    "reward_hacking": [
+        "reward hacking",
+        "reward gaming",
+        "specification gaming",
+    ],
+    "corrigibility": ["corrigibility", "AI corrigibility", "correctable AI"],
+}
+
 
 def get_base_arxiv_id(url: str) -> str:
     match = re.search(r"\d+\.\d+", url)
@@ -101,47 +136,12 @@ class ArxivSafetyPipeline:
         output_path: Path = Path("data"),
         corpus_file_name: str = "ai_safety_corpus.csv",
     ):
-        """Initialize the Arxiv pipeline for AI safety research."""
         self.output_path: Path = output_path
         self.corpus_file_name: str = corpus_file_name
         self.existing_ids: set[str] = set()
         self.load_existing()
 
-        # Define AI safety sub-topics with relevant search terms
-        self.subtopics: dict[str, list[str]] = {
-            "alignment": ["AI alignment", "aligned AI", "value alignment"],
-            "interpretability": [
-                "interpretability",
-                "explainable AI",
-                "XAI",
-                "model understanding",
-            ],
-            "robustness": [
-                "AI robustness",
-                "adversarial robustness",
-                "distributional robustness",
-            ],
-            "value_learning": ["value learning", "human values", "preference learning"],
-            "catastrophic_risk": [
-                "existential risk",
-                "AI risk",
-                "catastrophic AI",
-                "x-risk",
-            ],
-            "monitoring": ["monitoring", "control", "oversight"],
-            "deception": ["AI deception", "model deception", "deceptive alignment"],
-            "distribution_shift": [
-                "distribution shift",
-                "out-of-distribution",
-                "OOD generalization",
-            ],
-            "reward_hacking": [
-                "reward hacking",
-                "reward gaming",
-                "specification gaming",
-            ],
-            "corrigibility": ["corrigibility", "AI corrigibility", "correctable AI"],
-        }
+        self.subtopics: dict[str, list[str]] = AI_SAFETY_SUBTOPICS
 
     @property
     def corpus_file(self) -> Path:
