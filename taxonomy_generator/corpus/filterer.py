@@ -12,8 +12,6 @@ from taxonomy_generator.utils.parse_llm import first_int, get_xml_content
 
 SAMPLE_DIR_PATH = Path("data/relevance_checks")
 
-# corpus = AICorpus()
-
 
 def check_relevance(
     sample_size: int | None = 50,
@@ -37,9 +35,7 @@ def check_relevance(
         output_dir
         / f"{f'sample_{sample_size}' if sample_size else 'full'}{'_explanations' if with_explanations else ''}_{time.strftime('%Y-%m-%d_%I%p:%M:%S')}.json"
     )
-    output_file.write_text(
-        json.dumps(list(zip(responses, [p.arxiv_id for p in sample])))
-    )
+    output_file.write_text(json.dumps(list(zip(responses, [p.id for p in sample]))))
     if verbose:
         print()
         print(f"Saved relevance data to {output_file}")
@@ -67,7 +63,8 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
                 print(corpus.get_pretty_paper(arx_id, ["title", "url", "abstract"]))
                 print("---")
                 print(f"Score: {score}")
-                explanation and print(f"Explanation: {explanation.strip()}")
+                if explanation:
+                    print(f"Explanation: {explanation.strip()}")
                 print()
         else:
             score = first_int(r)

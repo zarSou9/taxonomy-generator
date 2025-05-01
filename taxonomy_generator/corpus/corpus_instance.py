@@ -1,6 +1,6 @@
-from taxonomy_generator.corpus.ai_corpus import AICorpus
+from taxonomy_generator.corpus.corpus import Corpus
 
-corpus = AICorpus()
+corpus = Corpus("data/ai_safety_corpus.jsonl")
 
 
 if __name__ == "__main__":

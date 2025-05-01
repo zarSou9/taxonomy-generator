@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
@@ -33,7 +34,7 @@ def print_topics_left():
     def _print_topics_left(topic: Topic = tree, depth: int = 0):
         nonlocal left_to_go
 
-        parents = get_parents(topic, tree)
+        parents = cast(list[Topic], get_parents(topic, tree))
         if not topic.topics and len(topic.papers) >= 20:
             print(
                 f"{depth} - {len(topic.papers)} - {topic_breadcrumbs(topic, parents)}"

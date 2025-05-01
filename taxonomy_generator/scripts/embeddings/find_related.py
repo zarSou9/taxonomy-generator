@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import cast
 
 from taxonomy_generator.scripts.embeddings.embeddings import find_similar_by_id
 from taxonomy_generator.scripts.generator.generator_types import Link, Topic
@@ -53,15 +54,18 @@ def get_related(
         if s["similarity"] > sim_threshold
     ]
     off_limits = get_topics_off_limits(topic, parents)
-    related = [
-        get_topic_from_desc(desc)
-        for desc in similar_descs
-        if desc not in [t.description for t in off_limits]
-    ]
+    related = cast(
+        list[tuple[Topic, list[Topic]]],
+        [
+            get_topic_from_desc(desc)
+            for desc in similar_descs
+            if desc not in [t.description for t in off_limits]
+        ],
+    )
 
     i = 0
     while i < len(related) - 1:
-        related_off = get_related_topics_off_limits(*related[i])
+        related_off = get_related_topics_off_limits(related[i][0], related[i][1])
         related = related[: i + 1] + [
             r for r in related[i + 1 :] if r[0] not in related_off
         ]

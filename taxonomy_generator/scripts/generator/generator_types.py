@@ -8,13 +8,6 @@ class SortTopic(BaseModel):
     papers: list[str]
 
 
-class TopicPaper(BaseModel):
-    title: str
-    arx: str
-    published: str
-    abstract: str
-
-
 class Link(BaseModel):
     id: str
 
@@ -22,7 +15,7 @@ class Link(BaseModel):
 class Topic(BaseModel):
     title: str
     description: str
-    papers: list[TopicPaper] = []
+    papers: list[Paper] = []
     topics: list["Topic"] = []
     links: list[Link] = []
 
@@ -45,11 +38,11 @@ class EvalResult(BaseModel):
     all_scores: EvalScores
     overall_score: float
     topics_feedbacks: list[TopicsFeedback]
-    topic_papers: dict[str, list[TopicPaper]]
-    overlap_topics_papers: dict[frozenset[str], list[TopicPaper]]
-    not_placed: list[TopicPaper]
-    single_papers: list[TopicPaper]
-    overlap_papers: list[TopicPaper]
+    topic_papers: dict[str, list[Paper]]
+    overlap_topics_papers: dict[frozenset[str], list[Paper]]
+    not_placed: list[Paper]
+    single_papers: list[Paper]
+    overlap_papers: list[Paper]
     sample_len: int
     overview_papers: dict[str, list[Paper]]
     invalid: bool = False

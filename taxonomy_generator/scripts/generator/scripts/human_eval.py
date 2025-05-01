@@ -2,7 +2,6 @@ from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.scripts.generator.generator import evaluate_topics
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
-from taxonomy_generator.scripts.generator.utils import resolve_topic_papers
 
 TOPICS = [
     {
@@ -33,11 +32,10 @@ TOPICS = [
 
 
 def main():
-    papers = resolve_topic_papers(corpus.papers)
     topics = [Topic.model_validate(t) for t in TOPICS]
 
     eval_result = evaluate_topics(
-        topics, 400, papers, sample_seed=222, no_overviews=True
+        topics, 400, corpus.papers, sample_seed=222, no_overviews=True
     )
 
     print("--------------------------------")

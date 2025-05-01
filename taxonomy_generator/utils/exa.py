@@ -2,7 +2,7 @@ import os
 
 from exa_py import Exa
 
-from taxonomy_generator.corpus.ai_corpus import get_base_arxiv_id
+from taxonomy_generator.corpus.arxiv_helper import get_base_arxiv_id
 from taxonomy_generator.utils.utils import cache
 
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))

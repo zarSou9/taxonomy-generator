@@ -16,7 +16,9 @@ from taxonomy_generator.utils.parse_llm import parse_response_json
 TREE_PATH = Path("data/tree.json")
 
 
-def order_papers_for_topic(topic: Topic, root: Topic) -> Generator[str, str, list]:
+def order_papers_for_topic(
+    topic: Topic, root: Topic
+) -> Generator[str | None, str | None, list]:
     """Order papers within a topic by relevance using LLM."""
     if len(topic.papers) <= 1:
         return topic.papers
@@ -105,7 +107,7 @@ def order_all_papers(
         return
 
     # Collect all prompts and generators
-    generators: list[Generator[str, str, list]] = []
+    generators: list[Generator[str | None, str | None, list]] = []
     topics: list[Topic] = []
     prompts: list[str] = []
     collect_prompts_recursively(root, root, generators, topics, prompts)
@@ -135,7 +137,7 @@ def order_all_papers(
             print(f"Error processing response for {topic.title}: {e}")
 
     # Save updated taxonomy
-    if not inquirer.confirm(
+    if not inquirer.confirm(  # type: ignore
         "Would you like to save the result?",
         default=True,
     ).execute():

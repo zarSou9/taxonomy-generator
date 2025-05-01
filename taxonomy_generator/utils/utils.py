@@ -32,7 +32,7 @@ def recurse_even(func: Callable[P, GR]):
             def this_call_child(*args: P.args, **kwargs: P.kwargs):
                 call_child(_current_depth + 1, *args, **kwargs)
 
-            generator = func(this_call_child, *child_args, **child_kwargs)
+            generator = func(this_call_child, *child_args, **child_kwargs)  # type: ignore
             recursors.append(
                 Recursor(
                     gen=generator,
@@ -92,7 +92,7 @@ def cache(cache_filename_override: str | None = None, max_size: int | None = 30)
 
             return cache[key]
 
-        return wrapper
+        return wrapper  # type: ignore
 
     return decorator
 
@@ -214,8 +214,8 @@ def compare_datas(
 
     # Plot on same graph
     plt.figure(figsize=(10, 6))
-    plt.bar(data1.keys(), data1.values(), alpha=0.7, label=data1_label)
-    plt.bar(data2.keys(), data2.values(), alpha=0.7, label=data2_label)
+    plt.bar(list(data1.keys()), list(data1.values()), alpha=0.7, label=data1_label)
+    plt.bar(list(data2.keys()), list(data2.values()), alpha=0.7, label=data2_label)
     plt.legend()
     plt.title("Comparison")
     plt.xlabel("Number of Topics")
@@ -253,14 +253,14 @@ def switch(
 def switch(var: T, options: Iterable[tuple[T, R]], default: D) -> R | D: ...
 
 
-def switch(var: T, options: Iterable[tuple[T, R]], default: D | None = None):
+def switch(var: T, options: Iterable[tuple[T, R]], default: object | None = None):
     return next((value for option, value in options if option == var), default)
 
 
 def resolve_all_param(
     param: T | Sequence[T], idx: int, iter_type: type[Sequence] = list
 ) -> T:
-    return (
+    return (  # type: ignore
         (param[idx] if 0 <= idx < len(param) else param[-1])
         if isinstance(param, iter_type)
         else param

@@ -6,12 +6,10 @@ from typing import Literal, TypedDict, overload
 from InquirerPy import inquirer
 from tabulate import tabulate
 
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     EvalScores,
     Topic,
-    TopicPaper,
 )
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.utils import format_perc
@@ -75,18 +73,6 @@ def recalculate_scores_file(
     Path(file).write_text(json.dumps(results, indent=2, ensure_ascii=False))
 
 
-def resolve_topic_papers(papers: list[Paper]) -> list[TopicPaper]:
-    return [
-        TopicPaper(
-            title=p.title,
-            arx=p.arxiv_id.split("v")[0],
-            published=p.published,
-            abstract=p.abstract,
-        )
-        for p in papers
-    ]
-
-
 def resolve_topics(response: str) -> list[Topic]:
     return [Topic(**t) for t in parse_response_json(response, [], raise_on_fail=True)]
 
@@ -130,7 +116,7 @@ def select_topics(results_data: list[Result]) -> list[TopicDict]:
         if displayed_count < len(results_data):
             choices.append({"name": "Show more results", "value": "more"})
 
-        selection = inquirer.select(
+        selection = inquirer.select(  # type: ignore
             message="Select a set of topics to use:",
             choices=choices,
         ).execute()

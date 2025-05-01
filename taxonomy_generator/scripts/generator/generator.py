@@ -1,15 +1,16 @@
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import cast
 
 from InquirerPy import inquirer
 
 from taxonomy_generator.corpus.corpus_instance import corpus
+from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     EvalScores,
     Topic,
-    TopicPaper,
     TopicsFeedback,
 )
 from taxonomy_generator.scripts.generator.overview_finder import find_overview_papers
@@ -28,7 +29,6 @@ from taxonomy_generator.scripts.generator.utils import (
     get_results_data,
     paper_num_table,
     resolve_topic,
-    resolve_topic_papers,
     resolve_topics,
     select_topics,
     topic_breadcrumbs,
@@ -63,10 +63,10 @@ BREAKDOWN_RESULTS = Path("data/breakdown_results")
 def process_sort_results(
     topic: Topic,
     topics: list[Topic],
-    sample: list[TopicPaper],
+    sample: list[Paper],
     sample_len: int,
     parents: list[Topic],
-) -> list[tuple[TopicPaper, frozenset[str]]]:
+) -> list[tuple[Paper, frozenset[str]]]:
     results = []
     parsed_sample_idx = 0
 
@@ -94,7 +94,7 @@ def process_sort_results(
                 continue
 
             try:
-                chosen_topics = parse_response_json(
+                chosen_topics: list[str] = parse_response_json(
                     response or "", [], raise_on_fail=True
                 )
             except ValueError:
@@ -113,11 +113,12 @@ def process_sort_results(
                 print(f"Invalid topic(s) for paper: {paper.title} - {chosen_topics}")
                 continue
 
-            chosen_topics = frozenset(
-                resolve_topic(t, topics).title for t in chosen_topics
+            results.append(
+                (
+                    paper,
+                    frozenset(resolve_topic(t, topics).title for t in chosen_topics),  # type: ignore
+                )
             )
-
-            results.append((paper, chosen_topics))
 
         print(f"Current results len: {len(results)}")
 
@@ -130,7 +131,7 @@ def evaluate_topics(
     topic: Topic,
     topics: list[Topic],
     sample_len: int,
-    all_papers: list[TopicPaper],
+    all_papers: list[Paper],
     calculate_overall_score: Callable[[EvalScores, int], float],
     depth: int = 0,
     parents: list[Topic] = [],
@@ -145,11 +146,11 @@ def evaluate_topics(
 
     invalid_reasons = []
 
-    topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topics}
-    overlap_topics_papers: dict[frozenset[str], list[TopicPaper]] = {}
-    not_placed: list[TopicPaper] = []
-    single_papers: list[TopicPaper] = []
-    overlap_papers: list[TopicPaper] = []
+    topic_papers: dict[str, list[Paper]] = {t.title: [] for t in topics}
+    overlap_topics_papers: dict[frozenset[str], list[Paper]] = {}
+    not_placed: list[Paper] = []
+    single_papers: list[Paper] = []
+    overlap_papers: list[Paper] = []
 
     for paper, chosen_topics in sort_results:
         if not chosen_topics:
@@ -188,23 +189,26 @@ def evaluate_topics(
     }
 
     # Helpfulness Scores
+    system_prompts = get_topics_feedback_system_prompts(FIELD)
     if not no_feedback:
         prompt = get_topics_feedback_prompt(topics, parents + [topic])
-        system_prompts = get_topics_feedback_system_prompts(FIELD)
 
-        responses = run_in_parallel(
-            [prompt for _ in system_prompts],
-            [{"system": system} for system in system_prompts],
-            model="gemini-1.5-pro",
-            temp=1.5,
+        score_feedbacks: Iterable[tuple[int, str | None]] = (
+            (
+                first_int(get_xml_content(response, "score") or ""),
+                get_xml_content(response, "feedback"),
+            )
+            for response in run_in_parallel(
+                [prompt for _ in system_prompts],
+                [{"system": system} for system in system_prompts],
+                model="gemini-1.5-pro",
+                temp=1.5,
+            )
         )
         topics_feedbacks = [
-            TopicsFeedback(
-                score=first_int(get_xml_content(response, "score")),
-                feedback=get_xml_content(response, "feedback"),
-                system=system,
-            )
-            for system, response in zip(system_prompts, responses)
+            TopicsFeedback(score=score, feedback=feedback, system=system)
+            for system, (score, feedback) in zip(system_prompts, score_feedbacks)
+            if score >= 0 and feedback is not None
         ]
     else:
         topics_feedbacks = [
@@ -265,7 +269,7 @@ def evaluate_topics(
 
 def generate_topics(
     topic: Topic,
-    parents: list[Topic] | None,
+    parents: list[Topic],
     num_iterations: int,
     init_sample_len: int,
     sort_sample_len: int,
@@ -295,7 +299,7 @@ def generate_topics(
             print(f"Error parsing cached results file for {topic.title}")
 
         if cached_results and not auto:
-            generate_flag = inquirer.confirm(
+            generate_flag = inquirer.confirm(  # type: ignore
                 f"{len(cached_results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
                 default=True,
             ).execute()
@@ -318,7 +322,7 @@ def generate_topics(
             topics: list[Topic] | None = None
 
             for i in range(num_iterations):
-                if i == 0:
+                if not eval_result:
                     prompt = get_init_topics_prompt(
                         topic,
                         init_sample_len,
@@ -411,7 +415,7 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
 
 @recurse_even
 def generate(
-    generate,
+    generate: Callable,
     num_papers_threshold: int | None = None,
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
@@ -421,7 +425,7 @@ def generate(
         (2, 6),
         (2, 8),
     ],
-    thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [
+    thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [  # type: ignore
         (3100, 2600),
         2000,
         1700,
@@ -444,7 +448,7 @@ def generate(
             else Topic(
                 title=cap_words(FIELD),
                 description=DESCRIPTION,
-                papers=resolve_topic_papers(corpus.papers),
+                papers=corpus.papers,
             )
         )
         root = topic
@@ -452,14 +456,14 @@ def generate(
         assert topic
         assert root
 
-    parents = get_parents(topic, root)
+    parents = cast(list[Topic], get_parents(topic, root))
 
     resolver = get_resolve_all_param(depth)
 
     init_sample_len = resolver(init_sample_len_all)
     sort_sample_len = resolver(sort_sample_len_all)
     num_iterations = resolver(num_iterations_all)
-    topics_len_bounds = resolver(topics_len_bounds_all)
+    topics_len_bounds = cast(tuple[int, int], resolver(topics_len_bounds_all))
     thinking_budget = resolver(thinking_budget_all)
     find_overviews = resolver(find_overviews_all)
     epochs = resolver(epochs_all)
@@ -467,7 +471,7 @@ def generate(
 
     print(f"\nNow handling {topic_breadcrumbs(topic, parents)}")
 
-    if get_all_papers_len(topic) < num_papers_threshold:
+    if num_papers_threshold and get_all_papers_len(topic) < num_papers_threshold:
         print(f"\nThis topic has less than {num_papers_threshold} papers. Skipping...")
         return
 
@@ -505,12 +509,12 @@ def generate(
         print(
             f"\nIt looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
         )
-        sort_flag = inquirer.confirm(
+        sort_flag = inquirer.confirm(  # type: ignore
             f"Would you still like to sort the {len(topic.papers):,} papers under {topic.title}?",
             default=False,
         ).execute()
     else:
-        sort_flag = inquirer.confirm(
+        sort_flag = inquirer.confirm(  # type: ignore
             f"Would you like to continue by sorting all {len(topic.papers):,} papers into this taxonomy?",
             default=True,
         ).execute()
@@ -529,7 +533,7 @@ def generate(
 
     if (
         not auto
-        and not inquirer.confirm(
+        and not inquirer.confirm(  # type: ignore
             "Would you like to continue generating taxonomies for the subtopics?",
             default=True,
         ).execute()
@@ -556,4 +560,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate(max_depth=4, num_papers_threshold=20)
+    generate(max_depth=4, num_papers_threshold=20)  # type: ignore

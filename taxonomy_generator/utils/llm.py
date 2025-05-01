@@ -3,8 +3,9 @@ import concurrent.futures.thread
 import json
 import os
 import time
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, TypedDict, overload
+from typing import Literal, NotRequired, TypedDict, overload
 
 from anthropic import Anthropic
 from anthropic.types import Message as AntMessage
@@ -294,6 +295,9 @@ def ask_llm(
             else:
                 raise ValueError(f"Invalid model: {model}")
 
+            if response is None:
+                raise RuntimeError("No response from the API.")
+
             response = response.strip()
             if verbose:
                 log(response)
@@ -333,12 +337,12 @@ def run_through_convo(
 
 
 def run_in_parallel(
-    histories: list[History],
+    histories: Sequence[History],
     settingss: list[dict] | None = None,
     max_workers: int = 5,
     test: bool = False,
     **kwargs,
-) -> list[str | None]:
+) -> list[str]:
     """
     Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
 
@@ -348,7 +352,7 @@ def run_in_parallel(
         **kwargs: Additional arguments to pass to ask_llm
 
     Returns:
-        list[str | None]: Responses in the same order as the input prompts
+        list[str]: Responses in the same order as the input prompts
     """
     if test:
         return [
@@ -356,7 +360,7 @@ def run_in_parallel(
             for h in histories
         ]
 
-    results = [None] * len(histories)
+    results: list[str] = [""] * len(histories)
 
     if settingss:
         assert len(settingss) == len(histories)
@@ -375,25 +379,20 @@ def run_in_parallel(
             desc="Processing prompts",
             unit="prompt",
         ):
-            prompt_index = future_to_prompt[future]
-            try:
-                result = future.result()
-                results[prompt_index] = result
-            except Exception as e:
-                print(f"Error processing prompt at index {prompt_index}: {str(e)}")
-                results[prompt_index] = None
+            result = future.result()
+            results[future_to_prompt[future]] = result
 
     return results
 
 
-class ChatMessage(TypedDict, total=False):
+class ChatMessage(TypedDict):
     message: str | AntMessage
-    settings_override: dict | None
+    settings_override: NotRequired[dict | None]
 
 
-class ChatMessageJSON(TypedDict, total=False):
+class ChatMessageJSON(TypedDict):
     message: str | dict
-    settings_override: dict | None
+    settings_override: NotRequired[dict | None]
 
 
 class Cache(TypedDict):
@@ -403,18 +402,28 @@ class Cache(TypedDict):
 
 def resolve_chat_json(chat_history: list[ChatMessage]) -> list[ChatMessageJSON]:
     return [
-        cm
-        if isinstance(cm["message"], str)
-        else ChatMessageJSON(message=cm["message"].model_dump(mode="json"))
+        ChatMessageJSON(
+            message=(
+                cm["message"]
+                if isinstance(cm["message"], str)
+                else cm["message"].model_dump(mode="json")
+            ),
+            settings_override=cm.get("settings_override"),
+        )
         for cm in chat_history
     ]
 
 
 def model_validate_chat(chat_json: list[ChatMessageJSON]) -> list[ChatMessage]:
     return [
-        cmj
-        if isinstance(cmj["message"], str)
-        else ChatMessage(message=AntMessage.model_validate(cmj["message"]))
+        ChatMessage(
+            message=(
+                cmj["message"]
+                if isinstance(cmj["message"], str)
+                else AntMessage.model_validate(cmj["message"])
+            ),
+            settings_override=cmj.get("settings_override"),
+        )
         for cmj in chat_json
     ]
 
@@ -457,7 +466,7 @@ class Chat:
                 -self.cache_limit :
             ]
 
-    def ask(self, prompt: str | None = None, **kwargs) -> str:
+    def ask(self, prompt: str, **kwargs) -> str:
         self.history.append(
             ChatMessage(message=prompt.strip(), settings_override=kwargs)
         )
@@ -482,7 +491,7 @@ class Chat:
 
     @property
     def simple_history(self):
-        return resolve_simple_history(self.history)
+        return resolve_simple_history([cm["message"] for cm in self.history])
 
     def handle_cache(self):
         if self.dont_cache:

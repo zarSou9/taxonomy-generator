@@ -1,3 +1,4 @@
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,21 @@ import arxiv
 import pandas as pd
 
 from taxonomy_generator.corpus.corpus_types import Paper
+
+
+def get_base_arxiv_id(url: str) -> str:
+    match = re.search(r"\d+\.\d+", url)
+    return match.group(0) if match else ""
+
+
+def get_arxiv_id_from_url(url: str) -> str:
+    pattern = r"arxiv\.org/(?:.+?)/(\d+\.\d+(?:v\d+)?)"
+    match = re.search(pattern, url, re.IGNORECASE)
+
+    if match:
+        return match.group(1)
+
+    return get_base_arxiv_id(url)
 
 
 def extract_paper_info(paper: arxiv.Result) -> dict[str, str]:
@@ -160,7 +176,7 @@ class ArxivSafetyPipeline:
         # Check for entries missing essential metadata
         missing_metadata = df[
             df["arxiv_id"].notna()
-            & (df.get("title", "").isna() | df.get("abstract", "").isna())
+            & (df.get("title", "").isna() | df.get("abstract", "").isna())  # type: ignore
         ]
 
         if missing_metadata.empty:

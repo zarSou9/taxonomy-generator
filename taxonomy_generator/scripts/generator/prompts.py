@@ -1,10 +1,10 @@
 from tabulate import tabulate
 
-from taxonomy_generator.corpus.ai_corpus import AICorpus
+from taxonomy_generator.corpus.corpus_instance import corpus
+from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
     EvalResult,
     Topic,
-    TopicPaper,
     TopicsFeedback,
 )
 from taxonomy_generator.scripts.generator.utils import (
@@ -15,14 +15,12 @@ from taxonomy_generator.scripts.generator.utils import (
 from taxonomy_generator.utils.prompting import prompt
 from taxonomy_generator.utils.utils import format_perc, random_sample, safe_lower
 
-empty_corpus = AICorpus(papers_override=[])
-
 
 @prompt
 def get_init_topics_prompt(
     topic: Topic,
     sample_len: int,
-    sample_seed: int,
+    sample_seed: int | None,
     overrview_checks: bool,
     topics_len_bounds: tuple[int, int],
     parents: list[Topic] = [],
@@ -35,7 +33,7 @@ def get_init_topics_prompt(
 Your task is to develop a taxonomy for categorizing a corpus of {field} related research papers. The full corpus has a total of {len(topic.papers):,} papers, but to give some context, here are {sample_len:,} randomly chosen papers from the corpus:
 
 <corpus_sample>
-{empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed))}
+{corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed))}
 </corpus_sample>
 
 Specifically, your job is to develop a list of sub-topics under {field} to effectively categorize all the papers in this corpus."""
@@ -80,7 +78,7 @@ You are developing a hierarchical taxonomy for organizing a corpus of {field} re
 The category you're currently focused on breaking down further is {parents_str if parents_str else f'{topic.title}, which is defined as "{topic.description}" This category'} currently has {len(topic.papers):,} papers sorted into it. {f"The following is a sample of {sample_len:,} papers from the full list:" if use_sample else "Here are those papers:"}
 
 <papers{"_sample" if use_sample else ""}>
-{empty_corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed) if use_sample else topic.papers)}
+{corpus.get_pretty_sample(random_sample(topic.papers, sample_len, sample_seed) if use_sample else topic.papers)}
 </papers{"_sample" if use_sample else ""}>
 
 Your task is to develop a list of sub-categories/sub-topics to effectively categorize all papers in the {title} category."""
@@ -117,7 +115,7 @@ Please present your topics as a JSON array without any other text or explanation
 @prompt
 def get_sort_prompt(
     topic: Topic,
-    paper: TopicPaper,
+    paper: Paper,
     topics: list[Topic],
     parents: list[Topic] = [],
     multiple: bool = False,
@@ -134,7 +132,7 @@ You are categorizing a paper into a{" hierarchical" if parents else ""} taxonomy
 
 PAPER:
 ---
-{empty_corpus.get_pretty_paper(paper)}
+{corpus.get_pretty_paper(paper)}
 ---
 
 AVAILABLE CATEGORIES:
@@ -211,7 +209,7 @@ After providing feedback, please rate the overall usefulness of this breakdown f
 """
 
 
-def get_topics_feedback_system_prompts(field: str) -> list[str]:
+def get_topics_feedback_system_prompts(field: str) -> list[str | None]:
     return [
         None,
         f"You are an enthusiast of {field} research",
@@ -233,7 +231,7 @@ def format_topics_feedbacks(topics_feedbacks: list[TopicsFeedback]) -> str:
 @prompt
 def get_not_placed_str(eval_result: EvalResult) -> str:
     not_placed_num = len(eval_result.not_placed)
-    not_placed_examples = empty_corpus.get_pretty_sample(
+    not_placed_examples = corpus.get_pretty_sample(
         random_sample(eval_result.not_placed, 4, seed=1)
     )
     perc = not_placed_num / eval_result.sample_len
@@ -282,9 +280,7 @@ def get_overlap_str(eval_result: EvalResult, first: bool) -> str:
         )
 
         if len(papers) / overlap_num > 0.09:
-            sample_str = empty_corpus.get_pretty_sample(
-                random_sample(papers, 3, seed=1)
-            )
+            sample_str = corpus.get_pretty_sample(random_sample(papers, 3, seed=1))
             examples.append(f"## {title}\n\n{sample_str}")
 
     examples_str = "\n\n".join(examples[:4])
@@ -344,12 +340,12 @@ def get_topic_papers_str(eval_result: EvalResult, first: bool) -> str:
         )
 
         clean_papers = [
-            p for p in papers if p.arx in (p.arx for p in eval_result.single_papers)
+            p for p in papers if p.id in (p.id for p in eval_result.single_papers)
         ]
         papers = clean_papers if len(clean_papers) >= 3 else papers
         sample = random_sample(papers, 2, seed=1)
         pretty_sample = (
-            empty_corpus.get_pretty_sample(sample)
+            corpus.get_pretty_sample(sample)
             if sample
             else "No papers were categorized into this topic"
         )
@@ -427,7 +423,7 @@ Of these, {len(eval_result.single_papers)} ({format_perc(len(eval_result.single_
 @prompt
 def get_order_papers_prompt(
     topic: Topic,
-    papers: list[TopicPaper],
+    papers: list[Paper],
     root: Topic,
     parents: list[Topic] = [],
 ) -> str:
@@ -466,7 +462,7 @@ I'll provide you with a list of {len(papers)} papers that have been categorized 
 
 PAPERS:
 ----
-{empty_corpus.get_pretty_sample(papers)}
+{corpus.get_pretty_sample(papers)}
 ----
 
 Please respond with a JSON array of paper titles, ordered from most to least relevant to the topic {topic.title}. The array should include ALL paper titles from the list, with no omissions.
