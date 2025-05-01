@@ -125,7 +125,7 @@ def fetch_papers_by_id(
     return all_papers if as_dict else [Paper(**p) for p in all_papers]
 
 
-def fetch_papers_for_taxonomy(
+def search_papers_on_arxiv(
     categories: list[str] = ["cat:cs.AI", "cat:cs.LG"],
     subtopics: dict[str, list[str]] = AI_SAFETY_SUBTOPICS,
     max_results_per_term: int = 100,
@@ -191,4 +191,4 @@ def fetch_papers_for_taxonomy(
 
 
 if __name__ == "__main__":
-    fetch_papers_for_taxonomy()
+    search_papers_on_arxiv()
