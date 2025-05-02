@@ -1,4 +1,5 @@
 import functools
+import json
 import pickle
 import random
 import time
@@ -23,6 +24,8 @@ class Recursor(BaseModel):
 
 
 def recurse_even(func: Callable[P, GR]):
+    """Makes a generator function recursive, while ensureing the function is evaluated one depth at a time."""
+
     def wrapper(max_depth: int = 3, *args: P.args, **kwargs: P.kwargs):
         recursors: list[Recursor] = []
 
@@ -283,3 +286,11 @@ def join_items_english(items: list[str]) -> str:
             meta_str += items[i] + " and "
 
     return meta_str + items[-1]
+
+
+def save_pydantic(model: BaseModel, path: Path, indent: int | None = 2):
+    path.write_text(
+        json.dumps(
+            model.model_dump(exclude_defaults=True), ensure_ascii=False, indent=indent
+        )
+    )

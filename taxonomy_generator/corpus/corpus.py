@@ -2,7 +2,6 @@ import re
 from collections.abc import Iterable, Sequence
 
 import jsonlines
-import pandas as pd
 
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_types import Paper
@@ -50,7 +49,22 @@ class Corpus:
         return random_sample(self.papers, n, seed)
 
     def get_paper_by_id(self, paper_id: str) -> Paper | None:
-        return next(p for p in self.papers if p.id == paper_id)
+        # Use binary search if papers are ordered by id
+        left, right = 0, len(self.papers) - 1
+
+        while left <= right:
+            mid = (left + right) // 2
+            if self.papers[mid].id == paper_id:
+                return self.papers[mid]
+            elif self.papers[mid].id < paper_id:
+                left = mid + 1
+            else:
+                right = mid - 1
+
+        print(
+            f"Couldn't find paper with id {paper_id} through binary search, is the corpus ordered?"
+        )
+        return next((p for p in self.papers if p.id == paper_id), None)
 
     def get_pretty_paper(
         self,
@@ -166,7 +180,7 @@ class Corpus:
                 temp=0,
             )
 
-            filtered = []
+            filtered: list[Paper] = []
             for paper, response in zip(to_add, responses):
                 if response and first_int(response) >= relevance_threshold:
                     filtered.append(paper)
@@ -174,8 +188,7 @@ class Corpus:
             to_add = filtered
 
         if to_add and not dry_run:
-            self.papers.extend(to_add)
-            self.save_to_csv()
+            self.set_papers(self.papers + to_add)
 
         if verbose:
             print("-----------------------------------------------")
@@ -222,22 +235,25 @@ class Corpus:
         print("-----------------------------------------------")
 
         if not dry_run:
-            self.papers = papers
-            self.save_to_csv(path_override)
+            self.set_papers(papers, save=False)
+            self.save(path_override)
             print(f"Saved updated corpus with {len(self.papers)} papers")
         else:
             print("Dry run - changes not saved to disk")
 
         return papers_removed
 
-    def save_to_csv(self, path_override: str | None = None):
-        rows = []
-        for paper in self.papers:
-            p = paper.model_dump()
-            p["categories"] = ", ".join(p.get("categories") or [])
-            rows.append(p)
-        if rows:
-            pd.DataFrame(rows).to_csv(path_override or self.corpus_path, index=False)
+    def save(self, path_override: str | None = None):
+        with jsonlines.open(path_override or self.corpus_path, mode="w") as writer:
+            for paper in self.papers:
+                writer.write(paper.model_dump(exclude_defaults=True))
+
+    def set_papers(self, papers: list[Paper] | None = None, save=True):
+        if papers is not None:
+            self.papers = papers
+        self.papers.sort(key=lambda p: p.id)
+        if save:
+            self.save()
 
     def filter_by_terms(self, *term_groups: list[str]):
         return (

@@ -188,7 +188,3 @@ def search_papers_on_arxiv(
 
     print(f"Found a total of {len(all_papers)} papers")
     return all_papers
-
-
-if __name__ == "__main__":
-    search_papers_on_arxiv()
