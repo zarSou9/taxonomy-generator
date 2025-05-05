@@ -35,7 +35,11 @@ def main():
     topics = [Topic.model_validate(t) for t in TOPICS]
 
     eval_result = evaluate_topics(
-        topics, 400, corpus.papers, sample_seed=222, no_overviews=True
+        topics,
+        400,
+        corpus.papers,
+        sample_seed=222,
+        no_overviews=True,
     )
 
     print("--------------------------------")
@@ -43,7 +47,7 @@ def main():
     print(f"Overall Score: {eval_result.overall_score}")
     print("--------------------------------")
 
-    print(get_iter_topics_prompt(eval_result, True))
+    print(get_iter_topics_prompt(eval_result, first=True))
 
 
 if __name__ == "__main__":

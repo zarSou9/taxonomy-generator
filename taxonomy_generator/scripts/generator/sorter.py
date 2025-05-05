@@ -1,15 +1,14 @@
-import json
 from pathlib import Path
 
 from InquirerPy import inquirer
 from tabulate import tabulate
 
 from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.scripts.generator.generator_types import Topic, TopicPaper
+from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.prompts import get_sort_prompt
-from taxonomy_generator.scripts.generator.utils import resolve_topic_papers
 from taxonomy_generator.utils.llm import run_in_parallel
-from taxonomy_generator.utils.utils import format_perc
+from taxonomy_generator.utils.utils import format_perc, save_pydantic
 
 
 def sort_papers(
@@ -19,7 +18,7 @@ def sort_papers(
     save_to: Path | None = None,
     auto: bool = True,
     dry_run: bool = False,
-    input_papers_override: list[TopicPaper] | None = None,
+    input_papers_override: list[Paper] | None = None,
 ):
     if input_papers_override is None:
         input_papers = topic.papers
@@ -38,14 +37,17 @@ def sort_papers(
     ]
 
     responses = run_in_parallel(
-        prompts, max_workers=40, model="gemini-2.0-flash", temp=0
+        prompts,
+        max_workers=40,
+        model="gemini-2.0-flash",
+        temp=0,
     )
 
-    new_topic_papers: list[TopicPaper] = []
-    excluded_papers: list[TopicPaper] = []
-    sub_topic_papers: dict[str, list[TopicPaper]] = {t.title: [] for t in topic.topics}
+    new_topic_papers: list[Paper] = []
+    excluded_papers: list[Paper] = []
+    sub_topic_papers: dict[str, list[Paper]] = {t.title: [] for t in topic.topics}
 
-    for paper, response in zip(input_papers, responses):
+    for paper, response in zip(input_papers, responses, strict=True):
         if "none applicable" in response.lower():
             excluded_papers.append(paper)
             continue
@@ -91,7 +93,7 @@ def sort_papers(
             ],
             headers=["Topic", "Num Papers", "Percent of Corpus"],
             colalign=["left", "right", "right"],
-        )
+        ),
     )
     print("--------------------------------")
 
@@ -122,15 +124,15 @@ def sort_papers(
         ):
             return
 
-        save_to.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
+        save_pydantic(root, save_to)
         print(f"Papers sorted and saved to {save_to}")
 
 
 def sort_additional(from_idx: int, tree_path: Path = Path("data/tree.json")):
     tree = Topic.model_validate_json(tree_path.read_text())
 
-    def _paper_in_tree(paper: TopicPaper, topic: Topic = tree):
-        if paper.arx in (p.arx for p in topic.papers):
+    def _paper_in_tree(paper: Paper, topic: Topic = tree):
+        if paper.id in (p.id for p in topic.papers):
             return True
 
         for subtopic in topic.topics:
@@ -140,11 +142,7 @@ def sort_additional(from_idx: int, tree_path: Path = Path("data/tree.json")):
 
         return False
 
-    to_add = [
-        tp
-        for tp in resolve_topic_papers(corpus.papers[from_idx:])
-        if not _paper_in_tree(tp)
-    ]
+    to_add = [tp for tp in corpus.papers[from_idx:] if not _paper_in_tree(tp)]
 
     print("Original papers:", len(corpus.papers[from_idx:]))
     print("Papers to add:", len(to_add), "\n")

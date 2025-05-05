@@ -72,28 +72,25 @@ def extract_paper_info(paper: arxiv.Result) -> dict[str, Any]:
 
 @overload
 def fetch_papers_by_id(
-    arxiv_ids: list[str], as_dict: Literal[False] = False, batch_size: int = 100
+    arxiv_ids: list[str],
+    as_dict: Literal[False] = False,
+    batch_size: int = 100,
 ) -> list[Paper]: ...
 
 
 @overload
 def fetch_papers_by_id(
-    arxiv_ids: list[str], as_dict: Literal[True] = True, batch_size: int = 100
+    arxiv_ids: list[str],
+    as_dict: Literal[True] = True,
+    batch_size: int = 100,
 ) -> list[dict[str, str]]: ...
 
 
 def fetch_papers_by_id(
-    arxiv_ids: list[str], as_dict: bool = False, batch_size: int = 100
+    arxiv_ids: list[str],
+    as_dict: bool = False,
+    batch_size: int = 100,
 ):
-    """Fetch papers from arXiv by their IDs in batches.
-
-    Args:
-        arxiv_ids: List of arXiv paper IDs to fetch
-        batch_size: Number of papers to fetch in each batch (default: 100)
-
-    Returns:
-        List of dictionaries containing paper information
-    """
     if not arxiv_ids:
         return []
 
@@ -108,7 +105,7 @@ def fetch_papers_by_id(
         batch = arxiv_ids[i : i + batch_size]
         print(
             f"Fetching batch {i // batch_size + 1} of {(len(arxiv_ids) + batch_size - 1) // batch_size} "
-            f"(papers {i + 1}-{min(i + batch_size, len(arxiv_ids))})"
+            f"(papers {i + 1}-{min(i + batch_size, len(arxiv_ids))})",
         )
 
         try:
@@ -119,7 +116,7 @@ def fetch_papers_by_id(
             print(f"Successfully fetched {len(batch_papers)} papers from current batch")
 
         except Exception as e:
-            print(f"Error fetching batch: {str(e)}")
+            print(f"Error fetching batch: {e!s}")
             continue
 
     return all_papers if as_dict else [Paper(**p) for p in all_papers]
@@ -174,7 +171,7 @@ def search_papers_on_arxiv(
                 time.sleep(3)
 
             except Exception as e:
-                print(f"Error searching for term '{term}': {str(e)}")
+                print(f"Error searching for term '{term}': {e!s}")
 
         if results:
             # Convert to Paper objects with subtopic

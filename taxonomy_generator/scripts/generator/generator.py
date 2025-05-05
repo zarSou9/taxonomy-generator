@@ -49,6 +49,7 @@ from taxonomy_generator.utils.utils import (
     random_sample,
     recurse_even,
     resolve_all_param,
+    save_pydantic,
     switch,
     unique_str,
 )
@@ -88,7 +89,7 @@ def process_sort_results(
             temp=0,
         )
 
-        for paper, response in zip(this_sample, responses):
+        for paper, response in zip(this_sample, responses, strict=True):
             if not response:
                 print(f"No response for paper: {paper.title}")
                 continue
@@ -175,7 +176,7 @@ def evaluate_topics(
     ]
     if no_papers_topics:
         invalid_reasons.append(
-            f"No papers sorted into {join_items_english(no_papers_topics)}"
+            f"No papers sorted into {join_items_english(no_papers_topics)}",
         )
 
     # Overview Papers
@@ -207,7 +208,9 @@ def evaluate_topics(
         )
         topics_feedbacks = [
             TopicsFeedback(score=score, feedback=feedback, system=system)
-            for system, (score, feedback) in zip(system_prompts, score_feedbacks)
+            for system, (score, feedback) in zip(
+                system_prompts, score_feedbacks, strict=True
+            )
             if score >= 0 and feedback is not None
         ]
     else:
@@ -238,7 +241,8 @@ def evaluate_topics(
 
     perc_single = len(single_papers) / len(sort_results)
     single_score = min(
-        perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6, 0.92
+        perc_single if (perc_single < 0.993 or len(sort_results) < 60) else 0.6,
+        0.92,
     )
 
     scores = EvalScores(
@@ -374,7 +378,7 @@ def generate_topics(
                     results_file.write_text(
                         json.dumps(
                             cached_results + gen_results, indent=2, ensure_ascii=False
-                        )
+                        ),
                     )
 
                     print("--------------------------------")
@@ -432,7 +436,8 @@ def generate(
     ],
     find_overviews_all: bool | list[bool] = [True, True, False],
     calculate_overall_score: Callable[
-        [EvalScores, int], float
+        [EvalScores, int],
+        float,
     ] = calculate_overall_score,
     epochs_all: int | list[int] = [2, 1],
     auto_all: bool | list[bool] = True,
@@ -496,7 +501,7 @@ def generate(
             print(f"Topics not generated for {topic.title} topic")
             return
 
-        TREE_PATH.write_text(json.dumps(root.model_dump(), ensure_ascii=False))
+        save_pydantic(root, TREE_PATH)
 
         print(f"{topic.title} taxonomy saved to {TREE_PATH}")
 

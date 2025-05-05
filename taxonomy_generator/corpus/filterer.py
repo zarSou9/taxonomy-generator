@@ -2,8 +2,8 @@ import json
 import random
 import time
 from collections import Counter
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY, IS_AI_SAFETY_EXPLANATION
@@ -35,7 +35,9 @@ def check_relevance(
         output_dir
         / f"{f'sample_{sample_size}' if sample_size else 'full'}{'_explanations' if with_explanations else ''}_{time.strftime('%Y-%m-%d_%I%p:%M:%S')}.json"
     )
-    output_file.write_text(json.dumps(list(zip(responses, [p.id for p in sample]))))
+    output_file.write_text(
+        json.dumps(list(zip(responses, [p.id for p in sample], strict=False)))
+    )
     if verbose:
         print()
         print(f"Saved relevance data to {output_file}")
@@ -57,7 +59,7 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
         if "explanations" in data_file.name:
             score = first_int(get_xml_content(r, "score") or r)
 
-            if verbose >= 2 or score < 3 and verbose == 1:
+            if verbose >= 2 or (score < 3 and verbose == 1):
                 explanation = get_xml_content(r, "explanation")
                 print("---")
                 print(corpus.get_pretty_paper(arx_id, ["title", "url", "abstract"]))
@@ -101,7 +103,9 @@ def filter_papers(
                 to_remove.append(arx_id)
 
     removed = corpus.remove_papers(
-        to_remove, dry_run=dry_run, path_override=path_override
+        to_remove,
+        dry_run=dry_run,
+        path_override=path_override,
     )
 
     if print_sample:

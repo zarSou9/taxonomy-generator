@@ -36,8 +36,7 @@ def get_batch_metadata(
     batch_size: int = 100,
     timeout: float | None = None,
 ) -> list[dict[str, Any] | None]:
-    """
-    Fetch metadata for a list of arXiv IDs from Semantic Scholar API.
+    """Fetch metadata for a list of arXiv IDs from Semantic Scholar API.
 
     Args:
         arxiv_ids: List of arXiv IDs to fetch metadata for
@@ -65,7 +64,7 @@ def get_batch_metadata(
         return all_results
 
     except Exception as error:
-        print(f"Error retrieving batch metadata: {str(error)}")
+        print(f"Error retrieving batch metadata: {error!s}")
         return []
 
 
@@ -75,9 +74,7 @@ def _fetch_batch(
     fields: str,
     timeout: float | None = None,
 ) -> list[dict[str, Any] | None]:
-    """
-    Fetch metadata for a single batch of arXiv IDs.
-    """
+    """Fetch metadata for a single batch of arXiv IDs."""
     params = {"fields": fields}
     url = "https://api.semanticscholar.org/graph/v1/paper/batch"
 
@@ -109,7 +106,7 @@ def _fetch_batch(
             if paper
             else None
         )
-        for paper, arxiv_id in zip(data, arxiv_ids)
+        for paper, arxiv_id in zip(data, arxiv_ids, strict=False)
     ]
 
 
@@ -120,16 +117,12 @@ def _make_request(
     json: dict[str, Any] | None = None,
     timeout: float | None = None,
 ) -> Any:
-    """
-    Synchronous wrapper around _make_request_async.
-    """
+    """Synchronous wrapper around _make_request_async."""
     return asyncio.run(_make_request_async(url, params, headers, json, timeout))
 
 
 def _get_headers(api_key: str | None = None) -> dict[str, str]:
-    """
-    Get common headers for API requests.
-    """
+    """Get common headers for API requests."""
     headers = {
         "Accept": "application/json",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -147,17 +140,17 @@ async def _make_request_async(
     params: dict[str, Any],
     headers: dict[str, str],
     json: dict[str, Any] | None = None,
-    timeout: float | None = None,
+    client_timeout: float | None = None,
 ) -> Any:
-    """
-    Make async API request with exponential backoff retry logic.
-    """
-    max_retries = 2 if timeout else 4
+    """Make async API request with exponential backoff retry logic."""
+    max_retries = 2 if client_timeout else 4
     base_delay = 10
 
     # Create timeout object for both total and connect timeouts
     timeout_obj = (
-        aiohttp.ClientTimeout(total=timeout, connect=timeout / 2) if timeout else None
+        aiohttp.ClientTimeout(total=client_timeout, connect=client_timeout / 2)
+        if client_timeout
+        else None
     )
 
     for attempt in range(max_retries):
@@ -177,7 +170,7 @@ async def _make_request_async(
                     if response.status in [429, 500, 502, 503, 504]:
                         if attempt < max_retries - 1:
                             print(
-                                f"Rate limited or server error (status {response.status}) on attempt {attempt + 1}"
+                                f"Rate limited or server error (status {response.status}) on attempt {attempt + 1}",
                             )
                             delay = base_delay * (2**attempt)
                             await asyncio.sleep(delay)
@@ -190,17 +183,19 @@ async def _make_request_async(
                     response.raise_for_status()
                     return await response.json()
 
-        except asyncio.TimeoutError as e:
-            print(f"Timeout Error after {timeout} seconds: {type(e).__name__}")
+        except TimeoutError as e:
+            print(f"Timeout Error after {client_timeout} seconds: {type(e).__name__}")
             return None
         except aiohttp.ClientError as e:
-            print(f"Client error on attempt {attempt + 1}: {str(e)}")
+            print(f"Client error on attempt {attempt + 1}: {e!s}")
             if attempt < max_retries - 1:
                 delay = base_delay * (2**attempt)
                 print(f"Retrying in {delay} seconds...")
                 await asyncio.sleep(delay)
             else:
-                raise Exception(f"API error after {max_retries} retries: {str(e)}")
+                raise Exception(
+                    f"API error after {max_retries} retries: {e!s}",
+                ) from e
 
     print("Maximum retries exceeded")
     return None
@@ -212,16 +207,14 @@ async def _get_paper_by_title_async(
     fields: list[str] = ["title", "abstract", "publicationDate", "citationCount"],
     api_key: str | None = None,
 ) -> dict[str, Any] | None:
-    """
-    Search for a single paper by title using Semantic Scholar's title match endpoint.
-    """
+    """Search for a single paper by title using Semantic Scholar's title match endpoint."""
     if not title:
         return None
 
     if id_type == "open_access_pdf_url":
-        fields = list(set(["openAccessPdf", *fields]))
+        fields = list(set("openAccessPdf", *fields))
     elif id_type == "url":
-        fields = list(set(["url", *fields]))
+        fields = list(set("url", *fields))
 
     url = "https://api.semanticscholar.org/graph/v1/paper/search/match"
     params = {
@@ -267,7 +260,9 @@ async def _get_paper_by_title_async(
 
 
 async def _get_titles_metadata_async(
-    titles: list[str], id_type: Literal["open_access_pdf_url", "url"], fields: list[str]
+    titles: list[str],
+    id_type: Literal["open_access_pdf_url", "url"],
+    fields: list[str],
 ):
     tasks = []
     for title in titles:

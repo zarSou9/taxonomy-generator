@@ -1,6 +1,5 @@
-import json
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 from InquirerPy import inquirer
 
@@ -12,12 +11,14 @@ from taxonomy_generator.scripts.generator.utils import (
 )
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import parse_response_json
+from taxonomy_generator.utils.utils import save_pydantic
 
 TREE_PATH = Path("data/tree.json")
 
 
 def order_papers_for_topic(
-    topic: Topic, root: Topic
+    topic: Topic,
+    root: Topic,
 ) -> Generator[str | None, str | None, list]:
     """Order papers within a topic by relevance using LLM."""
     if len(topic.papers) <= 1:
@@ -123,11 +124,14 @@ def order_all_papers(
     # Run all prompts in parallel
     print(f"\nRunning {len(prompts)} prompts in parallel with {max_workers} workers...")
     responses = run_in_parallel(
-        prompts, max_workers=max_workers, model=model, temp=temp
+        prompts,
+        max_workers=max_workers,
+        model=model,
+        temp=temp,
     )
 
     # Process responses and update paper orders
-    for topic, generator, response in zip(topics, generators, responses):
+    for topic, generator, response in zip(topics, generators, responses, strict=False):
         try:
             generator.send(response)
         except StopIteration as e:
@@ -143,5 +147,5 @@ def order_all_papers(
     ).execute():
         return
 
-    tree_path.write_text(json.dumps(root.model_dump(), ensure_ascii=False, indent=2))
+    save_pydantic(root, tree_path)
     print(f"\nOrdered papers saved to {tree_path}")

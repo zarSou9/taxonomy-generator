@@ -34,7 +34,7 @@ class Corpus:
     def __init__(
         self,
         corpus_path: str = "data/corpus.jsonl",
-        papers_override: list | None = None,
+        papers_override: list[Paper] | None = None,
     ):
         self.corpus_path: str = corpus_path
         self.papers: list[Paper] = (
@@ -56,7 +56,7 @@ class Corpus:
             mid = (left + right) // 2
             if self.papers[mid].id == paper_id:
                 return self.papers[mid]
-            elif self.papers[mid].id < paper_id:
+            if self.papers[mid].id < paper_id:
                 left = mid + 1
             else:
                 right = mid - 1
@@ -116,10 +116,12 @@ class Corpus:
         return duplicates
 
     def resolve_paper_ids(self, paper_or_ids: Sequence[Paper | str]):
-        return self.resolve_papers(paper_or_ids, True)
+        return self.resolve_papers(paper_or_ids, only_ids=True)
 
     def resolve_papers(
-        self, paper_or_ids: Sequence[Paper | str], only_ids: bool = False
+        self,
+        paper_or_ids: Sequence[Paper | str],
+        only_ids: bool = False,
     ) -> list[Paper | str]:
         papers = []
         included_ids: set[str] = set()
@@ -128,7 +130,7 @@ class Corpus:
 
             if p_id not in included_ids:
                 papers.append(
-                    p_id if only_ids else (self.get_paper_by_id(p_id) or p_id)
+                    p_id if only_ids else (self.get_paper_by_id(p_id) or p_id),
                 )
                 included_ids.add(p_id)
 
@@ -143,7 +145,8 @@ class Corpus:
         assume_safe_papers: bool = False,
         relevance_threshold: int = 3,
     ) -> list[Paper]:
-        """
+        """Add papers to the corpus.
+
         Returns:
             paper_or_ids resolved (without dups) and converted to list[Paper]
         """
@@ -158,17 +161,17 @@ class Corpus:
                 print(f"Papers length: {len(paper_or_ids)}")
                 if input_len != len(paper_or_ids):
                     print(
-                        f"Removed {input_len - len(paper_or_ids)} duplicates from input"
+                        f"Removed {input_len - len(paper_or_ids)} duplicates from input",
                     )
                 return []
 
             fetched = iter(
-                fetch_papers_by_id([p for p in paper_or_ids if isinstance(p, str)])
+                fetch_papers_by_id([p for p in paper_or_ids if isinstance(p, str)]),
             )
             papers = []
             for paper_or_id in paper_or_ids:
                 papers.append(
-                    next(fetched) if isinstance(paper_or_id, str) else paper_or_id
+                    next(fetched) if isinstance(paper_or_id, str) else paper_or_id,
                 )
 
         to_add = [p for p in papers if not self.get_paper_by_id(p.id)]
@@ -181,7 +184,7 @@ class Corpus:
             )
 
             filtered: list[Paper] = []
-            for paper, response in zip(to_add, responses):
+            for paper, response in zip(to_add, responses, strict=False):
                 if response and first_int(response) >= relevance_threshold:
                     filtered.append(paper)
 
@@ -206,8 +209,9 @@ class Corpus:
                 print()
                 print(
                     self.get_pretty_sample(
-                        papers, ["title", "url", "published", "abstract"]
-                    )
+                        papers,
+                        ["title", "url", "published", "abstract"],
+                    ),
                 )
                 print()
 

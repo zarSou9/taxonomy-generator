@@ -1,10 +1,10 @@
-import json
 from pathlib import Path
 from typing import cast
 
 from taxonomy_generator.scripts.embeddings.embeddings import find_similar_by_id
 from taxonomy_generator.scripts.generator.generator_types import Link, Topic
 from taxonomy_generator.scripts.generator.utils import get_tid, topic_breadcrumbs
+from taxonomy_generator.utils.utils import save_pydantic
 
 TREE_PATH = Path("data/tree.json")
 
@@ -46,7 +46,10 @@ def get_related_topics_off_limits(topic: Topic, parents: list[Topic]) -> list[To
 
 
 def get_related(
-    topic: Topic, parents: list[Topic], sim_threshold=0.793, max_related=5
+    topic: Topic,
+    parents: list[Topic],
+    sim_threshold=0.793,
+    max_related=5,
 ) -> list[tuple[Topic, list[Topic]]]:
     similar_descs: list[str] = [
         s["text"]
@@ -75,7 +78,9 @@ def get_related(
 
 
 def get_topic_from_desc(
-    desc: str, topic: Topic = tree, parents: list[Topic] = []
+    desc: str,
+    topic: Topic = tree,
+    parents: list[Topic] = [],
 ) -> tuple[Topic, list[Topic]] | None:
     if desc == topic.description:
         return topic, parents
@@ -87,7 +92,9 @@ def get_topic_from_desc(
 
 
 def analyze_all_related(
-    topic: Topic = tree, parents: list[Topic] = [], lens: dict = {}
+    topic: Topic = tree,
+    parents: list[Topic] = [],
+    lens: dict = {},
 ):
     if parents:
         related = get_related(topic, parents)
@@ -96,13 +103,13 @@ def analyze_all_related(
             lens[lr] = lens.get(lr, 0) + 1
             print(f"{topic_breadcrumbs(topic, parents)}:")
             print(
-                f"---------------------------------\n{topic.description}\n---------------------------------\n"
+                f"---------------------------------\n{topic.description}\n---------------------------------\n",
             )
             print(
-                f"Related:\n---------------------------------\n{'\n\n'.join(f'{topic_breadcrumbs(rt, rp)}\n------------\n{rt.description}\n------------' for rt, rp in related)}\n---------------------------------\n"
+                f"Related:\n---------------------------------\n{'\n\n'.join(f'{topic_breadcrumbs(rt, rp)}\n------------\n{rt.description}\n------------' for rt, rp in related)}\n---------------------------------\n",
             )
             print(
-                "=================================================================================\n"
+                "=================================================================================\n",
             )
 
     for subtopic in topic.topics:
@@ -145,6 +152,4 @@ def add_all_related(
 
 if __name__ == "__main__":
     add_all_related()
-    Path("data/tree_related.json").write_text(
-        json.dumps(tree.model_dump(), ensure_ascii=False)
-    )
+    save_pydantic(tree, Path("data/tree_related.json"))

@@ -28,7 +28,9 @@ def get_exa_query(topic: Topic, parents: list[Topic]):
 
 
 def find_overview_papers(
-    topic: Topic, parents: list[Topic], add_to_corpus=False
+    topic: Topic,
+    parents: list[Topic],
+    add_to_corpus=False,
 ) -> list[Paper]:
     papers = fetch_papers_by_id(search_arxs(get_exa_query(topic, parents)))
 
@@ -40,7 +42,9 @@ def find_overview_papers(
     )
 
     overview_papers = [
-        paper for paper, response in zip(papers, responses) if "yes" in response.lower()
+        paper
+        for paper, response in zip(papers, responses, strict=False)
+        if "yes" in response.lower()
     ]
 
     if add_to_corpus:

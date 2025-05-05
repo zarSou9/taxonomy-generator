@@ -8,10 +8,7 @@ BACKUP_PATH = Path().resolve().parent.parent / "_archive"
 
 
 def save_backup():
-    """
-    Creates a backup of the AI safety corpus by copying the source file
-    to the backup directory with a timestamp in the filename.
-    """
+    """Creates a backup of the AI safety corpus by copying the source file to the backup directory with a timestamp in the filename."""
     BACKUP_PATH.mkdir(parents=True, exist_ok=True)
 
     backup_file_path = BACKUP_PATH / f"ai_safety_corpus_{unique_str()}.csv"

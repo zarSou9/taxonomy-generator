@@ -11,8 +11,8 @@ from tqdm import tqdm
 
 
 def load_embeddings(input_file: str) -> list[dict[str, Any]]:
-    """Load embeddings from a file"""
-    with open(input_file, "r") as f:
+    """Load embeddings from a file."""
+    with open(input_file) as f:
         topics = json.load(f)
 
     # Convert embedding lists back to numpy arrays
@@ -27,9 +27,11 @@ loaded_topics = load_embeddings("data/topic_embeddings.json")
 
 
 def generate_embedding(
-    client, topic: dict[str, Any], max_retries: int = 5
+    client,
+    topic: dict[str, Any],
+    max_retries: int = 5,
 ) -> dict[str, Any]:
-    """Generate embedding for a single topic with exponential backoff for retries"""
+    """Generate embedding for a single topic with exponential backoff for retries."""
     retry_count = 0
     base_delay = 5
 
@@ -65,7 +67,7 @@ def generate_embeddings_parallel(
     wait_seconds: int = 10,
     batch_size: int = 20,
 ) -> list[dict[str, Any]]:
-    """Generate embeddings for a list of topics in parallel
+    """Generate embeddings for a list of topics in parallel.
 
     Args:
         topics: List of topic dictionaries
@@ -107,7 +109,7 @@ def generate_embeddings_parallel(
             # Wait after processing each batch
             if processed_count % batch_size == 0:
                 print(
-                    f"Processed {processed_count} topics. Waiting for {wait_seconds} seconds..."
+                    f"Processed {processed_count} topics. Waiting for {wait_seconds} seconds...",
                 )
                 time.sleep(wait_seconds)
 
@@ -115,9 +117,10 @@ def generate_embeddings_parallel(
 
 
 def save_embeddings(
-    topics_with_embeddings: list[dict[str, Any]], output_file: str
+    topics_with_embeddings: list[dict[str, Any]],
+    output_file: str,
 ) -> None:
-    """Save the embeddings to a file"""
+    """Save the embeddings to a file."""
     # Convert ContentEmbedding objects to lists or dictionaries
     serializable_topics = []
     for topic in topics_with_embeddings:
@@ -140,8 +143,7 @@ def find_similar_topics(
     topics_with_embeddings: list[dict[str, Any]],
     n: int | None = None,
 ) -> list[dict[str, Any]]:
-    """
-    Find topics similar to the target embedding, ordered from most to least similar.
+    """Find topics similar to the target embedding, ordered from most to least similar.
 
     Args:
         target_embedding: The embedding vector to compare against
@@ -178,7 +180,9 @@ def find_similar_topics(
 
     # Sort by similarity (highest first)
     sorted_similarities = sorted(
-        similarities, key=lambda x: x["similarity"], reverse=True
+        similarities,
+        key=lambda x: x["similarity"],
+        reverse=True,
     )
 
     return sorted_similarities if n is None else sorted_similarities[:n]
@@ -189,10 +193,11 @@ def find_similar_by_id(
     n: int | None = None,
     topics_with_embeddings: list[dict[str, Any]] = loaded_topics,
 ) -> list[dict[str, Any]]:
-    """Find topics similar to the one with the specified ID"""
+    """Find topics similar to the one with the specified ID."""
     # Find the target topic
     target_topic = next(
-        (t for t in topics_with_embeddings if t["id"] == topic_id), None
+        (t for t in topics_with_embeddings if t["id"] == topic_id),
+        None,
     )
     if not target_topic:
         raise ValueError(f"Topic with ID {topic_id} not found")
@@ -202,7 +207,8 @@ def find_similar_by_id(
 
     # Find similar topics
     similar_topics = find_similar_topics(
-        target_topic["embedding"], topics_with_embeddings
+        target_topic["embedding"],
+        topics_with_embeddings,
     )
 
     # Remove the target topic itself (which would be the most similar)

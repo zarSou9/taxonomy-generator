@@ -18,7 +18,7 @@ GR = TypeVar("GR", bound=Generator)
 
 
 class Recursor(BaseModel):
-    gen: Generator[None, Any, None]
+    gen: Generator[None, Any]
     depth: int
     complete: bool
 
@@ -30,7 +30,9 @@ def recurse_even(func: Callable[P, GR]):
         recursors: list[Recursor] = []
 
         def call_child(
-            _current_depth: int, *child_args: P.args, **child_kwargs: P.kwargs
+            _current_depth: int,
+            *child_args: P.args,
+            **child_kwargs: P.kwargs,
         ):
             def this_call_child(*args: P.args, **kwargs: P.kwargs):
                 call_child(_current_depth + 1, *args, **kwargs)
@@ -67,7 +69,7 @@ def cache(cache_filename_override: str | None = None, max_size: int | None = 30)
         # Load cache if exists
         if cache_file.exists():
             with cache_file.open("rb") as f:
-                cache = pickle.load(f)
+                cache = pickle.load(f)  # noqa: S301
         else:
             cache = {}
 
@@ -123,7 +125,8 @@ def split_join(
 
 def cap_words(text: str) -> str:
     return split_join(
-        text, lambda w: w if any(char.isupper() for char in w) else w.capitalize()
+        text,
+        lambda w: w if any(char.isupper() for char in w) else w.capitalize(),
     )
 
 
@@ -147,7 +150,9 @@ def format_perc(value: float, fill: bool = False) -> str:
 
 
 def random_sample(
-    population: Sequence[T], n: int = 1, seed: int | None = None
+    population: Sequence[T],
+    n: int = 1,
+    seed: int | None = None,
 ) -> list[T]:
     random.seed(seed)
     return random.sample(population, min(n, len(population)))
@@ -163,8 +168,7 @@ def get_avg_deviation(nums: list[int]) -> float:
 def unique_str(only_date: bool = False) -> str:
     if only_date:
         return time.strftime("%Y-%m-%d")
-    else:
-        return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
+    return f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{random.randint(10000, 99999)}"
 
 
 def plot_list(
@@ -178,7 +182,7 @@ def plot_list(
         x = list(data.keys())
         y = list(data.values())
     else:
-        x = [i for i in range(1, len(data) + 1)]
+        x = list(range(1, len(data) + 1))
         y = data
 
     match kind:
@@ -228,15 +232,15 @@ def compare_datas(
 
 
 @overload
-def normalize(data: list[float], out_of: int | float = 100) -> list[float]: ...
+def normalize(data: list[float], out_of: float = 100) -> list[float]: ...
 
 
 @overload
-def normalize(data: dict[T, float], out_of: int | float = 100) -> dict[T, float]: ...
+def normalize(data: dict[T, float], out_of: float = 100) -> dict[T, float]: ...
 
 
 def normalize(
-    data: list[float] | dict[T, float], out_of: int | float = 100
+    data: list[float] | dict[T, float], out_of: float = 100
 ) -> list[float] | dict[T, float]:
     if isinstance(data, list):
         total = sum(data)
@@ -248,7 +252,9 @@ def normalize(
 
 @overload
 def switch(
-    var: T, options: Iterable[tuple[T, R]], default: None = None
+    var: T,
+    options: Iterable[tuple[T, R]],
+    default: None = None,
 ) -> R | None: ...
 
 
@@ -261,7 +267,9 @@ def switch(var: T, options: Iterable[tuple[T, R]], default: object | None = None
 
 
 def resolve_all_param(
-    param: T | Sequence[T], idx: int, iter_type: type[Sequence] = list
+    param: T | Sequence[T],
+    idx: int,
+    iter_type: type[Sequence] = list,
 ) -> T:
     return (  # type: ignore
         (param[idx] if 0 <= idx < len(param) else param[-1])
@@ -291,6 +299,8 @@ def join_items_english(items: list[str]) -> str:
 def save_pydantic(model: BaseModel, path: Path, indent: int | None = 2):
     path.write_text(
         json.dumps(
-            model.model_dump(exclude_defaults=True), ensure_ascii=False, indent=indent
+            model.model_dump(exclude_defaults=True),
+            ensure_ascii=False,
+            indent=indent,
         )
     )

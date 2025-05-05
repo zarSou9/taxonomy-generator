@@ -5,13 +5,16 @@ T_JSON = TypeVar("T_JSON", bound=dict | list)
 
 
 def parse_response_json(
-    response: str, fallback: T_JSON = {}, raise_on_fail: bool = False
+    response: str,
+    fallback: T_JSON = {},
+    raise_on_fail: bool = False,
 ) -> T_JSON:
     """Parse a JSON response from an LLM.
 
     Args:
         response (str): LLM response text
         fallback: Fallback value for invalid JSON, defaults to empty dict
+        raise_on_fail: Raise an error if the JSON is invalid, defaults to False
 
     Returns:
         Parsed JSON object or fallback value
@@ -34,7 +37,7 @@ def parse_response_json(
         except json.JSONDecodeError:
             return json.loads(_clean_json_str(json_str))
     except Exception as e:
-        print(f"LLM JSON parse error: {str(e)}")
+        print(f"LLM JSON parse error: {e!s}")
         if raise_on_fail:
             raise
         return fallback
@@ -55,7 +58,7 @@ def get_xml_content(response: str, tag: str) -> str | None:
     end = response.find(f"</{tag}>")
 
     if start == -1 or end == -1:
-        return
+        return None
 
     return response[start + len(s) : end].strip()
 

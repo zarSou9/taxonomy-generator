@@ -64,45 +64,44 @@ def convert_to_anthropic_messages(
 ) -> list[dict]:
     if isinstance(history, str):
         return [anthropic_message("user", history, use_cache)]
-    else:
-        messages = []
-        cached_blocks = 0
-        for i, m in enumerate(history):
-            thinking_block = None
-            if isinstance(m, AntMessage):
-                thinking_block = next(
-                    (c for c in m.content if c.type == "thinking"), None
-                )
-                thinking_block = thinking_block and thinking_block.model_dump()
-                m = get_ant_message_text(m)
-
-            role = "user" if i % 2 == 0 else "assistant"
-            cache_this = (
-                role == "user"
-                and cached_blocks < max_cache_blocks
-                and use_cache
-                and not (dont_cache_last and i == len(history) - 1)
+    messages = []
+    cached_blocks = 0
+    for i, m in enumerate(history):
+        thinking_block = None
+        if isinstance(m, AntMessage):
+            thinking_block = next(
+                (c for c in m.content if c.type == "thinking"),
+                None,
             )
-            messages.append(anthropic_message(role, m, cache_this, thinking_block))
+            thinking_block = thinking_block and thinking_block.model_dump()
+            m = get_ant_message_text(m)
 
-            if cache_this and len(m) > 4000:
-                cached_blocks += 1
+        role = "user" if i % 2 == 0 else "assistant"
+        cache_this = (
+            role == "user"
+            and cached_blocks < max_cache_blocks
+            and use_cache
+            and not (dont_cache_last and i == len(history) - 1)
+        )
+        messages.append(anthropic_message(role, m, cache_this, thinking_block))
 
-        return messages
+        if cache_this and len(m) > 4000:
+            cached_blocks += 1
+
+    return messages
 
 
 def convert_to_google_messages(history: History) -> list[GContent]:
     if isinstance(history, str):
         return [GContent(role="user", parts=[Part(text=history)])]
-    else:
-        messages = []
-        for i, m in enumerate(history):
-            text = resolve_message_text(m)
-            if i % 2 == 0:
-                messages.append(GContent(role="user", parts=[Part(text=text)]))
-            else:
-                messages.append(GContent(role="model", parts=[Part(text=text)]))
-        return messages
+    messages = []
+    for i, m in enumerate(history):
+        text = resolve_message_text(m)
+        if i % 2 == 0:
+            messages.append(GContent(role="user", parts=[Part(text=text)]))
+        else:
+            messages.append(GContent(role="model", parts=[Part(text=text)]))
+    return messages
 
 
 def is_google_model(model: str) -> bool:
@@ -310,14 +309,17 @@ def ask_llm(
                 raise
 
             retry_delay = initial_retry_delay * (2**attempt)
-            print(f"API error: {str(e)}. Retrying in {retry_delay} seconds...")
+            print(f"API error: {e!s}. Retrying in {retry_delay} seconds...")
             time.sleep(retry_delay)
 
     raise Exception("Max retries reached. Unable to get a response from the API.")
 
 
 def run_through_convo(
-    user_messages: list[str], verbose=False, stdin_chat=False, **kwargs
+    user_messages: list[str],
+    verbose=False,
+    stdin_chat=False,
+    **kwargs,
 ) -> list[str | AntMessage]:
     chat_history = []
     assistant_messages = []
@@ -343,12 +345,13 @@ def run_in_parallel(
     test: bool = False,
     **kwargs,
 ) -> list[str]:
-    """
-    Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
+    """Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
 
     Args:
         histories: A list of prompts or message histories to process
+        settingss: Optional list of settings dictionaries to override kwargs for each history
         max_workers: Maximum number of concurrent workers (default: 5)
+        test: If True, returns test responses instead of calling the LLM
         **kwargs: Additional arguments to pass to ask_llm
 
     Returns:
@@ -370,7 +373,9 @@ def run_in_parallel(
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_prompt = {
             executor.submit(ask_llm, history, **kwargs, **settings): i
-            for i, (history, settings) in enumerate(zip(histories, settingss))
+            for i, (history, settings) in enumerate(
+                zip(histories, settingss, strict=False),
+            )
         }
 
         for future in tqdm(
@@ -481,8 +486,9 @@ class Chat:
         else:
             response = ChatMessage(
                 message=ask_llm(
-                    chat_to_history(self.history), **(self.settings | kwargs)
-                )
+                    chat_to_history(self.history),
+                    **(self.settings | kwargs),
+                ),
             )
             self.history.append(response)
             self.handle_cache()
@@ -510,7 +516,8 @@ class Chat:
         ]
         if valid_caches:
             longest_valid_cache = max(
-                valid_caches, key=lambda cache: len(cache["history"])
+                valid_caches,
+                key=lambda cache: len(cache["history"]),
             )
             return model_validate_chat(longest_valid_cache["history"])
 

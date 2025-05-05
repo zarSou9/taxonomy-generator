@@ -149,8 +149,7 @@ If, however, this paper is {"an" if parents else "a broad"} overview or survey o
 
 Please identify which category/categories this paper belongs to. Respond with a JSON array of strings containing the title(s) of the matching category or categories. If none fit, return an empty array. Add no other text or explanation.
 """
-    else:
-        return f"""
+    return f"""
 {start}
 
 Please identify which single category this paper belongs to. Respond with only the title of the best matching category. If no categories fit, respond with "NONE APPLICABLE". Add no other text or explanation.
@@ -187,8 +186,7 @@ After providing feedback, please rate the overall usefulness of this taxonomy fr
 
 {output_format}
 """
-    else:
-        return f"""
+    return f"""
 You are reviewing part of a hierarchical taxonomy for organizing research papers related to {field}. Specifically you're reviewing a proposed breakdown of {f"{parents[-1].title}, which is directly under {field}" if len(parents) == 2 else f"the {parents[-1].title} topic, which can be found at {topic_breadcrumbs(parents[-1], parents[:-1])}"} in the taxonomy. Here's the proposed breakdown:
 
 ```json
@@ -325,7 +323,9 @@ def get_overview_results_str(eval_result: EvalResult, first: bool):
 @prompt
 def get_topic_papers_str(eval_result: EvalResult, first: bool) -> str:
     topic_papers_sorted = sorted(
-        eval_result.topic_papers.items(), key=lambda tp: len(tp[1]), reverse=True
+        eval_result.topic_papers.items(),
+        key=lambda tp: len(tp[1]),
+        reverse=True,
     )
 
     stats: list[tuple[str, int, str]] = []

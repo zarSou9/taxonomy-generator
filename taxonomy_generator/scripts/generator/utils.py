@@ -27,7 +27,8 @@ class Result(TypedDict):
 
 
 def get_results_data(
-    results: list[tuple[list[Topic], EvalResult]], sort=False
+    results: list[tuple[list[Topic], EvalResult]],
+    sort=False,
 ) -> list[Result]:
     if sort:
         results = sorted(results, key=lambda r: r[1].overall_score, reverse=True)
@@ -55,7 +56,8 @@ def recalculate_scores(
 ) -> list[Result]:
     for result in results:
         result["overall_score"] = calculate_overall_score(
-            EvalScores.model_validate(result["scores"]), depth
+            EvalScores.model_validate(result["scores"]),
+            depth,
         )
 
     return sorted(results, key=lambda r: r["overall_score"], reverse=True)
@@ -90,7 +92,9 @@ def resolve_topic(title: str, topics: list[Topic]) -> Topic | None:
 
 
 def display_top_results(
-    results_data: list[Result], count: int = 5, start: int = 0
+    results_data: list[Result],
+    count: int = 5,
+    start: int = 0,
 ) -> int:
     end = min(start + count, len(results_data))
 

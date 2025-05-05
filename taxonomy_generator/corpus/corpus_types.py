@@ -13,5 +13,4 @@ class Paper(BaseModel):
     title: str
     published: str
     summary: Summary
-    authors: list[str]
     source: Literal["arxiv", "alignmentforum", "lesswrong"] = "arxiv"

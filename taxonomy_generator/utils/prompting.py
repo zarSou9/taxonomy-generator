@@ -20,10 +20,13 @@ def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
     return prompt
 
 
-def fps(globals: dict[str, Any]) -> None:
-    for key, value in globals.items():
+def fps(module_globals: dict[str, Any]) -> None:
+    for key, value in module_globals.items():
         if isinstance(value, str) and key.isupper():
-            globals[key] = clean_prompt(value, is_exa_query=key.startswith("EXA"))
+            module_globals[key] = clean_prompt(
+                value,
+                is_exa_query=key.startswith("EXA"),
+            )
 
 
 def prompt(func):
