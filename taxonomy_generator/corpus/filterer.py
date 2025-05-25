@@ -6,6 +6,7 @@ from collections.abc import Generator
 from pathlib import Path
 
 from taxonomy_generator.corpus.corpus_instance import corpus
+from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY, IS_AI_SAFETY_EXPLANATION
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import first_int, get_xml_content
@@ -18,7 +19,7 @@ def check_relevance(
     output_dir: Path = SAMPLE_DIR_PATH,
     verbose: int = 0,
     max_workers: int = 10,
-    with_explanations=False,
+    with_explanations: bool = False,
 ):
     sample = (
         corpus.papers if sample_size is None else corpus.get_random_sample(sample_size)
@@ -53,7 +54,7 @@ def resolve_data(data_file: Path) -> Generator[tuple[int, str]]:
 
 def print_relevance_data(data_file: Path, verbose: int = 0):
     data: list[tuple[str, str]] = json.loads(data_file.read_text())
-    scores = []
+    scores: list[int] = []
 
     for r, arx_id in data:
         if "explanations" in data_file.name:
@@ -90,11 +91,11 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
 
 def filter_papers(
     data_file: Path,
-    dry_run=False,
-    print_sample=False,
-    rem_chances=(1, 1),
+    dry_run: bool = False,
+    print_sample: bool = False,
+    rem_chances: tuple[int, int] = (1, 1),
     path_override: str | None = None,
-):
+) -> list[Paper]:
     to_remove: list[str] = []
 
     for score, arx_id in resolve_data(data_file):

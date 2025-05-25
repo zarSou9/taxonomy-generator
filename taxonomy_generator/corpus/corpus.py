@@ -1,5 +1,7 @@
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Generator, Iterable, Sequence
+from pathlib import Path
+from typing import Literal, cast, final
 
 import jsonlines
 
@@ -11,13 +13,14 @@ from taxonomy_generator.utils.parse_llm import first_int
 from taxonomy_generator.utils.utils import random_sample
 
 
-def term_in_text(term: str, text: str):
+def term_in_text(term: str, text: str) -> bool:
     if not term or not text:
         return False
 
     return bool(re.search(r"\b" + re.escape(term.lower()) + r"\b", text.lower()))
 
 
+@final
 class TermGroups:
     AI_SAFETY = ["ai safety", "alignment", "safe ai", "responsible ai"]
     SURVEY = [
@@ -33,38 +36,47 @@ class TermGroups:
 class Corpus:
     def __init__(
         self,
-        corpus_path: str = "data/corpus.jsonl",
+        corpus_path: str | Path = "data/corpus.jsonl",
         papers_override: list[Paper] | None = None,
     ):
-        self.corpus_path: str = corpus_path
-        self.papers: list[Paper] = (
-            self._load_papers() if papers_override is None else papers_override
+        self.corpus_path: str = (
+            corpus_path
+            if isinstance(corpus_path, str)
+            else corpus_path.resolve().as_posix()
+        )
+        self.papers: list[Paper] = []
+        self.set_papers(
+            self._load_papers() if papers_override is None else papers_override,
+            save=False,
         )
 
     def _load_papers(self) -> list[Paper]:
-        with jsonlines.open(self.corpus_path, mode="r") as reader:
-            return [Paper(**paper) for paper in reader]
+        try:
+            with jsonlines.open(self.corpus_path, mode="r") as reader:  # pyright: ignore[reportUnknownMemberType]
+                return [Paper(**paper) for paper in reader]
+        except FileNotFoundError:
+            return []
 
     def get_random_sample(self, n: int = 1, seed: int | None = None) -> list[Paper]:
         return random_sample(self.papers, n, seed)
 
-    def get_paper_by_id(self, paper_id: str) -> Paper | None:
-        # Use binary search if papers are ordered by id
-        left, right = 0, len(self.papers) - 1
+    def get_paper_by_id(
+        self, paper_id: str, method: Literal["both", "linear", "binary"] = "both"
+    ) -> Paper | None:
+        if method == "both" or method == "binary":
+            left, right = 0, len(self.papers) - 1
 
-        while left <= right:
-            mid = (left + right) // 2
-            if self.papers[mid].id == paper_id:
-                return self.papers[mid]
-            if self.papers[mid].id < paper_id:
-                left = mid + 1
-            else:
-                right = mid - 1
+            while left <= right:
+                mid = (left + right) // 2
+                if self.papers[mid].id == paper_id:
+                    return self.papers[mid]
+                if self.papers[mid].id < paper_id:
+                    left = mid + 1
+                else:
+                    right = mid - 1
 
-        print(
-            f"Couldn't find paper with id {paper_id} through binary search, is the corpus ordered?"
-        )
-        return next((p for p in self.papers if p.id == paper_id), None)
+        if method == "both" or method == "linear":
+            return next((p for p in self.papers if p.id == paper_id), None)
 
     def get_pretty_paper(
         self,
@@ -115,7 +127,9 @@ class Corpus:
 
         return duplicates
 
-    def resolve_paper_ids(self, paper_or_ids: Sequence[Paper | str]):
+    def resolve_paper_ids(
+        self, paper_or_ids: Sequence[Paper | str]
+    ) -> list[Paper | str]:
         return self.resolve_papers(paper_or_ids, only_ids=True)
 
     def resolve_papers(
@@ -123,14 +137,16 @@ class Corpus:
         paper_or_ids: Sequence[Paper | str],
         only_ids: bool = False,
     ) -> list[Paper | str]:
-        papers = []
+        papers: list[Paper | str] = []
         included_ids: set[str] = set()
         for p in paper_or_ids:
             p_id = p if isinstance(p, str) else p.id
 
             if p_id not in included_ids:
                 papers.append(
-                    p_id if only_ids else (self.get_paper_by_id(p_id) or p_id),
+                    p_id
+                    if only_ids
+                    else (self.get_paper_by_id(p_id, method="linear") or p_id),
                 )
                 included_ids.add(p_id)
 
@@ -153,7 +169,7 @@ class Corpus:
         input_len = len(paper_or_ids)
 
         if assume_safe_papers:
-            papers: list[Paper] = paper_or_ids  # type: ignore
+            papers: list[Paper] = cast(list[Paper], paper_or_ids)
         else:
             paper_or_ids = self.resolve_papers(paper_or_ids)
 
@@ -166,7 +182,9 @@ class Corpus:
                 return []
 
             fetched = iter(
-                fetch_papers_by_id([p for p in paper_or_ids if isinstance(p, str)]),
+                fetch_papers_by_id(
+                    [p for p in paper_or_ids if isinstance(p, str)], raise_on_fail=True
+                ),
             )
             papers = []
             for paper_or_id in paper_or_ids:
@@ -174,7 +192,7 @@ class Corpus:
                     next(fetched) if isinstance(paper_or_id, str) else paper_or_id,
                 )
 
-        to_add = [p for p in papers if not self.get_paper_by_id(p.id)]
+        to_add = [p for p in papers if not self.get_paper_by_id(p.id, "linear")]
 
         if ensure_relevance:
             responses = run_in_parallel(
@@ -248,18 +266,18 @@ class Corpus:
         return papers_removed
 
     def save(self, path_override: str | None = None):
-        with jsonlines.open(path_override or self.corpus_path, mode="w") as writer:
+        with jsonlines.open(path_override or self.corpus_path, mode="w") as writer:  # pyright: ignore[reportUnknownMemberType]
             for paper in self.papers:
                 writer.write(paper.model_dump(exclude_defaults=True))
 
-    def set_papers(self, papers: list[Paper] | None = None, save=True):
+    def set_papers(self, papers: list[Paper] | None = None, save: bool = True):
         if papers is not None:
             self.papers = papers
         self.papers.sort(key=lambda p: p.id)
         if save:
             self.save()
 
-    def filter_by_terms(self, *term_groups: list[str]):
+    def filter_by_terms(self, *term_groups: list[str]) -> Generator[Paper]:
         return (
             p
             for p in self.papers

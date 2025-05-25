@@ -2,10 +2,8 @@
 name = "taxonomy-generator"
 version = "0.1.0"
 description = "Hierarchical taxonomy generator for AI Safety research papers"
-authors = [
-    {name = "Myles"}
-]
-license = {text = "MIT License"}
+authors = [{ name = "Myles" }]
+license = { text = "MIT License" }
 readme = "README.md"
 requires-python = ">=3.13,<4.0"
 dependencies = [
@@ -22,7 +20,7 @@ dependencies = [
     "matplotlib (>=3.10.1,<4.0.0)",
     "inquirerpy (>=0.3.4,<0.4.0)",
     "jsonlines (>=4.0.0,<5.0.0)",
-    "aiohttp (>=3.11.18,<4.0.0)"
+    "aiohttp (>=3.11.18,<4.0.0)",
 ]
 
 
@@ -36,43 +34,51 @@ poetry-plugin-export = ">=1.8"
 
 
 [tool.ruff]
-    [tool.ruff.lint]
-        ignore=[
-            "D10",   # Require docstrings for all public methods
-            "E501",  # Line too long
-            "N816",  # Global variable should be snake_case (prevents acronyms)
-            "N999",  # Module variable should be snake_case (prevents acronyms)
-            "S101",  # Use of assert detected (needed for testing)
-            "S311",  # Pseudo-random generators not suitable for cryptographic purposes (not our use case)
-            "B006",  # Mutable parameter defaults
-            "C901"   # Complex functions
-        ]
-        select=[
-            "A",     # flake8-builtins (detects use of python builtins)
-            "ASYNC", # flake8-async (common async issues)
-            "B",     # flake8-bugbear (common bugs and design problems)
-            "C",     # mccabe (complexity checker)
-            "D",     # pydocstyle (docstring style checker)
-            "E",     # pycodestyle errors (PEP8 code style requirements)
-            "F",     # pyflakes (detects coding errors)
-            "I",     # isort (import sorting)
-            "N",     # flake8 (variable naming conventions)
-            "S",     # flake8-bandit (security issues)
-            "UP",    # Conform to latest Python PEP style guidelines
-            "W",     # pycodestyle warnings (PEP8 code style requirements),
-            "FBT003" # boolean-positional-value-in-call
-        ]
+[tool.ruff.lint]
+ignore = [
+    "D10",  # Require docstrings for all public methods
+    "E501", # Line too long
+    "N816", # Global variable should be snake_case (prevents acronyms)
+    "N999", # Module variable should be snake_case (prevents acronyms)
+    "S101", # Use of assert detected (needed for testing)
+    "S311", # Pseudo-random generators not suitable for cryptographic purposes (not our use case)
+    "B006", # Mutable parameter defaults
+    "C901", # Complex functions
+]
+select = [
+    "A",      # flake8-builtins (detects use of python builtins)
+    "ASYNC",  # flake8-async (common async issues)
+    "B",      # flake8-bugbear (common bugs and design problems)
+    "C",      # mccabe (complexity checker)
+    "D",      # pydocstyle (docstring style checker)
+    "E",      # pycodestyle errors (PEP8 code style requirements)
+    "F",      # pyflakes (detects coding errors)
+    "I",      # isort (import sorting)
+    "N",      # flake8 (variable naming conventions)
+    "S",      # flake8-bandit (security issues)
+    "UP",     # Conform to latest Python PEP style guidelines
+    "W",      # pycodestyle warnings (PEP8 code style requirements),
+    "FBT003", # boolean-positional-value-in-call
+]
 
-        [tool.ruff.lint.pydocstyle]
-            convention="google"
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
-        [tool.ruff.lint.pep8-naming]
-            # Allow Pydantic's `@validator` decorator to trigger class method treatment.
-            classmethod-decorators=[
-                "classmethod",
-                "pydantic.field_validator",
-                "pydantic.validator",
-            ]
+[tool.ruff.lint.pep8-naming]
+# Allow Pydantic's `@validator` decorator to trigger class method treatment.
+classmethod-decorators = [
+    "classmethod",
+    "pydantic.field_validator",
+    "pydantic.validator",
+]
 
-        [tool.ruff.lint.flake8-builtins]
-            builtins-ignorelist=["eval"]
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = ["eval"]
+
+[tool.basedpyright]
+reportMissingTypeStubs = false
+reportCallInDefaultInitializer = false
+reportOverlappingOverload = false
+reportExplicitAny = false
+reportAny = false
+reportUnusedCallResult = false

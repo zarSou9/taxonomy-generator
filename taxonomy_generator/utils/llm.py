@@ -1,11 +1,10 @@
 import concurrent.futures
-import concurrent.futures.thread
 import json
 import os
 import time
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict, overload
+from typing import Any, Literal, NotRequired, TypedDict, cast, overload
 
 from anthropic import Anthropic
 from anthropic.types import Message as AntMessage
@@ -36,9 +35,9 @@ genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 def anthropic_message(
     role: Literal["user", "assistant"],
     prompt: str,
-    use_cache=False,
-    thinking_block: dict | None = None,
-):
+    use_cache: bool = False,
+    thinking_block: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     return {
         "role": role,
         "content": [
@@ -58,13 +57,13 @@ def anthropic_message(
 
 def convert_to_anthropic_messages(
     history: History,
-    use_cache=False,
-    max_cache_blocks=4,
-    dont_cache_last=False,
-) -> list[dict]:
+    use_cache: bool = False,
+    max_cache_blocks: int = 4,
+    dont_cache_last: bool = False,
+) -> list[dict[str, Any]]:
     if isinstance(history, str):
         return [anthropic_message("user", history, use_cache)]
-    messages = []
+    messages: list[dict[str, Any]] = []
     cached_blocks = 0
     for i, m in enumerate(history):
         thinking_block = None
@@ -94,7 +93,7 @@ def convert_to_anthropic_messages(
 def convert_to_google_messages(history: History) -> list[GContent]:
     if isinstance(history, str):
         return [GContent(role="user", parts=[Part(text=history)])]
-    messages = []
+    messages: list[GContent] = []
     for i, m in enumerate(history):
         text = resolve_message_text(m)
         if i % 2 == 0:
@@ -143,12 +142,12 @@ def ask_llm(
     max_retries: int = 4,
     initial_retry_delay: int = 15,
     stop_sequences: list[str] = [],
-    ground_with_google_search=False,
-    use_cache=False,
-    dont_cache_last=False,
+    ground_with_google_search: bool = False,
+    use_cache: bool = False,
+    dont_cache_last: bool = False,
     use_thinking: Literal[False] = False,  # <---
     thinking_budget: int = 7000,
-    verbose=False,
+    verbose: bool = False,
 ) -> str: ...
 
 
@@ -162,12 +161,12 @@ def ask_llm(
     max_retries: int = 4,
     initial_retry_delay: int = 15,
     stop_sequences: list[str] = [],
-    ground_with_google_search=False,
-    use_cache=False,
-    dont_cache_last=False,
+    ground_with_google_search: bool = False,
+    use_cache: bool = False,
+    dont_cache_last: bool = False,
     use_thinking: Literal[True] = True,  # <---
     thinking_budget: int = 7000,
-    verbose=False,
+    verbose: bool = False,
 ) -> AntMessage: ...
 
 
@@ -180,12 +179,12 @@ def ask_llm(
     max_retries: int = 4,
     initial_retry_delay: int = 15,
     stop_sequences: list[str] = [],
-    ground_with_google_search=False,
-    use_cache=False,
-    dont_cache_last=False,
-    use_thinking=False,
+    ground_with_google_search: bool = False,
+    use_cache: bool = False,
+    dont_cache_last: bool = False,
+    use_thinking: bool = False,
     thinking_budget: int = 7000,
-    verbose=False,
+    verbose: bool = False,
 ) -> str | AntMessage:
     if verbose:
         log(get_last(history))
@@ -207,7 +206,7 @@ def ask_llm(
                     dont_cache_last=dont_cache_last,
                 )
 
-                kwargs = {
+                kwargs: dict[str, Any] = {
                     "model": model,
                     "max_tokens": max_tokens,
                     "messages": messages,
@@ -236,10 +235,12 @@ def ask_llm(
                         "budget_tokens": thinking_budget,
                     }
 
-                ant_message: AntMessage = anthropic_client.messages.create(**kwargs)
+                ant_message: AntMessage = cast(
+                    AntMessage, anthropic_client.messages.create(**kwargs)
+                )
 
                 if verbose:
-                    usage_strs = []
+                    usage_strs: list[str] = []
                     for name, value in ant_message.usage:
                         usage_strs.append(
                             f"{cap_words(name.replace('_', ' '))}: {value}"
@@ -317,20 +318,20 @@ def ask_llm(
 
 def run_through_convo(
     user_messages: list[str],
-    verbose=False,
-    stdin_chat=False,
-    **kwargs,
+    verbose: bool = False,
+    stdin_chat: bool = False,
+    **kwargs: Any,
 ) -> list[str | AntMessage]:
-    chat_history = []
-    assistant_messages = []
+    chat_history: list[str | AntMessage] = []
+    assistant_messages: list[str | AntMessage] = []
     i = 0
     while i < len(user_messages):
         chat_history.append(user_messages[i])
-        response = ask_llm(chat_history, **kwargs)
+        response = cast(str | AntMessage, ask_llm(chat_history, **kwargs))
         chat_history.append(response)
         assistant_messages.append(response)
         if verbose or stdin_chat:
-            print(response + "\n\n\n")
+            print(resolve_message_text(response) + "\n\n\n")
         if stdin_chat and i == len(user_messages) - 1:
             user_messages.append(input())
             print("\n\n\n")
@@ -340,10 +341,10 @@ def run_through_convo(
 
 def run_in_parallel(
     histories: Sequence[History],
-    settingss: list[dict] | None = None,
+    settingss: list[dict[str, Any]] | None = None,
     max_workers: int = 5,
     test: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> list[str]:
     """Runs multiple ask_llm calls in parallel using ThreadPoolExecutor.
 
@@ -365,10 +366,8 @@ def run_in_parallel(
 
     results: list[str] = [""] * len(histories)
 
-    if settingss:
-        assert len(settingss) == len(histories)
-    else:
-        settingss = [{}] * len(histories)
+    settingss = cast(list[dict[str, Any]], settingss or [{}] * len(histories))
+    assert len(settingss) == len(histories)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_prompt = {
@@ -392,16 +391,16 @@ def run_in_parallel(
 
 class ChatMessage(TypedDict):
     message: str | AntMessage
-    settings_override: NotRequired[dict | None]
+    settings_override: NotRequired[dict[str, Any] | None]
 
 
 class ChatMessageJSON(TypedDict):
-    message: str | dict
-    settings_override: NotRequired[dict | None]
+    message: str | dict[str, Any]
+    settings_override: NotRequired[dict[str, Any] | None]
 
 
 class Cache(TypedDict):
-    settings: dict
+    settings: dict[str, Any]
     history: list[ChatMessageJSON]
 
 
@@ -454,16 +453,16 @@ class Chat:
         cache_file_name: str | None = "history",
         cache_limit: int = 30,
         dont_cache: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ):
-        self.history = history_to_chat(history)
-        self.settings = kwargs
-        self.cache_file_name = cache_file_name
-        self.cache_limit = cache_limit
-        self.dont_cache = dont_cache
+        self.history: list[ChatMessage] = history_to_chat(history)
+        self.settings: dict[str, Any] = kwargs
+        self.cache_file_name: str | None = cache_file_name
+        self.cache_limit: int = cache_limit
+        self.dont_cache: bool = dont_cache
 
         CHAT_CACHE_PATH.mkdir(parents=True, exist_ok=True)
-        self.cache_file = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
+        self.cache_file: Path = CHAT_CACHE_PATH / f"{self.cache_file_name}.json"
 
         self.cache_list: list[Cache] = []
         if self.cache_file.exists():
@@ -471,7 +470,7 @@ class Chat:
                 -self.cache_limit :
             ]
 
-    def ask(self, prompt: str, **kwargs) -> str:
+    def ask(self, prompt: str, **kwargs: Any) -> str:
         self.history.append(
             ChatMessage(message=prompt.strip(), settings_override=kwargs)
         )
@@ -485,7 +484,7 @@ class Chat:
             self.history.append(response)
         else:
             response = ChatMessage(
-                message=ask_llm(
+                message=ask_llm(  # pyright: ignore[reportUnknownArgumentType]
                     chat_to_history(self.history),
                     **(self.settings | kwargs),
                 ),
@@ -496,10 +495,10 @@ class Chat:
         return resolve_message_text(response["message"])
 
     @property
-    def simple_history(self):
+    def simple_history(self) -> list[str]:
         return resolve_simple_history([cm["message"] for cm in self.history])
 
-    def handle_cache(self):
+    def handle_cache(self) -> list[ChatMessage]:
         if self.dont_cache:
             return self.history
 

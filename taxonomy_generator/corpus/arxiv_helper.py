@@ -74,6 +74,7 @@ def extract_paper_info(paper: arxiv.Result) -> dict[str, Any]:
 def fetch_papers_by_id(
     arxiv_ids: list[str],
     as_dict: Literal[False] = False,
+    raise_on_fail: bool = False,
     batch_size: int = 100,
 ) -> list[Paper]: ...
 
@@ -82,6 +83,7 @@ def fetch_papers_by_id(
 def fetch_papers_by_id(
     arxiv_ids: list[str],
     as_dict: Literal[True] = True,
+    raise_on_fail: bool = False,
     batch_size: int = 100,
 ) -> list[dict[str, str]]: ...
 
@@ -89,12 +91,13 @@ def fetch_papers_by_id(
 def fetch_papers_by_id(
     arxiv_ids: list[str],
     as_dict: bool = False,
+    raise_on_fail: bool = False,
     batch_size: int = 100,
-):
+) -> list[dict[str, str]] | list[Paper]:
     if not arxiv_ids:
         return []
 
-    all_papers = []
+    all_papers: list[dict[str, Any]] = []
     client = arxiv.Client(
         page_size=100,
         delay_seconds=1.5,
@@ -104,8 +107,7 @@ def fetch_papers_by_id(
     for i in range(0, len(arxiv_ids), batch_size):
         batch = arxiv_ids[i : i + batch_size]
         print(
-            f"Fetching batch {i // batch_size + 1} of {(len(arxiv_ids) + batch_size - 1) // batch_size} "
-            f"(papers {i + 1}-{min(i + batch_size, len(arxiv_ids))})",
+            f"Fetching batch {i // batch_size + 1} of {(len(arxiv_ids) + batch_size - 1) // batch_size} (papers {i + 1}-{min(i + batch_size, len(arxiv_ids))})"
         )
 
         try:
@@ -117,6 +119,8 @@ def fetch_papers_by_id(
 
         except Exception as e:
             print(f"Error fetching batch: {e!s}")
+            if raise_on_fail:
+                raise e
             continue
 
     return all_papers if as_dict else [Paper(**p) for p in all_papers]
@@ -144,7 +148,7 @@ def search_papers_on_arxiv(
         print(f"\nSearching for subtopic: {subtopic}")
 
         # Search for papers without checking for duplicates
-        results = []
+        results: list[arxiv.Result] = []
         for term in terms:
             categories_query = " OR ".join(categories)
             query = f'(ti:"{term}" OR abs:"{term}") AND ({categories_query})'
