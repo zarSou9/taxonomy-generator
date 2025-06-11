@@ -1,7 +1,7 @@
-from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.scripts.generator.generator import evaluate_topics
-from taxonomy_generator.scripts.generator.generator_types import Topic
-from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
+# from taxonomy_generator.corpus.corpus_instance import corpus
+# from taxonomy_generator.scripts.generator.generator import evaluate_topics
+# from taxonomy_generator.scripts.generator.generator_types import Topic
+# from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
 
 TOPICS = [
     {
@@ -31,24 +31,24 @@ TOPICS = [
 ]
 
 
-def main():
-    topics = [Topic.model_validate(t) for t in TOPICS]
+# def main():
+#     topics = [Topic.model_validate(t) for t in TOPICS]
 
-    eval_result = evaluate_topics(
-        topics,
-        400,
-        corpus.papers,
-        sample_seed=222,
-        no_overviews=True,
-    )
+#     eval_result = evaluate_topics(
+#         topics,
+#         400,
+#         corpus.papers,
+#         sample_seed=222,
+#         no_overviews=True,
+#     )
 
-    print("--------------------------------")
-    print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
-    print(f"Overall Score: {eval_result.overall_score}")
-    print("--------------------------------")
+#     print("--------------------------------")
+#     print(f"All Scores:\n{eval_result.all_scores.model_dump_json(indent=2)}")
+#     print(f"Overall Score: {eval_result.overall_score}")
+#     print("--------------------------------")
 
-    print(get_iter_topics_prompt(eval_result, first=True))
+#     print(get_iter_topics_prompt(eval_result, first=True))
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

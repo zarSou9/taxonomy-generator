@@ -1,12 +1,13 @@
 import functools
 import re
+from collections.abc import Callable
 from typing import Any
 
 
 def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
     prompt = prompt.strip()
 
-    cleaned_lines = []
+    cleaned_lines: list[str] = []
     for line in prompt.split("\n"):
         if not line.lstrip().startswith("#!"):
             cleaned_lines.append(line.split("#!", 1)[0].rstrip())
@@ -29,9 +30,9 @@ def fps(module_globals: dict[str, Any]) -> None:
             )
 
 
-def prompt(func):
+def prompt(func: Callable[..., str]):
     @functools.wraps(func)
-    def wrapper_timer(*args, **kwargs):
+    def wrapper_timer(*args: Any, **kwargs: Any) -> str:
         return clean_prompt(func(*args, **kwargs))
 
     return wrapper_timer

@@ -117,7 +117,7 @@ def sort_papers(
     if save_to:
         if (
             not auto
-            and not inquirer.confirm(  # type: ignore
+            and not inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
                 "Would you like to save the result?",
                 default=True,
             ).execute()

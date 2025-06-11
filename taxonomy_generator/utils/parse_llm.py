@@ -1,7 +1,7 @@
 import json
-from typing import TypeVar
+from typing import Any, TypeVar
 
-T_JSON = TypeVar("T_JSON", bound=dict | list)
+T_JSON = TypeVar("T_JSON", bound=(dict[str, Any] | list[Any]))
 
 
 def parse_response_json(

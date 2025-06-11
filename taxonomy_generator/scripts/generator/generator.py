@@ -68,7 +68,7 @@ def process_sort_results(
     sample_len: int,
     parents: list[Topic],
 ) -> list[tuple[Paper, frozenset[str]]]:
-    results = []
+    results: list[tuple[Paper, frozenset[str]]] = []
     parsed_sample_idx = 0
 
     while len(results) < sample_len:
@@ -117,7 +117,7 @@ def process_sort_results(
             results.append(
                 (
                     paper,
-                    frozenset(resolve_topic(t, topics).title for t in chosen_topics),  # type: ignore
+                    frozenset(resolve_topic(t, topics).title for t in chosen_topics),  # pyright: ignore[reportOptionalMemberAccess]
                 )
             )
 
@@ -138,14 +138,14 @@ def evaluate_topics(
     parents: list[Topic] = [],
     buffer_len: int = 50,
     sample_seed: int | None = None,
-    no_feedback=False,
-    no_overviews=False,
+    no_feedback: bool = False,
+    no_overviews: bool = False,
 ) -> EvalResult:
     sample = random_sample(all_papers, sample_len + buffer_len, sample_seed)
 
     sort_results = process_sort_results(topic, topics, sample, sample_len, parents)
 
-    invalid_reasons = []
+    invalid_reasons: list[str] = []
 
     topic_papers: dict[str, list[Paper]] = {t.title: [] for t in topics}
     overlap_topics_papers: dict[frozenset[str], list[Paper]] = {}
@@ -303,7 +303,7 @@ def generate_topics(
             print(f"Error parsing cached results file for {topic.title}")
 
         if cached_results and not auto:
-            generate_flag = inquirer.confirm(  # type: ignore
+            generate_flag = inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
                 f"{len(cached_results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
                 default=True,
             ).execute()
@@ -419,7 +419,7 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
 
 @recurse_even
 def generate(
-    generate,
+    generate: Callable[..., None],
     num_papers_threshold: int | None = None,
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
@@ -429,7 +429,7 @@ def generate(
         (2, 6),
         (2, 8),
     ],
-    thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [  # type: ignore
+    thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [  # pyright: ignore[reportArgumentType]
         (3100, 2600),
         2000,
         1700,
@@ -514,12 +514,12 @@ def generate(
         print(
             f"\nIt looks some papers have already been sorted into this taxonomy.\n\n{paper_num_table(topic)}\n"
         )
-        sort_flag = inquirer.confirm(  # type: ignore
+        sort_flag = inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
             f"Would you still like to sort the {len(topic.papers):,} papers under {topic.title}?",
             default=False,
         ).execute()
     else:
-        sort_flag = inquirer.confirm(  # type: ignore
+        sort_flag = inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
             f"Would you like to continue by sorting all {len(topic.papers):,} papers into this taxonomy?",
             default=True,
         ).execute()
@@ -538,7 +538,7 @@ def generate(
 
     if (
         not auto
-        and not inquirer.confirm(  # type: ignore
+        and not inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
             "Would you like to continue generating taxonomies for the subtopics?",
             default=True,
         ).execute()
@@ -565,4 +565,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate(max_depth=4, num_papers_threshold=20)  # type: ignore
+    generate(max_depth=4, num_papers_threshold=20)  # pyright: ignore[reportCallIssue]

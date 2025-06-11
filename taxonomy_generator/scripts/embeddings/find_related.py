@@ -48,8 +48,8 @@ def get_related_topics_off_limits(topic: Topic, parents: list[Topic]) -> list[To
 def get_related(
     topic: Topic,
     parents: list[Topic],
-    sim_threshold=0.793,
-    max_related=5,
+    sim_threshold: float = 0.793,
+    max_related: int = 5,
 ) -> list[tuple[Topic, list[Topic]]]:
     similar_descs: list[str] = [
         s["text"]
@@ -94,8 +94,8 @@ def get_topic_from_desc(
 def analyze_all_related(
     topic: Topic = tree,
     parents: list[Topic] = [],
-    lens: dict = {},
-):
+    lens: dict[int, int] = {},
+) -> dict[int, int]:
     if parents:
         related = get_related(topic, parents)
         lr = len(related)
@@ -126,7 +126,7 @@ def add_all_related(
 ):
     if parents:
         related_with_tids = [(get_tid(*r), *r) for r in get_related(topic, parents)]
-        to_add = []
+        to_add: list[tuple[str, Topic, list[Topic]]] = []
         for rwt in related_with_tids:
             tid = rwt[0]
             added_links[tid] = added_links.get(tid, 0) + 1

@@ -381,7 +381,7 @@ def get_iter_topics_prompt(
     topic: Topic,
     depth: int,
     topics_len_bounds: tuple[int, int],
-    no_overviews=False,
+    no_overviews: bool = False,
 ) -> str:
     title = "the field" if depth == 0 else topic.title
     if first:

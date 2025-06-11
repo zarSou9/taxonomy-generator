@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
+from typing import Any
 
 ORIGIN_PATH = Path("data/tree.json")
 DEST_PATH = Path("map.json")
 
 
-def rename_topics(topic: dict):
+def rename_topics(topic: dict[str, Any]):
     topic["children"] = topic["topics"]
     del topic["topics"]
 

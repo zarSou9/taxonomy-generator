@@ -1,8 +1,10 @@
 from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 from InquirerPy import inquirer
 
+from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.prompts import get_order_papers_prompt
 from taxonomy_generator.scripts.generator.utils import (
@@ -19,7 +21,7 @@ TREE_PATH = Path("data/tree.json")
 def order_papers_for_topic(
     topic: Topic,
     root: Topic,
-) -> Generator[str | None, str | None, list]:
+) -> Generator[str | None, Any, list[Paper]]:
     """Order papers within a topic by relevance using LLM."""
     if len(topic.papers) <= 1:
         return topic.papers
@@ -52,7 +54,7 @@ def order_papers_for_topic(
     paper_map = {paper.title.lower(): paper for paper in topic.papers}
 
     # Reorder papers based on the response
-    ordered_papers = []
+    ordered_papers: list[Paper] = []
 
     # First add papers in the order specified by the LLM
     for title in ordered_titles:
@@ -71,15 +73,15 @@ def order_papers_for_topic(
 def collect_prompts_recursively(
     topic: Topic,
     root: Topic,
-    generators: list,
-    topics: list,
-    prompts: list,
+    generators: list[Any],
+    topics: list[Topic],
+    prompts: list[str],
 ) -> None:
     """Collect prompts from all topics."""
     if len(topic.papers) > 1:
         generator = order_papers_for_topic(topic, root)
         try:
-            prompts.append(next(generator))
+            prompts.append(next(generator))  # pyright: ignore[reportArgumentType]
             generators.append(generator)
             topics.append(topic)
         except StopIteration:
@@ -108,7 +110,7 @@ def order_all_papers(
         return
 
     # Collect all prompts and generators
-    generators: list[Generator[str | None, str | None, list]] = []
+    generators: list[Generator[str | None, Any, list[Paper]]] = []
     topics: list[Topic] = []
     prompts: list[str] = []
     collect_prompts_recursively(root, root, generators, topics, prompts)
@@ -141,7 +143,7 @@ def order_all_papers(
             print(f"Error processing response for {topic.title}: {e}")
 
     # Save updated taxonomy
-    if not inquirer.confirm(  # type: ignore
+    if not inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
         "Would you like to save the result?",
         default=True,
     ).execute():

@@ -1,7 +1,7 @@
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal, TypedDict, overload
+from typing import Literal, TypedDict, cast, overload
 
 from InquirerPy import inquirer
 from tabulate import tabulate
@@ -28,7 +28,7 @@ class Result(TypedDict):
 
 def get_results_data(
     results: list[tuple[list[Topic], EvalResult]],
-    sort=False,
+    sort: bool = False,
 ) -> list[Result]:
     if sort:
         results = sorted(results, key=lambda r: r[1].overall_score, reverse=True)
@@ -120,7 +120,7 @@ def select_topics(results_data: list[Result]) -> list[TopicDict]:
         if displayed_count < len(results_data):
             choices.append({"name": "Show more results", "value": "more"})
 
-        selection = inquirer.select(  # type: ignore
+        selection = inquirer.select(  # pyright: ignore[reportPrivateImportUsage]
             message="Select a set of topics to use:",
             choices=choices,
         ).execute()
@@ -128,10 +128,10 @@ def select_topics(results_data: list[Result]) -> list[TopicDict]:
         if selection == "more":
             displayed_count = display_top_results(results_data, start=displayed_count)
         else:
-            return results_data[selection]["topics"]
+            return cast(list[TopicDict], results_data[selection]["topics"])
 
 
-def paper_num_table(topic: Topic, include_main: bool = True):
+def paper_num_table(topic: Topic, include_main: bool = True) -> str:
     num_all_papers = get_all_papers_len(topic, include_main)
 
     return tabulate(
@@ -171,7 +171,9 @@ def get_parents(
 ) -> Literal[True] | None: ...
 
 
-def get_parents(topic: Topic, root: Topic, parents: list[Topic] | None = None):
+def get_parents(
+    topic: Topic, root: Topic, parents: list[Topic] | None = None
+) -> list[Topic] | Literal[True] | None:
     is_root = False
     if parents is None:
         is_root = True
@@ -210,7 +212,7 @@ def list_titles(topics: list[Topic]):
     return "\n".join(f"- {topic.title}" for topic in topics)
 
 
-def get_all_papers_len(topic: Topic, include_main: bool = True):
+def get_all_papers_len(topic: Topic, include_main: bool = True) -> int:
     return (len(topic.papers) if include_main else 0) + sum(
         get_all_papers_len(sub_topic) for sub_topic in topic.topics
     )

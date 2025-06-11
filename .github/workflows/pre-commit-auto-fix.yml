@@ -57,6 +57,12 @@ jobs:
             echo "$FILES" | xargs poetry run pre-commit run --files || echo "FIXES_NEEDED=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Run basedpyright type checking
+        if: steps.check-previous-commit.outputs.SKIP != 'true'
+        run: |
+          echo "Running basedpyright type checking"
+          poetry run basedpyright || exit 1
+
       - name: Commit and push changes if needed
         if: steps.pre-commit.outputs.FIXES_NEEDED == 'true'
         run: |

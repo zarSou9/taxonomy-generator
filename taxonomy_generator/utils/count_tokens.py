@@ -64,8 +64,8 @@ if not ONE_INPUT_TOKENS or not ONE_INPUT_TOKENS:
 
     response = genai_client.models.generate_content(model=MODEL_ID, contents=PROMPT)
 
-    one_input_tokens: int = response.usage_metadata.prompt_token_count  # type: ignore
-    one_output_tokens: int = response.usage_metadata.candidates_token_count  # type: ignore
+    one_input_tokens: int = response.usage_metadata.prompt_token_count  # pyright: ignore[reportAssignmentType, reportOptionalMemberAccess]
+    one_output_tokens: int = response.usage_metadata.candidates_token_count  # pyright: ignore[reportAssignmentType, reportOptionalMemberAccess]
 
     print("Prompt tokens:", one_input_tokens)
     print("Output tokens:", one_output_tokens)

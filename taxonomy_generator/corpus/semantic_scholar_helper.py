@@ -165,7 +165,7 @@ async def _make_request_async(
                 if json is not None:
                     request_kwargs["json"] = json
 
-                async with method(**request_kwargs) as response:
+                async with method(**request_kwargs) as response:  # pyright: ignore[reportArgumentType]
                     # If rate limited or server error, retry with backoff
                     if response.status in [429, 500, 502, 503, 504]:
                         if attempt < max_retries - 1:
@@ -229,7 +229,7 @@ async def _get_paper_by_title_async(
     if not response or not response.get("data") or not response["data"]:
         return None
 
-    data: dict = response["data"][0]
+    data: dict[str, Any] = response["data"][0]
 
     if id_type == "open_access_pdf_url":
         if not data.get("openAccessPdf") or not data["openAccessPdf"].get("url"):
@@ -263,8 +263,8 @@ async def _get_titles_metadata_async(
     titles: list[str],
     id_type: Literal["open_access_pdf_url", "url"],
     fields: list[str],
-):
-    tasks = []
+) -> list[Any]:
+    tasks: list[Any] = []
     for title in titles:
         tasks.append(_get_paper_by_title_async(title, id_type, fields))
     return await asyncio.gather(*tasks)

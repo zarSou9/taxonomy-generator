@@ -101,6 +101,9 @@ arxiv==2.1.3 ; python_version >= "3.13" and python_version < "4.0" \
 attrs==25.3.0 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:427318ce031701fea540783410126f03899a97ffc6f61596ad581ac2e40e3bc3 \
     --hash=sha256:75d7cefc7fb576747b2c81b4442d4d4a1ce0900973527c011d1030fd3bf4af1b
+basedpyright==1.29.2 ; python_version >= "3.13" and python_version < "4.0" \
+    --hash=sha256:12c49186003b9f69a028615da883ef97035ea2119a9e3f93a00091b3a27088a6 \
+    --hash=sha256:f389e2997de33d038c5065fd85bff351fbdc62fa6d6371c7b947fc3bce8d437d
 cachetools==5.5.2 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4 \
     --hash=sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a
@@ -766,6 +769,16 @@ multidict==6.4.3 ; python_version >= "3.13" and python_version < "4.0" \
 nodeenv==1.9.1 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f \
     --hash=sha256:ba11c9782d29c27c70ffbdda2d7415098754709be8a7056d79a737cd901155c9
+nodejs-wheel-binaries==22.16.0 ; python_version >= "3.13" and python_version < "4.0" \
+    --hash=sha256:2728972d336d436d39ee45988978d8b5d963509e06f063e80fe41b203ee80b28 \
+    --hash=sha256:2fffb4bf1066fb5f660da20819d754f1b424bca1b234ba0f4fa901c52e3975fb \
+    --hash=sha256:447ad796850eb52ca20356ad39b2d296ed8fef3f214921f84a1ccdad49f2eba1 \
+    --hash=sha256:4ae3cf22138891cb44c3ee952862a257ce082b098b29024d7175684a9a77b0c0 \
+    --hash=sha256:71f2de4dc0b64ae43e146897ce811f80ac4f9acfbae6ccf814226282bf4ef174 \
+    --hash=sha256:7f526ca6a132b0caf633566a2a78c6985fe92857e7bfdb37380f76205a10b808 \
+    --hash=sha256:986b715a96ed703f8ce0c15712f76fc42895cf09067d72b6ef29e8b334eccf64 \
+    --hash=sha256:d695832f026df3a0cf9a089d222225939de9d1b67f8f0a353b79f015aabbe7e2 \
+    --hash=sha256:dbfccbcd558d2f142ccf66d8c3a098022bf4436db9525b5b8d32169ce185d99e
 numpy==2.2.4 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:05c076d531e9998e7e694c36e8b349969c56eadd2cdcd07242958489d79a7286 \
     --hash=sha256:0d54974f9cf14acf49c60f0f7f4084b6579d24d439453d5fc5805d46a165b542 \

@@ -3,7 +3,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from google import genai
@@ -27,7 +27,7 @@ loaded_topics = load_embeddings("data/topic_embeddings.json")
 
 
 def generate_embedding(
-    client,
+    client: Any,
     topic: dict[str, Any],
     max_retries: int = 5,
 ) -> dict[str, Any]:
@@ -85,13 +85,13 @@ def generate_embeddings_parallel(
     # Initialize the Gemini client
     client = genai.Client(api_key=api_key)
 
-    topics_with_embeddings = []
+    topics_with_embeddings: list[dict[str, Any]] = []
     processed_count = 0
 
     # Use ThreadPoolExecutor for parallel processing
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create a list of futures
-        futures = []
+        futures: list[concurrent.futures.Future[dict[str, Any]]] = []
         for topic in topics:
             futures.append(executor.submit(generate_embedding, client, topic))
 
@@ -122,7 +122,7 @@ def save_embeddings(
 ) -> None:
     """Save the embeddings to a file."""
     # Convert ContentEmbedding objects to lists or dictionaries
-    serializable_topics = []
+    serializable_topics: list[dict[str, Any]] = []
     for topic in topics_with_embeddings:
         serializable_topic = topic.copy()
         if "embedding" in topic and hasattr(topic["embedding"][0], "values"):
@@ -139,7 +139,7 @@ def save_embeddings(
 
 
 def find_similar_topics(
-    target_embedding: np.ndarray,
+    target_embedding: np.ndarray[Any, Any],
     topics_with_embeddings: list[dict[str, Any]],
     n: int | None = None,
 ) -> list[dict[str, Any]]:
@@ -154,14 +154,18 @@ def find_similar_topics(
         List of topic dictionaries with similarity scores, ordered from most to least similar
     """
     # Filter out topics without embeddings
-    valid_topics = [t for t in topics_with_embeddings if "embedding" in t]
+    valid_topics: list[dict[str, Any]] = [
+        t for t in topics_with_embeddings if "embedding" in t
+    ]
 
     # Compute cosine similarity for each topic
-    similarities = []
+    similarities: list[dict[str, Any]] = []
     for topic in valid_topics:
         # Convert embedding to numpy array if it's a list
         if isinstance(topic["embedding"], list):
-            topic_embedding = np.array(topic["embedding"])
+            topic_embedding: np.ndarray[Any, Any] = np.array(
+                cast(list[Any], topic["embedding"])
+            )
         else:
             topic_embedding = topic["embedding"]
 

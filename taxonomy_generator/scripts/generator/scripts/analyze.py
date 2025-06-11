@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
@@ -82,8 +82,8 @@ def print_total_related():
     print(total_related)
 
 
-def get_num_topics(raw=False) -> dict[int, float]:
-    num_topics = {}
+def get_num_topics(raw: bool = False) -> dict[int, float]:
+    num_topics: dict[int, float] = {}
 
     def _get_num_topics(topic: Topic = tree, depth: int = 0):
         nonlocal num_topics
@@ -99,14 +99,14 @@ def get_num_topics(raw=False) -> dict[int, float]:
     return num_topics if raw else normalize(num_topics)
 
 
-def get_attempt_num_topics(raw=False) -> dict[int, float]:
-    all_num_topics = []
+def get_attempt_num_topics(raw: bool = False) -> dict[int, float]:
+    all_num_topics: list[int] = []
     results_path = Path("data/breakdown_results")
 
     for file in results_path.iterdir():
         all_num_topics.extend([len(t["topics"]) for t in json.loads(file.read_text())])
 
-    num_topics = {}
+    num_topics: dict[int, float] = {}
     for num in all_num_topics:
         num_topics[num] = num_topics.get(num, 0) + 1
 
@@ -123,7 +123,7 @@ def compare_num_topics():
     )
 
 
-def get_descriptions(topic: Topic = tree, descs: list = []):
+def get_descriptions(topic: Topic = tree, descs: list[str] = []) -> list[str]:
     descs.append(topic.description)
     for subtopic in topic.topics:
         get_descriptions(subtopic, descs)
@@ -138,10 +138,10 @@ def save_descriptions():
 
 
 def show_frequency_by_iteration(len_results: int = 6):
-    max_results = {}
+    max_results: dict[int, float] = {}
     for path in Path("data/breakdown_results").iterdir():
         if path.is_file():
-            results = json.loads(path.read_text())
+            results: list[dict[str, Any]] = json.loads(path.read_text())
             if len(results) == len_results:
                 max_idx = max(
                     enumerate(results),
@@ -162,7 +162,7 @@ def show_frequency_by_iteration(len_results: int = 6):
 
 
 def show_avg_score_by_iteration(len_results: int = 6):
-    scores_by_iteration = {}
+    scores_by_iteration: dict[int, float] = {}
     num_results = 0
     for path in Path("data/breakdown_results").iterdir():
         if path.is_file():

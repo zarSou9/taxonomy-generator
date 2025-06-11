@@ -21,7 +21,7 @@ Only respond with either YES or NO depending on whether this paper is an overvie
 """
 
 
-def get_exa_query(topic: Topic, parents: list[Topic]):
+def get_exa_query(topic: Topic, parents: list[Topic]) -> str:
     description = topic.description[0].lower() + topic.description[1:].rstrip(".")
 
     return f"This research paper provides a comprehensive overview of {topic.title} in the context of {get_parents_context(parents)}. The paper covers: {description}. It's published on ArXiv here: "
@@ -30,7 +30,7 @@ def get_exa_query(topic: Topic, parents: list[Topic]):
 def find_overview_papers(
     topic: Topic,
     parents: list[Topic],
-    add_to_corpus=False,
+    add_to_corpus: bool = False,
 ) -> list[Paper]:
     papers = fetch_papers_by_id(search_arxs(get_exa_query(topic, parents)))
 

@@ -14,7 +14,7 @@ T = TypeVar("T")
 R = TypeVar("R")
 D = TypeVar("D")
 P = ParamSpec("P")
-GR = TypeVar("GR", bound=Generator)
+GR = TypeVar("GR", bound=Generator[Any, Any, Any])
 
 
 class Recursor(BaseModel):
@@ -37,12 +37,12 @@ def recurse_even(func: Callable[P, GR]):
             def this_call_child(*args: P.args, **kwargs: P.kwargs):
                 call_child(_current_depth + 1, *args, **kwargs)
 
-            generator = func(this_call_child, *child_args, **child_kwargs)  # type: ignore
+            generator = func(this_call_child, *child_args, **child_kwargs)  # pyright: ignore[reportCallIssue,reportUnknownVariableType]
             recursors.append(
                 Recursor(
-                    gen=generator,
+                    gen=generator,  # pyright: ignore[reportUnknownArgumentType]
                     depth=_current_depth,
-                    complete=next(generator, -1) == -1,
+                    complete=(next(generator, -1) == -1),  # pyright: ignore[reportUnknownArgumentType]
                 )
             )
 
@@ -71,10 +71,10 @@ def cache(cache_filename_override: str | None = None, max_size: int | None = 30)
             with cache_file.open("rb") as f:
                 cache = pickle.load(f)  # noqa: S301
         else:
-            cache = {}
+            cache: dict[str, Any] = {}
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any):
             nonlocal cache
             # Create key from arguments
             key = str(args) + str(sorted(kwargs.items()))
@@ -173,7 +173,7 @@ def unique_str(only_date: bool = False) -> str:
 
 def plot_list(
     data: list[float] | dict[int, float],
-    title="Results",
+    title: str = "Results",
     kind: Literal["line", "bar"] = "line",
     xlabel: str = "X-axis",
     ylabel: str = "Y-axis",
@@ -187,19 +187,21 @@ def plot_list(
 
     match kind:
         case "line":
-            plt.plot(x, y, marker="o")  # marker='o' for dots
+            plt.plot(  # pyright: ignore[reportUnknownMemberType]
+                x,
+                y,
+                marker="o",  # marker='o' for dots
+            )
         case "bar":
-            plt.bar(x, y)
-        case _:
-            raise ValueError(f"Invalid kind: {kind}")
+            plt.bar(x, y)  # pyright: ignore[reportUnknownMemberType]
 
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
+    plt.xlabel(xlabel)  # pyright: ignore[reportUnknownMemberType]
+    plt.ylabel(ylabel)  # pyright: ignore[reportUnknownMemberType]
+    plt.title(title)  # pyright: ignore[reportUnknownMemberType]
 
-    plt.xticks(x)
+    plt.xticks(x)  # pyright: ignore[reportUnknownMemberType]
 
-    plt.show()
+    plt.show()  # pyright: ignore[reportUnknownMemberType]
 
 
 def compare_datas(
@@ -209,7 +211,7 @@ def compare_datas(
     data1_label: str,
     data2_label: str,
 ):
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))  # pyright: ignore[reportUnknownMemberType]
     ax1.bar(data1.keys(), data1.values())
     ax1.set_title(data1_label)
     ax1.set_ylabel(ylabel)
@@ -217,18 +219,18 @@ def compare_datas(
     ax2.set_title(data2_label)
     ax2.set_ylabel(ylabel)
     plt.tight_layout()
-    plt.show()
+    plt.show()  # pyright: ignore[reportUnknownMemberType]
 
     # Plot on same graph
-    plt.figure(figsize=(10, 6))
-    plt.bar(list(data1.keys()), list(data1.values()), alpha=0.7, label=data1_label)
-    plt.bar(list(data2.keys()), list(data2.values()), alpha=0.7, label=data2_label)
-    plt.legend()
-    plt.title("Comparison")
-    plt.xlabel("Number of Topics")
-    plt.ylabel(ylabel)
+    plt.figure(figsize=(10, 6))  # pyright: ignore[reportUnknownMemberType]
+    plt.bar(list(data1.keys()), list(data1.values()), alpha=0.7, label=data1_label)  # pyright: ignore[reportUnknownMemberType]
+    plt.bar(list(data2.keys()), list(data2.values()), alpha=0.7, label=data2_label)  # pyright: ignore[reportUnknownMemberType]
+    plt.legend()  # pyright: ignore[reportUnknownMemberType]
+    plt.title("Comparison")  # pyright: ignore[reportUnknownMemberType]
+    plt.xlabel("Number of Topics")  # pyright: ignore[reportUnknownMemberType]
+    plt.ylabel(ylabel)  # pyright: ignore[reportUnknownMemberType]
     plt.tight_layout()
-    plt.show()
+    plt.show()  # pyright: ignore[reportUnknownMemberType]
 
 
 @overload
@@ -269,16 +271,16 @@ def switch(var: T, options: Iterable[tuple[T, R]], default: object | None = None
 def resolve_all_param(
     param: T | Sequence[T],
     idx: int,
-    iter_type: type[Sequence] = list,
+    iter_type: type[Sequence[Any]] = list,
 ) -> T:
-    return (  # type: ignore
-        (param[idx] if 0 <= idx < len(param) else param[-1])
+    return (  # pyright: ignore[reportReturnType,reportUnknownVariableType]
+        (param[idx] if 0 <= idx < len(param) else param[-1])  # pyright: ignore[reportUnknownArgumentType]
         if isinstance(param, iter_type)
         else param
     )
 
 
-def get_resolve_all_param(idx: int, iter_type: type[Sequence] = list):
+def get_resolve_all_param(idx: int, iter_type: type[Sequence[Any]] = list):
     def resolver(param: T | Sequence[T]) -> T:
         return resolve_all_param(param, idx, iter_type)
 

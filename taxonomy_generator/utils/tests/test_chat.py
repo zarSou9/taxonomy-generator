@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -7,7 +9,7 @@ from taxonomy_generator.utils.llm import Chat
 
 
 @pytest.fixture
-def mock_cache_dir(tmp_path):
+def mock_cache_dir(tmp_path: Path):
     cache_dir = tmp_path / ".chat_cache"
     with patch("taxonomy_generator.utils.llm.CHAT_CACHE_PATH", cache_dir):
         yield cache_dir
@@ -19,7 +21,7 @@ def mock_ask_llm():
         yield ask_llm
 
 
-def test_cache_functionality(mock_ask_llm, mock_cache_dir):
+def test_cache_functionality(mock_ask_llm: Any, mock_cache_dir: Any):
     mock_ask_llm.return_value = "First cached response"
 
     chat1 = Chat(temp=2)
