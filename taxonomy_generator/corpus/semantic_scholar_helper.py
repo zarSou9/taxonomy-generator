@@ -4,29 +4,44 @@ from typing import Any, Literal
 import aiohttp
 
 
+def get_longest_overlap_len(s1: str, s2: str) -> int:
+    m, n = len(s1), len(s2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    max_len = 0
+
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if s1[i - 1] == s2[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+                max_len = max(max_len, dp[i][j])
+
+    return max_len
+
+
 def get_overlap_percent(str1: str, str2: str) -> float:
     """Returns the percentage of the longer string that contains the largest overlapping substring."""
     if not str1 or not str2:
         return 0.0
 
-    longer_len = max(len(str1), len(str2))
+    longest_overlap_len = get_longest_overlap_len(str1, str2)
 
-    def build_suffix_array(s1: str, s2: str):
-        m, n = len(s1), len(s2)
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        max_len = 0
+    longer_str_len = max(len(str1), len(str2))
 
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                if s1[i - 1] == s2[j - 1]:
-                    dp[i][j] = dp[i - 1][j - 1] + 1
-                    max_len = max(max_len, dp[i][j])
+    return longest_overlap_len / longer_str_len
 
-        return max_len
 
-    max_overlap = build_suffix_array(str1, str2)
-
-    return max_overlap / longer_len
+def _get_headers(api_key: str | None = None) -> dict[str, str]:
+    """Get common headers for API requests."""
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Connection": "keep-alive",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+    }
+    if api_key:
+        headers["x-api-key"] = api_key
+    return headers
 
 
 def get_batch_metadata(
@@ -93,8 +108,8 @@ def _fetch_batch(
         (
             {
                 "id": arxiv_id,
-                "title": paper["title"],
-                "abstract": paper["abstract"],
+                "title": paper.get("title"),
+                "abstract": paper.get("abstract"),
                 "published": (
                     f"{paper['publicationDate']}T00:00:00"
                     if paper.get("publicationDate")
@@ -121,20 +136,6 @@ def _make_request(
     return asyncio.run(_make_request_async(url, params, headers, json, timeout))
 
 
-def _get_headers(api_key: str | None = None) -> dict[str, str]:
-    """Get common headers for API requests."""
-    headers = {
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Connection": "keep-alive",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-    }
-    if api_key:
-        headers["x-api-key"] = api_key
-    return headers
-
-
 async def _make_request_async(
     url: str,
     params: dict[str, Any],
@@ -157,7 +158,7 @@ async def _make_request_async(
         try:
             async with aiohttp.ClientSession(timeout=timeout_obj) as session:
                 method = session.post if json is not None else session.get
-                request_kwargs = {
+                request_kwargs: dict[str, Any] = {
                     "url": url,
                     "params": params,
                     "headers": headers,
@@ -165,7 +166,7 @@ async def _make_request_async(
                 if json is not None:
                     request_kwargs["json"] = json
 
-                async with method(**request_kwargs) as response:  # pyright: ignore[reportArgumentType]
+                async with method(**request_kwargs) as response:
                     # If rate limited or server error, retry with backoff
                     if response.status in [429, 500, 502, 503, 504]:
                         if attempt < max_retries - 1:

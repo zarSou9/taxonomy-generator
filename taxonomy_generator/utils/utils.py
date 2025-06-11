@@ -5,7 +5,7 @@ import random
 import time
 from collections.abc import Callable, Generator, Iterable, Sequence
 from pathlib import Path
-from typing import Any, Literal, ParamSpec, TypeVar, overload
+from typing import Any, Literal, ParamSpec, TypeVar, cast, overload
 
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
@@ -15,6 +15,7 @@ R = TypeVar("R")
 D = TypeVar("D")
 P = ParamSpec("P")
 GR = TypeVar("GR", bound=Generator[Any, Any, Any])
+DI = TypeVar("DI", bound=dict[str, Any])
 
 
 class Recursor(BaseModel):
@@ -306,3 +307,7 @@ def save_pydantic(model: BaseModel, path: Path, indent: int | None = 2):
             indent=indent,
         )
     )
+
+
+def clean_dict(d: DI) -> DI:
+    return cast(DI, {k: v for k, v in d.items() if v is not None})
