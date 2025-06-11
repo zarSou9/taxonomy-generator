@@ -285,7 +285,7 @@ def generate_topics(
     depth: int,
     thinking_budget: int | tuple[int],
     topics_len_bounds: tuple[int, int],
-):
+) -> list[Topic]:
     BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
     cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{'' if seed is None else f'_{seed}'}"
     results_file = BREAKDOWN_RESULTS / f"{cache_name}.json"
