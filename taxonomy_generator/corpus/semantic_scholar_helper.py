@@ -1,7 +1,10 @@
 import asyncio
+from collections.abc import Generator
 from typing import Any, Literal
 
 import aiohttp
+
+from taxonomy_generator.corpus.corpus_types import Paper
 
 
 def get_longest_overlap_len(s1: str, s2: str) -> int:
@@ -44,17 +47,17 @@ def _get_headers(api_key: str | None = None) -> dict[str, str]:
     return headers
 
 
-def get_batch_metadata(
-    arxiv_ids: list[str],
+def get_semantic_scholar_metadata(
+    arxiv_ids_or_papers: list[str | Paper] | list[str] | list[Paper],
     api_key: str | None = None,
     fields: str = "title,abstract,publicationDate,citationCount,influentialCitationCount",
-    batch_size: int = 100,
+    batch_size: int = 500,
     timeout: float | None = None,
-) -> list[dict[str, Any] | None]:
+) -> Generator[list[dict[str, Any] | None], Any]:
     """Fetch metadata for a list of arXiv IDs from Semantic Scholar API.
 
     Args:
-        arxiv_ids: List of arXiv IDs to fetch metadata for
+        arxiv_ids_or_papers: List of arXiv IDs or Paper objects to fetch metadata for
         api_key: Optional Semantic Scholar API key
         fields: Comma-separated string of fields to retrieve
         batch_size: Maximum number of papers to request in a single API call
@@ -63,24 +66,22 @@ def get_batch_metadata(
     Returns:
         List of metadata dictionaries or None for papers that weren't found
     """
-    try:
-        headers = _get_headers(api_key)
+    headers = _get_headers(api_key)
 
-        # Split into batches (API limit)
-        batches = [
-            arxiv_ids[i : i + batch_size] for i in range(0, len(arxiv_ids), batch_size)
-        ]
-        all_results: list[dict[str, Any] | None] = []
+    arxiv_ids: list[str] = []
 
-        for batch in batches:
-            batch_results = _fetch_batch(batch, headers, fields, timeout)
-            all_results.extend(batch_results)
+    for id_or_paper in arxiv_ids_or_papers:
+        arxiv_ids.append(
+            id_or_paper.id if isinstance(id_or_paper, Paper) else id_or_paper
+        )
 
-        return all_results
+    # Split into batches (API limit)
+    batches = [
+        arxiv_ids[i : i + batch_size] for i in range(0, len(arxiv_ids), batch_size)
+    ]
 
-    except Exception as error:
-        print(f"Error retrieving batch metadata: {error!s}")
-        return []
+    for batch in batches:
+        yield _fetch_batch(batch, headers, fields, timeout)
 
 
 def _fetch_batch(

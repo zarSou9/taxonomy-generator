@@ -33,6 +33,22 @@ class TermGroups:
     ]
 
 
+def read_papers_jsonl(path: str | Path, not_exists_ok: bool = True) -> list[Paper]:
+    if not_exists_ok and not Path(path).exists():
+        print(f'Corpus file "{path}" does not exist.')
+        return []
+
+    with jsonlines.open(path, mode="r") as reader:  # pyright: ignore[reportUnknownMemberType]
+        return [Paper(**paper) for paper in reader]
+
+
+def write_papers_jsonl(path: str | Path, papers: list[Paper], append: bool = False):
+    mode = "a" if append else "w"
+    with jsonlines.open(path, mode=mode) as writer:  # pyright: ignore[reportUnknownMemberType]
+        for paper in papers:
+            writer.write(paper.model_dump(exclude_defaults=True))
+
+
 class Corpus:
     def __init__(
         self,
@@ -51,11 +67,7 @@ class Corpus:
         )
 
     def _load_papers(self) -> list[Paper]:
-        try:
-            with jsonlines.open(self.corpus_path, mode="r") as reader:  # pyright: ignore[reportUnknownMemberType]
-                return [Paper(**paper) for paper in reader]
-        except FileNotFoundError:
-            return []
+        return read_papers_jsonl(self.corpus_path, not_exists_ok=True)
 
     def get_random_sample(self, n: int = 1, seed: int | None = None) -> list[Paper]:
         return random_sample(self.papers, n, seed)
@@ -266,9 +278,7 @@ class Corpus:
         return papers_removed
 
     def save(self, path_override: str | None = None):
-        with jsonlines.open(path_override or self.corpus_path, mode="w") as writer:  # pyright: ignore[reportUnknownMemberType]
-            for paper in self.papers:
-                writer.write(paper.model_dump(exclude_defaults=True))
+        write_papers_jsonl(path_override or self.corpus_path, self.papers)
 
     def set_papers(self, papers: list[Paper] | None = None, save: bool = True):
         if papers is not None:

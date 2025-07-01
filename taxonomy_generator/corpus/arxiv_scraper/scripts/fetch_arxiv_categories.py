@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Any
 
 import arxiv
-import jsonlines
 
 from taxonomy_generator.corpus.arxiv_helper import extract_paper_info
+from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
 from taxonomy_generator.corpus.corpus_types import Paper
 
 
@@ -15,29 +15,6 @@ def save_progress(progress_file: Path, progress: dict[str, Any]) -> None:
     progress["last_update"] = datetime.now().isoformat()
     with open(progress_file, "w") as f:
         json.dump(progress, f, indent=2)
-
-
-def save_papers_batch(
-    papers_file: Path, papers: list[Paper], append: bool = True
-) -> None:
-    """Save a batch of papers to the JSONL file."""
-    mode = "a" if append else "w"
-    with jsonlines.open(papers_file, mode=mode) as writer:  # pyright: ignore[reportUnknownMemberType]
-        for paper in papers:
-            writer.write(paper.model_dump(exclude_defaults=True))
-
-
-def load_existing_papers(papers_file: Path) -> list[Paper]:
-    """Load papers from existing JSONL file."""
-    if not papers_file.exists():
-        return []
-
-    papers: list[Paper] = []
-    with jsonlines.open(papers_file, mode="r") as reader:  # pyright: ignore[reportUnknownMemberType]
-        for paper_data in reader:
-            papers.append(Paper(**paper_data))
-
-    return papers
 
 
 def fetch_arxiv_category(
@@ -92,7 +69,7 @@ def fetch_arxiv_category(
             f"Category '{category}' already completed. Found {progress['total_fetched']} papers."
         )
         print("Delete the progress file to start over, or load existing papers.")
-        return load_existing_papers(papers_file)
+        return read_papers_jsonl(papers_file)
 
     # Initialize progress
     if progress["start_time"] is None:
@@ -117,7 +94,7 @@ def fetch_arxiv_category(
         last_month = progress.get("last_month")
         current_month = int(last_month) if last_month is not None else 1
         # Load existing papers
-        all_papers = load_existing_papers(papers_file)
+        all_papers = read_papers_jsonl(papers_file)
 
     print(f"Starting fetch from {current_year}-{current_month:02d}")
 
@@ -153,7 +130,7 @@ def fetch_arxiv_category(
             print(
                 f"Found {len(month_papers)} papers for {current_year}-{current_month:02d}"
             )
-            save_papers_batch(papers_file, month_papers, append=len(all_papers) > 0)
+            write_papers_jsonl(papers_file, month_papers, append=len(all_papers) > 0)
             all_papers.extend(month_papers)
 
             # Update progress
@@ -203,9 +180,7 @@ def get_fetch_status(
         with open(progress_file) as f:
             progress = json.load(f)
 
-    existing_papers = (
-        len(load_existing_papers(papers_file)) if papers_file.exists() else 0
-    )
+    existing_papers = len(read_papers_jsonl(papers_file))
 
     return {
         "category": category,

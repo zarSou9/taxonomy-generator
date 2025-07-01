@@ -100,44 +100,52 @@ def parse_physics_section(accordion_body: Tag) -> dict[str, Any]:
     section_data: dict[str, Any] = {}
 
     # Physics section has subsections like "Astrophysics", "Condensed Matter", etc.
-    # Some categories are directly under h4, others are under subsection h3 elements
+    # Categories are nested under these subsections with h3 headers
 
-    # First, find all h4 elements that contain category codes directly
-    category_entries = accordion_body.find_all("h4")
+    # Find all physics subsection containers (div elements with class "physics columns")
+    physics_subsections = accordion_body.find_all("div", class_="physics columns")
 
-    for entry in category_entries:
-        if not isinstance(entry, Tag):
+    for subsection in physics_subsections:
+        if not isinstance(subsection, Tag):
             continue
 
-        entry_text = entry.get_text().strip()
+        # Find all h4 elements containing category codes within this subsection
+        category_entries = subsection.find_all("h4")
 
-        # Match various physics category patterns
-        patterns = [
-            r"^([a-z-]+\.[A-Z-]+)\s*\(([^)]+)\)",  # Standard pattern
-            r"^([a-z-]+)\s*\(([^)]+)\)",  # Single word categories like "quant-ph"
-        ]
+        for entry in category_entries:
+            if not isinstance(entry, Tag):
+                continue
 
-        for pattern in patterns:
-            match = re.match(pattern, entry_text)
-            if match:
-                category_code = match.group(1)
-                category_name = match.group(2)
+            entry_text = entry.get_text().strip()
 
-                # Find the description
-                description = ""
-                parent_columns = entry.find_parent("div", class_="columns")
-                if parent_columns and isinstance(parent_columns, Tag):
-                    columns = parent_columns.find_all("div", class_="column")
-                    if len(columns) >= 2 and isinstance(columns[1], Tag):
-                        desc_p = columns[1].find("p")  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
-                        if desc_p and isinstance(desc_p, Tag):
-                            description = clean_description(desc_p.get_text())
+            # Match various physics category patterns
+            patterns = [
+                r"^([a-z-]+\.[a-z-]+)\s*\(([^)]+)\)",  # Pattern for categories with hyphens like "cond-mat.dis-nn" or "physics.acc-ph"
+                r"^([a-z-]+\.[A-Z-]+)\s*\(([^)]+)\)",  # Standard pattern like "astro-ph.CO"
+                r"^([a-z-]+)\s*\(([^)]+)\)",  # Single word categories like "quant-ph"
+            ]
 
-                section_data[category_code] = {
-                    "name": category_name,
-                    "description": description,
-                }
-                break
+            for pattern in patterns:
+                match = re.match(pattern, entry_text)
+                if match:
+                    category_code = match.group(1)
+                    category_name = match.group(2)
+
+                    # Find the description
+                    description = ""
+                    parent_columns = entry.find_parent("div", class_="columns")
+                    if parent_columns and isinstance(parent_columns, Tag):
+                        columns = parent_columns.find_all("div", class_="column")
+                        if len(columns) >= 2 and isinstance(columns[1], Tag):
+                            desc_p = columns[1].find("p")  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue, reportUnknownVariableType]
+                            if desc_p and isinstance(desc_p, Tag):
+                                description = clean_description(desc_p.get_text())
+
+                    section_data[category_code] = {
+                        "name": category_name,
+                        "description": description,
+                    }
+                    break
 
     return section_data
 
@@ -175,4 +183,6 @@ def convert_arxiv_html_to_json(html_file_path: str, output_json_path: str) -> No
 
 if __name__ == "__main__":
     # Convert the arXiv categories HTML to JSON
-    convert_arxiv_html_to_json("arxiv_cats.html", "arxiv_categories.json")
+    convert_arxiv_html_to_json(
+        "data/arxiv/arxiv_categories.html", "arxiv_categories.json"
+    )

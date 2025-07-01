@@ -14,3 +14,4 @@ class Paper(BaseModel):
     published: str
     summary: Summary
     source: Literal["arxiv", "alignmentforum", "lesswrong"] = "arxiv"
+    citation_count: int | None = None
