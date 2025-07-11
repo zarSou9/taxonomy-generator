@@ -1,15 +1,14 @@
 import json
 import random
-from pathlib import Path
 
+from taxonomy_generator.config import (
+    ARXIV_ALL_PAPERS_FORMAT,
+    ARXIV_FILTERED_PAPERS_FORMAT,
+    CATEGORY,
+    CORPUS_CUTOFFS_PATH,
+)
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
 from taxonomy_generator.corpus.corpus_types import Paper
-
-CORPUS_CUTOFFS_PATH = Path(
-    "taxonomy_generator/corpus/arxiv_scraper/category_metadata/corpus_cuttofs.json"
-)
-ARXIV_ALL_PAPERS_FORMAT = "data/arxiv/categories/{category}_papers.jsonl"
-ARXIV_FILTERED_PAPERS_FORMAT = "data/arxiv/categories/{category}_filtered_papers.jsonl"
 
 
 def get_manual_cutoffs(category: str) -> dict[int, int]:
@@ -37,7 +36,7 @@ def get_manual_cutoffs(category: str) -> dict[int, int]:
 def filter_arxiv_papers(category: str) -> list[Paper]:
     manual_cutoffs = get_manual_cutoffs(category)
 
-    papers = read_papers_jsonl(ARXIV_ALL_PAPERS_FORMAT.format(category=category))
+    papers = read_papers_jsonl(ARXIV_ALL_PAPERS_FORMAT.format(category))
 
     print(f"Filtering {len(papers)} papers for {category}")
     filtered_papers: list[Paper] = []
@@ -60,7 +59,6 @@ def print_some_papers(papers: list[Paper]):
 
 
 if __name__ == "__main__":
-    category = "hep-th"
-    papers = filter_arxiv_papers(category)
+    papers = filter_arxiv_papers(CATEGORY)
 
-    write_papers_jsonl(ARXIV_FILTERED_PAPERS_FORMAT.format(category=category), papers)
+    write_papers_jsonl(ARXIV_FILTERED_PAPERS_FORMAT.format(CATEGORY), papers)

@@ -394,14 +394,17 @@
     },
     "hep-lat": {
       "name": "High Energy Physics - Lattice",
+      "name_override": "Lattice Field Theory",
       "description": "Lattice field theory. Phenomenology from lattice field theory. Algorithms for lattice field theory. Hardware for lattice field theory."
     },
     "hep-ph": {
       "name": "High Energy Physics - Phenomenology",
+      "name_override": "Phenomenological High Energy Physics",
       "description": "Theoretical particle physics and its interrelation with experiment. Prediction of particle physics observables: models, effective field theories, calculation techniques. Particle physics: analysis of theory through experimental results."
     },
     "hep-th": {
       "name": "High Energy Physics - Theory",
+      "name_override": "Theoretical High Energy Physics",
       "description": "Formal aspects of quantum field theory. String theory, supersymmetry and supergravity."
     },
     "math-ph": {

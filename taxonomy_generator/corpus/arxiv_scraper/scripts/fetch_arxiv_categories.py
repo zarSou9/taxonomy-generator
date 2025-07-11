@@ -5,6 +5,11 @@ from typing import Any
 
 import arxiv
 
+from taxonomy_generator.config import (
+    ARXIV_ALL_PAPERS_FORMAT,
+    ARXIV_ALL_PAPERS_PROGRESS_FORMAT,
+    CATEGORY,
+)
 from taxonomy_generator.corpus.arxiv_helper import extract_paper_info
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
 from taxonomy_generator.corpus.corpus_types import Paper
@@ -19,7 +24,6 @@ def save_progress(progress_file: Path, progress: dict[str, Any]) -> None:
 
 def fetch_arxiv_category(
     category: str,
-    output_dir: str = "data/arxiv/categories",
     batch_size: int = 1000,
     delay_seconds: float = 3.0,
     max_retries: int = 5,
@@ -38,12 +42,8 @@ def fetch_arxiv_category(
     Returns:
         List of Paper objects
     """
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    # File paths
-    papers_file = output_path / f"{category}_papers.jsonl"
-    progress_file = output_path / f"{category}_progress.json"
+    papers_file = Path(ARXIV_ALL_PAPERS_FORMAT.format(category))
+    progress_file = Path(ARXIV_ALL_PAPERS_PROGRESS_FORMAT.format(category))
 
     # Initialize arXiv client
     client = arxiv.Client(
@@ -167,13 +167,10 @@ def fetch_arxiv_category(
     return all_papers
 
 
-def get_fetch_status(
-    category: str, output_dir: str = "data/arxiv/categories"
-) -> dict[str, Any]:
+def get_fetch_status(category: str) -> dict[str, Any]:
     """Get current status of the fetching process."""
-    output_path = Path(output_dir)
-    papers_file = output_path / f"{category}_papers.jsonl"
-    progress_file = output_path / f"{category}_progress.json"
+    papers_file = Path(ARXIV_ALL_PAPERS_FORMAT.format(category))
+    progress_file = Path(ARXIV_ALL_PAPERS_PROGRESS_FORMAT.format(category))
 
     progress = {"total_fetched": 0, "completed": False}
     if progress_file.exists():
@@ -187,7 +184,6 @@ def get_fetch_status(
         "progress": progress,
         "papers_file_exists": papers_file.exists(),
         "papers_in_file": existing_papers,
-        "output_dir": str(output_path),
     }
 
 
@@ -198,13 +194,10 @@ if __name__ == "__main__":
     print("The script will save progress and can be resumed if interrupted.")
     print()
 
-    category = "hep-th"
-
     # Check current status first
     print("Checking current status...")
-    status = get_fetch_status(category)
+    status = get_fetch_status(CATEGORY)
     print(f"Category: {status['category']}")
-    print(f"Output directory: {status['output_dir']}")
     print(f"Papers file exists: {status['papers_file_exists']}")
     print(f"Papers already fetched: {status['papers_in_file']}")
     print()
@@ -222,8 +215,7 @@ if __name__ == "__main__":
         # Start or resume fetching
         try:
             papers = fetch_arxiv_category(
-                category=category,
-                output_dir="data/arxiv/categories",
+                category=CATEGORY,
                 start_year=1991,
                 batch_size=2000,
                 delay_seconds=2.0,

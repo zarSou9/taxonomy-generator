@@ -1,10 +1,15 @@
 import json
 from collections.abc import Callable, Iterable
-from pathlib import Path
 from typing import cast
 
 from InquirerPy import inquirer
 
+from taxonomy_generator.config import (
+    BREAKDOWN_RESULTS_PATH,
+    DESCRIPTION,
+    FIELD,
+    TREE_PATH,
+)
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import (
@@ -53,11 +58,6 @@ from taxonomy_generator.utils.utils import (
     switch,
     unique_str,
 )
-
-FIELD = "AI safety"
-DESCRIPTION = "AI safety is a field focused on preventing harm caused by unintended consequences of AI systems, ensuring they align with human values and operate reliably."
-TREE_PATH = Path("data/tree.json")
-BREAKDOWN_RESULTS = Path("data/breakdown_results")
 
 
 @cache(max_size=5)
@@ -286,9 +286,9 @@ def generate_topics(
     thinking_budget: int | tuple[int],
     topics_len_bounds: tuple[int, int],
 ) -> list[Topic]:
-    BREAKDOWN_RESULTS.mkdir(parents=True, exist_ok=True)
+    BREAKDOWN_RESULTS_PATH.mkdir(parents=True, exist_ok=True)
     cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{'' if seed is None else f'_{seed}'}"
-    results_file = BREAKDOWN_RESULTS / f"{cache_name}.json"
+    results_file = BREAKDOWN_RESULTS_PATH / f"{cache_name}.json"
 
     cached_results: list[Result] = []
     gen_results: list[Result] = []

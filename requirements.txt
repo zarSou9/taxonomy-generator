@@ -278,12 +278,17 @@ contourpy==1.3.2 ; python_version >= "3.13" and python_version < "4.0" \
 cycler==0.12.1 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30 \
     --hash=sha256:88bb128f02ba341da8ef447245a9e138fae777f6a23943da4540077d3601eb1c
+diskcache==5.6.3 ; python_version >= "3.13" and python_version < "4.0" \
+    --hash=sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc \
+    --hash=sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19
 distlib==0.3.9 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87 \
     --hash=sha256:a60f20dea646b8a33f3e7772f74dc0b2d0772d2837ee1342a00645c81edf9403
 distro==1.9.0 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed \
     --hash=sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2
+dotenv==0.9.9 ; python_version >= "3.13" and python_version < "4.0" \
+    --hash=sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9
 exa-py==1.14.16 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:6404775afe9eac83fdfb8cdf558f5206164c5550e54de90502a05fe96646c508 \
     --hash=sha256:9774a5fe4113d1e4fc51cea1cfb1ae633cfcaf39d388dc54bd10b731a9524587
@@ -1232,6 +1237,9 @@ pytest==8.4.1 ; python_version >= "3.13" and python_version < "4.0" \
 python-dateutil==2.9.0.post0 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
+python-dotenv==1.1.1 ; python_version >= "3.13" and python_version < "4.0" \
+    --hash=sha256:31f23644fe2602f88ff55e1f5c79ba497e01224ee7737937930c448e4d0e24dc \
+    --hash=sha256:a8a6399716257f45be6a007360200409fce5cda2661e3dec71d23dc15f6189ab
 pytz==2025.2 ; python_version >= "3.13" and python_version < "4.0" \
     --hash=sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3 \
     --hash=sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00

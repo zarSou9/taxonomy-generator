@@ -1,6 +1,7 @@
+from taxonomy_generator.config import CORPUS_PATH
 from taxonomy_generator.corpus.corpus import Corpus
 
-corpus = Corpus("data/ai_safety_corpus.jsonl")
+corpus = Corpus(CORPUS_PATH)
 
 
 if __name__ == "__main__":

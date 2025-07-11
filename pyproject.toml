@@ -23,6 +23,8 @@ dependencies = [
     "aiohttp (>=3.11.18,<4.0.0)",
     "basedpyright (>=1.29.2,<2.0.0)",
     "beautifulsoup4 (>=4.13.4,<5.0.0)",
+    "diskcache (>=5.6.3,<6.0.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
 ]
 
 
@@ -38,14 +40,15 @@ poetry-plugin-export = ">=1.8"
 [tool.ruff]
 [tool.ruff.lint]
 ignore = [
-    "D10",  # Require docstrings for all public methods
-    "E501", # Line too long
-    "N816", # Global variable should be snake_case (prevents acronyms)
-    "N999", # Module variable should be snake_case (prevents acronyms)
-    "S101", # Use of assert detected (needed for testing)
-    "S311", # Pseudo-random generators not suitable for cryptographic purposes (not our use case)
-    "B006", # Mutable parameter defaults
-    "C901", # Complex functions
+    "D10",   # Require docstrings for all public methods
+    "E501",  # Line too long
+    "N816",  # Global variable should be snake_case (prevents acronyms)
+    "N999",  # Module variable should be snake_case (prevents acronyms)
+    "S101",  # Use of assert detected (needed for testing)
+    "S311",  # Pseudo-random generators not suitable for cryptographic purposes (not our use case)
+    "B006",  # Mutable parameter defaults
+    "C901",  # Complex functions
+    "UP047", # Use type parameters
 ]
 select = [
     "A",      # flake8-builtins (detects use of python builtins)

@@ -3,8 +3,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 
+from taxonomy_generator.config import ARXIV_ALL_PAPERS_FORMAT, CATEGORY
 from taxonomy_generator.corpus.arxiv_scraper.scripts.filter_arxiv_papers import (
-    ARXIV_ALL_PAPERS_FORMAT,
     get_manual_cutoffs,
 )
 from taxonomy_generator.corpus.corpus import read_papers_jsonl
@@ -239,13 +239,11 @@ def visualize_cutoff_strategy(
 
 
 if __name__ == "__main__":
-    category = "hep-th"
-
     # First, show the basic citation analysis
     print("Analyzing citation patterns by year...")
     papers_by_year = analyze_citation_counts_by_year(
-        ARXIV_ALL_PAPERS_FORMAT.format(category=category)
+        ARXIV_ALL_PAPERS_FORMAT.format(CATEGORY)
     )
 
     # Then analyze different cutoff strategies (includes visualization for each)
-    analyze_citation_cutoffs(papers_by_year, category, target_total=5000)
+    analyze_citation_cutoffs(papers_by_year, CATEGORY, target_total=5000)
