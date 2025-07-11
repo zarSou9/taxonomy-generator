@@ -3,10 +3,16 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 
+from taxonomy_generator.corpus.arxiv_scraper.scripts.filter_arxiv_papers import (
+    ARXIV_ALL_PAPERS_FORMAT,
+    get_manual_cutoffs,
+)
 from taxonomy_generator.corpus.corpus import read_papers_jsonl
 
 
-def analyze_citation_counts_by_year(corpus_path: str, plot: bool = False):
+def analyze_citation_counts_by_year(
+    corpus_path: str, plot: bool = False
+) -> defaultdict[int, list[int]]:
     papers = read_papers_jsonl(corpus_path)
 
     # Group papers by year
@@ -83,39 +89,14 @@ def analyze_citation_counts_by_year(corpus_path: str, plot: bool = False):
     return papers_by_year
 
 
-def get_manual_cutoffs(year_start: int = 1991, year_end: int = 2025) -> dict[int, int]:
-    manual_cutoffs: dict[int, int] = {}
-
-    cutoff_sections: dict[int, int] = {
-        0: 1,
-        1: 4,
-        3: 20,
-        5: 60,
-        7: 100,
-        10: 140,
-        15: 200,
-        -1: 250,
-    }
-
-    for years_ago in range(year_end - year_start + 1):
-        manual_cutoffs[year_end - years_ago] = cutoff_sections[-1]
-        for k, v in cutoff_sections.items():
-            if years_ago <= k:
-                manual_cutoffs[year_end - years_ago] = v
-                break
-
-    print(manual_cutoffs)
-
-    return manual_cutoffs
-
-
 def analyze_citation_cutoffs(
-    papers_by_year: dict[int, list[int]], target_total: int = 5000
+    papers_by_year: dict[int, list[int]], category: str, target_total: int = 5000
 ):
     """Analyze different citation cutoff strategies to reach a target corpus size.
 
     Args:
         papers_by_year: Dictionary mapping year to list of citation counts
+        category: Category of the corpus
         target_total: Target total number of papers in final corpus
     """
     years = sorted(papers_by_year.keys())
@@ -135,7 +116,7 @@ def analyze_citation_cutoffs(
         # },
         # "Uniform Cutoff (5)": dict.fromkeys(years, 5),
         # "Uniform Cutoff (10)": dict.fromkeys(years, 10),
-        "Manual (Graduated)": get_manual_cutoffs(),
+        "Manual (Graduated)": get_manual_cutoffs(category),
     }
 
     print("\n" + "=" * 80)
@@ -258,11 +239,13 @@ def visualize_cutoff_strategy(
 
 
 if __name__ == "__main__":
-    corpus_path = "data/arxiv/categories/hep-th_papers.jsonl"
+    category = "hep-th"
 
     # First, show the basic citation analysis
     print("Analyzing citation patterns by year...")
-    papers_by_year = analyze_citation_counts_by_year(corpus_path)
+    papers_by_year = analyze_citation_counts_by_year(
+        ARXIV_ALL_PAPERS_FORMAT.format(category=category)
+    )
 
     # Then analyze different cutoff strategies (includes visualization for each)
-    analyze_citation_cutoffs(papers_by_year, target_total=5000)
+    analyze_citation_cutoffs(papers_by_year, category, target_total=5000)
