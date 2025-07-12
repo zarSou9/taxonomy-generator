@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable
+from functools import reduce
 from pathlib import Path
 from typing import Literal, TypedDict, cast, overload
 
@@ -187,7 +188,7 @@ def get_parents(
         return list(reversed(parents)) if is_root else True
 
 
-def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
+def topic_breadcrumbs(topic: Topic, parents: list[Topic]) -> str:
     return (
         f"{' -> '.join(t.title for t in parents)} -> *{topic.title}*"
         if parents
@@ -195,7 +196,7 @@ def topic_breadcrumbs(topic: Topic, parents: list[Topic]):
     )
 
 
-def get_parents_context(parents: list[Topic]):
+def get_parents_context(parents: list[Topic]) -> str:
     ptitles = [p.title for p in parents]
     match len(ptitles):
         case 1:
@@ -208,7 +209,7 @@ def get_parents_context(parents: list[Topic]):
             return f"{' under '.join(reversed(ptitles[2:]))} as a part of {ptitles[1]} in the field of {ptitles[0]}"
 
 
-def list_titles(topics: list[Topic]):
+def list_titles(topics: list[Topic]) -> str:
     return "\n".join(f"- {topic.title}" for topic in topics)
 
 
@@ -218,11 +219,11 @@ def get_all_papers_len(topic: Topic, include_main: bool = True) -> int:
     )
 
 
-def format_index(idx: int | str):
+def format_index(idx: int | str) -> str:
     return f".{idx}." if int(idx) > 9 else str(idx)
 
 
-def get_tid(topic: Topic, parents: list[Topic]):
+def get_tid(topic: Topic, parents: list[Topic]) -> str:
     tid = "0"
     for pi, t in enumerate(parents):
         tid += "0"
@@ -232,3 +233,67 @@ def get_tid(topic: Topic, parents: list[Topic]):
                 break
 
     return tid
+
+
+def get_all_children_by_depth(
+    topic: Topic, children_by_depth: list[list[Topic]] | None = None, depth: int = 0
+) -> list[list[Topic]]:
+    if not children_by_depth:
+        children_by_depth = []
+
+    if len(children_by_depth) > depth:
+        children_by_depth[depth].append(topic)
+    else:
+        children_by_depth.append([topic])
+
+    for child in topic.topics:
+        get_all_children_by_depth(child, children_by_depth, depth + 1)
+
+    return children_by_depth
+
+
+def get_relevant_topics_ordered(topic: Topic, root: Topic) -> list[Topic]:
+    parents = get_parents(topic, root)
+    if not parents:
+        raise ValueError("Invalid parents")
+    relevant_topics_by_depth: list[list[Topic]] = []
+
+    for i, ancestor in enumerate(reversed(parents + [topic])):
+        children_by_depth = get_all_children_by_depth(ancestor)
+
+        for k, children in enumerate(children_by_depth):
+            idx = i - k
+            if len(relevant_topics_by_depth) <= idx:
+                relevant_topics_by_depth.append([])
+            this_relevant_topics = relevant_topics_by_depth[idx]
+            for child in children:
+                if child not in this_relevant_topics:
+                    this_relevant_topics.append(child)
+
+    relevant_topics = reduce(lambda a, b: a + b, relevant_topics_by_depth)
+    return list(reversed(relevant_topics))
+
+
+def calculate_ema(topics: list[Topic], alpha: float = 0.08) -> float | None:
+    ema: float | None = None
+    for topic in topics:
+        for score in topic.scores:
+            if ema is None:
+                ema = score
+            else:
+                ema = score * alpha + ema * (1 - alpha)
+    return ema
+
+
+def get_random_topic_at_depth(
+    topic: Topic,
+    desired_depth: int,
+    depth: int = 0,
+) -> Topic | None:
+    if depth == desired_depth:
+        return topic
+    for child in topic.topics:
+        result = get_random_topic_at_depth(child, desired_depth, depth + 1)
+        if result:
+            return result
+    return None

@@ -13,6 +13,8 @@ class Topic(BaseModel):
     papers: list[Paper] = []
     topics: list["Topic"] = []
     links: list[Link] = []
+    scores: list[float] = []
+    final_score: float | None = None
 
 
 class TopicsFeedback(BaseModel):
