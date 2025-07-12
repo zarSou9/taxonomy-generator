@@ -9,8 +9,8 @@ load_dotenv()
 # Arxiv
 USE_ARXIV = getenv("USE_ARXIV") == "True"
 
-CATEGORY = getenv("CATEGORY")
-if USE_ARXIV and not CATEGORY:
+CATEGORY = getenv("CATEGORY", "NOTSET")
+if CATEGORY == "NOTSET":
     raise ValueError("CATEGORY is not set")
 ARXIV_ALL_PAPERS_FORMAT = getenv(
     "ARXIV_ALL_PAPERS_FORMAT", "data/arxiv/categories/{}/papers.jsonl"

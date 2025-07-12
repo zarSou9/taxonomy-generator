@@ -11,7 +11,13 @@ from anthropic.types import Message as AntMessage
 from google import genai
 from google.genai.chats import Chat as GenaiChat
 from google.genai.types import Content as GContent
-from google.genai.types import GenerateContentConfig, GoogleSearch, Part, Tool
+from google.genai.types import (
+    ContentOrDict,
+    GenerateContentConfig,
+    GoogleSearch,
+    Part,
+    Tool,
+)
 from tqdm import tqdm
 
 from taxonomy_generator.utils.utils import cap_words, log
@@ -287,7 +293,10 @@ def ask_llm(
                     history=(
                         None
                         if isinstance(history, str)
-                        else convert_to_google_messages(history[:-1])
+                        else cast(
+                            list[ContentOrDict],
+                            convert_to_google_messages(history[:-1]),
+                        )
                     ),
                 )
 
