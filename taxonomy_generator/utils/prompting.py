@@ -21,7 +21,7 @@ def clean_prompt(prompt: str, is_exa_query: bool = False) -> str:
     return prompt
 
 
-def fps(module_globals: dict[str, Any]) -> None:
+def fps(module_globals: dict[str, Any]):
     for key, value in module_globals.items():
         if isinstance(value, str) and key.isupper():
             module_globals[key] = clean_prompt(

@@ -28,10 +28,11 @@ from taxonomy_generator.scripts.generator.prompts import (
 )
 from taxonomy_generator.scripts.generator.sorter import sort_papers
 from taxonomy_generator.scripts.generator.utils import (
+    InvalidResult,
     Result,
     get_all_papers_len,
     get_parents,
-    get_results_data,
+    get_score_to_beat,
     paper_num_table,
     resolve_topic,
     resolve_topics,
@@ -56,7 +57,6 @@ from taxonomy_generator.utils.utils import (
     resolve_all_param,
     save_pydantic,
     switch,
-    unique_str,
 )
 
 
@@ -274,12 +274,14 @@ def evaluate_topics(
 def generate_topics(
     topic: Topic,
     parents: list[Topic],
-    num_iterations: int,
+    min_iterations: int,
+    max_iterations: int,
+    score_better_than_perc: float,
     init_sample_len: int,
     sort_sample_len: int,
     find_overviews: bool,
     calculate_overall_score: Callable[[EvalScores, int], float],
-    epochs: int,
+    max_epochs: int,
     seed: int | None,
     auto: bool,
     depth: int,
@@ -287,31 +289,31 @@ def generate_topics(
     topics_len_bounds: tuple[int, int],
 ) -> list[Topic]:
     BREAKDOWN_RESULTS_PATH.mkdir(parents=True, exist_ok=True)
-    cache_name = f"{topic.title.replace(' ', '_')}_{unique_str(only_date=True)}{'' if seed is None else f'_{seed}'}"
+    cache_name = f"{topic.title.replace(' ', '-')}{'' if seed is None else f'_{seed}'}"
     results_file = BREAKDOWN_RESULTS_PATH / f"{cache_name}.json"
 
-    cached_results: list[Result] = []
-    gen_results: list[Result] = []
+    results: list[Result | InvalidResult] = []
     generate_flag = True
 
     print()
 
     if results_file.exists():
         try:
-            cached_results = json.loads(results_file.read_text())
+            results = json.loads(results_file.read_text())
         except json.JSONDecodeError:
             print(f"Error parsing cached results file for {topic.title}")
 
-        if cached_results and not auto:
+        if results and not auto:
             generate_flag = inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
-                f"{len(cached_results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
+                f"{len(results)} cached results already exist for {topic.title}. Would you still like to generate more results?",
                 default=True,
             ).execute()
 
     if generate_flag:
-        results: list[tuple[list[Topic], EvalResult]] = []
-
-        for epoch in range(epochs):
+        epoch = 0
+        while epoch < max_epochs:
+            score_to_beat = get_score_to_beat(topic, parents, score_better_than_perc)
+            print(f"Score to beat: {score_to_beat:.2f}")
             epoch_seed = None if seed is None else seed + epoch
             epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
@@ -323,9 +325,9 @@ def generate_topics(
                 thinking_budget=epoch_thinking_budget,
             )
             eval_result: EvalResult | None = None
-            topics: list[Topic] | None = None
 
-            for i in range(num_iterations):
+            iteration = cast(int, 0)
+            while iteration < max_iterations:  # Iteration loop
                 if not eval_result:
                     prompt = get_init_topics_prompt(
                         topic,
@@ -338,7 +340,7 @@ def generate_topics(
                 else:
                     prompt = get_iter_topics_prompt(
                         eval_result,
-                        first=(i == 1),
+                        first=(iteration == 1),
                         topic=topic,
                         depth=depth,
                         topics_len_bounds=topics_len_bounds,
@@ -355,7 +357,7 @@ def generate_topics(
                     calculate_overall_score,
                     depth=depth,
                     parents=parents,
-                    sample_seed=None if epoch_seed is None else epoch_seed + i,
+                    sample_seed=None if epoch_seed is None else epoch_seed + iteration,
                     no_overviews=not find_overviews,
                 )
 
@@ -370,39 +372,97 @@ def generate_topics(
                     )
                 print("--------------------------------")
 
-                if not eval_result.invalid:
-                    results.append((topics, eval_result))
-
-                    gen_results = get_results_data(results)
-
-                    results_file.write_text(
-                        json.dumps(
-                            cached_results + gen_results, indent=2, ensure_ascii=False
-                        ),
+                if eval_result.invalid:
+                    results.append(
+                        {
+                            "valid": False,
+                            "epoch": epoch,
+                            "iteration": iteration,
+                            "invalid_reason": eval_result.invalid_reason,
+                            "topics": [
+                                {
+                                    "title": topic.title,
+                                    "description": topic.description,
+                                }
+                                for topic in topics
+                            ],
+                        }
+                    )
+                else:
+                    results.append(
+                        {
+                            "valid": True,
+                            "overall_score": eval_result.overall_score,
+                            "topics": [
+                                {
+                                    "title": topic.title,
+                                    "description": topic.description,
+                                }
+                                for topic in topics
+                            ],
+                            "scores": eval_result.all_scores.model_dump(),
+                            "epoch": epoch,
+                            "iteration": iteration,
+                        }
                     )
 
-                    print("--------------------------------")
-                    print(f"Iteration {i + 1} of {num_iterations} complete")
-                    print(f"Results saved to {results_file}")
-                    print("--------------------------------")
+                results_file.write_text(
+                    json.dumps(results, indent=2, ensure_ascii=False),
+                )
+
+                print("--------------------------------")
+                print(f"Iteration {iteration + 1} complete")
+                print(f"Results saved to {results_file}")
+                print("--------------------------------\n")
+                iteration += 1
+                max_score_this_epoch = max(
+                    cast(Result, r)["overall_score"]
+                    for r in results
+                    if r["valid"] and r["epoch"] == epoch
+                )
+
+                if iteration == min_iterations:
+                    topic.scores.append(max_score_this_epoch)
+
+                if (
+                    score_to_beat
+                    and iteration >= min_iterations
+                    and max_score_this_epoch > score_to_beat
+                ):
+                    break
 
             print("--------------------------------")
-            print(f"Epoch {epoch + 1} of {epochs} complete")
+            print(f"Epoch {epoch + 1} of {max_epochs} complete")
             print(f"Results saved to {results_file}")
             print("--------------------------------")
 
             if not auto:
-                plot_list([eval_result.overall_score for _, eval_result in results])
+                plot_list(
+                    [
+                        cast(Result, r)["overall_score"]
+                        for r in results
+                        if r["valid"] and r["epoch"] == epoch
+                    ]
+                )
 
-    all_results = cached_results + gen_results
-    assert all_results
+            epoch += 1
+
+            if score_to_beat and any(
+                cast(Result, r)["overall_score"] > score_to_beat
+                for r in results
+                if r["valid"]
+            ):
+                break
 
     return [
         Topic(**t)
         for t in (
-            max(all_results, key=lambda r: r["overall_score"])["topics"]
+            max(
+                [r for r in results if r["valid"]],
+                key=lambda r: cast(Result, r)["overall_score"],
+            )["topics"]
             if auto
-            else select_topics(all_results)
+            else select_topics(cast(list[Result], [r for r in results if r["valid"]]))
         )
     ]
 
@@ -423,7 +483,9 @@ def generate(
     num_papers_threshold: int | None = None,
     init_sample_len_all: int | list[int] = [80, 60, 40],
     sort_sample_len_all: int | list[int] = [400, 200, 80],
-    num_iterations_all: int | list[int] = [10, 8, 6],
+    min_iterations: int = 5,
+    max_iterations_all: int | list[int] = [12, 10, 8, 6],
+    score_better_than_perc_all: float | list[float] = [1, 0.8, 0.5, 0.3],
     topics_len_bounds_all: tuple[int, int] | list[tuple[int, int]] = [
         (2, 6),
         (2, 6),
@@ -439,7 +501,7 @@ def generate(
         [EvalScores, int],
         float,
     ] = calculate_overall_score,
-    epochs_all: int | list[int] = [2, 1],
+    max_epochs_all: int | list[int] = [2, 2, 1],
     auto_all: bool | list[bool] = True,
     seed: int | None = 11,
     depth: int = 0,
@@ -467,11 +529,12 @@ def generate(
 
     init_sample_len = resolver(init_sample_len_all)
     sort_sample_len = resolver(sort_sample_len_all)
-    num_iterations = resolver(num_iterations_all)
+    max_iterations = resolver(max_iterations_all)
+    score_better_than_perc = resolver(score_better_than_perc_all)
     topics_len_bounds = cast(tuple[int, int], resolver(topics_len_bounds_all))
     thinking_budget = resolver(thinking_budget_all)
     find_overviews = resolver(find_overviews_all)
-    epochs = resolver(epochs_all)
+    max_epochs = resolver(max_epochs_all)
     auto = resolver(auto_all)
 
     print(f"\nNow handling {topic_breadcrumbs(topic, parents)}")
@@ -484,12 +547,14 @@ def generate(
         topic.topics = generate_topics(
             topic=topic,
             parents=parents,
-            num_iterations=num_iterations,
+            min_iterations=min_iterations,
+            max_iterations=max_iterations,
+            score_better_than_perc=score_better_than_perc,
             init_sample_len=init_sample_len,
             sort_sample_len=sort_sample_len,
             find_overviews=find_overviews,
             calculate_overall_score=calculate_overall_score,
-            epochs=epochs,
+            max_epochs=max_epochs,
             seed=seed,
             auto=auto,
             depth=depth,
@@ -550,12 +615,14 @@ def generate(
             num_papers_threshold=num_papers_threshold,
             init_sample_len_all=init_sample_len_all,
             sort_sample_len_all=sort_sample_len_all,
-            num_iterations_all=num_iterations_all,
+            min_iterations=min_iterations,
+            max_iterations_all=max_iterations_all,
+            score_better_than_perc_all=score_better_than_perc_all,
             topics_len_bounds_all=topics_len_bounds_all,
             thinking_budget_all=thinking_budget_all,
             find_overviews_all=find_overviews_all,
             calculate_overall_score=calculate_overall_score,
-            epochs_all=epochs_all,
+            epochs_all=max_epochs_all,
             auto_all=auto_all,
             seed=seed,
             depth=depth + 1,
@@ -565,4 +632,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate(max_depth=4, num_papers_threshold=20)  # pyright: ignore[reportCallIssue]
+    generate(max_depth=4, num_papers_threshold=25)  # pyright: ignore[reportCallIssue]

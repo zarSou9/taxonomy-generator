@@ -4,14 +4,11 @@ from functools import reduce
 from pathlib import Path
 from typing import Literal, TypedDict, cast, overload
 
+import numpy as np
 from InquirerPy import inquirer
 from tabulate import tabulate
 
-from taxonomy_generator.scripts.generator.generator_types import (
-    EvalResult,
-    EvalScores,
-    Topic,
-)
+from taxonomy_generator.scripts.generator.generator_types import EvalScores, Topic
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.utils import format_perc
 
@@ -22,32 +19,20 @@ class TopicDict(TypedDict):
 
 
 class Result(TypedDict):
+    valid: Literal[True]
     overall_score: float
     topics: list[TopicDict]
     scores: dict[str, float]
+    epoch: int
+    iteration: int
 
 
-def get_results_data(
-    results: list[tuple[list[Topic], EvalResult]],
-    sort: bool = False,
-) -> list[Result]:
-    if sort:
-        results = sorted(results, key=lambda r: r[1].overall_score, reverse=True)
-
-    return [
-        {
-            "overall_score": eval_result.overall_score,
-            "topics": [
-                {
-                    "title": topic.title,
-                    "description": topic.description,
-                }
-                for topic in topics
-            ],
-            "scores": eval_result.all_scores.model_dump(),
-        }
-        for topics, eval_result in results
-    ]
+class InvalidResult(TypedDict):
+    valid: Literal[False]
+    invalid_reason: str
+    topics: list[TopicDict]
+    epoch: int
+    iteration: int
 
 
 def recalculate_scores(
@@ -252,8 +237,7 @@ def get_all_children_by_depth(
     return children_by_depth
 
 
-def get_relevant_topics_ordered(topic: Topic, root: Topic) -> list[Topic]:
-    parents = get_parents(topic, root)
+def get_relevant_topics_ordered(topic: Topic, parents: list[Topic]) -> list[Topic]:
     if not parents:
         raise ValueError("Invalid parents")
     relevant_topics_by_depth: list[list[Topic]] = []
@@ -274,15 +258,68 @@ def get_relevant_topics_ordered(topic: Topic, root: Topic) -> list[Topic]:
     return list(reversed(relevant_topics))
 
 
-def calculate_ema(topics: list[Topic], alpha: float = 0.08) -> float | None:
+def calculate_weighted_ema(
+    numbers: list[float] | np.ndarray,
+    alpha: float = 0.3,
+    weight_func: Callable[[float], float] | None = None,
+) -> float | None:
+    """EMA with custom weighting function applied to each value."""
+    if len(numbers) == 0:
+        return None
+
+    # Convert to list of floats to handle both types uniformly
+    numbers_list = [float(x) for x in numbers]
+
     ema: float | None = None
-    for topic in topics:
-        for score in topic.scores:
-            if ema is None:
-                ema = score
-            else:
-                ema = score * alpha + ema * (1 - alpha)
+    for n in numbers_list:
+        if ema is None:
+            ema = float(n)
+        else:
+            # Apply weight to the contribution of new value
+            effective_alpha = alpha * (weight_func(n) if weight_func else 1.0)
+            ema = float(n * effective_alpha + ema * (1 - effective_alpha))
     return ema
+
+
+def get_percentile_weighted_ema(
+    numbers: list[float] | np.ndarray,
+    percentile_target: float = 0.5,
+    alpha: float = 0.3,
+    min_weight: float = 0.3,
+) -> float | None:
+    """EMA where values closer to target percentile get higher weight. percentile_target: 0.0 = favor lowest values, 1.0 = favor highest values, 0.5 = favor median."""
+    if len(numbers) == 0:
+        return None
+
+    # Convert to list of floats to handle both types uniformly
+    numbers_list = [float(x) for x in numbers]
+
+    # Calculate percentile rank for each value
+    sorted_values = sorted(numbers_list)
+    n = len(sorted_values)
+
+    def weight_func(value: float) -> float:
+        # Find percentile rank of this value (0.0 to 1.0)
+        rank = sum(1 for v in sorted_values if v <= value) / n
+        # Weight based on distance from target percentile (closer = higher weight)
+        distance = abs(rank - percentile_target)
+        # Convert distance to weight: max weight at target, min weight at extremes
+        weight = 1.0 - distance
+        return max(min_weight, weight)  # Minimum weight to avoid zeroing out values
+
+    return calculate_weighted_ema(numbers_list, alpha, weight_func)
+
+
+def get_score_to_beat(
+    topic: Topic, parents: list[Topic], score_better_than_perc: float
+) -> float | None:
+    topics_ordered = get_relevant_topics_ordered(topic, parents)
+    return get_percentile_weighted_ema(
+        [score for topic in topics_ordered for score in topic.scores],
+        alpha=0.3,
+        min_weight=0.2,
+        percentile_target=score_better_than_perc,
+    )
 
 
 def get_random_topic_at_depth(
