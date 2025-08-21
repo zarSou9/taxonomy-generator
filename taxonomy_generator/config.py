@@ -4,6 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from taxonomy_generator.models.arxiv_category import ArxivCategoryInfo
+
 load_dotenv()
 
 # Arxiv
@@ -20,6 +22,10 @@ ARXIV_ALL_PAPERS_PROGRESS_FORMAT = getenv(
 )
 ARXIV_FILTERED_PAPERS_FORMAT = getenv(
     "ARXIV_FILTERED_PAPERS_FORMAT", "data/arxiv/categories/{}/filtered_papers.jsonl"
+)
+ARXIV_AI_FILTERED_PAPERS_FORMAT = getenv(
+    "ARXIV_AI_FILTERED_PAPERS_FORMAT",
+    "data/arxiv/categories/{}/ai_filtered_papers.jsonl",
 )
 ARXIV_TREE_FORMAT = getenv("ARXIV_TREE_FORMAT", "data/arxiv/categories/{}/tree.json")
 ARXIV_BREAKDOWN_RESULTS_FORMAT = getenv(
@@ -45,26 +51,26 @@ CUSTOM_BREAKDOWN_RESULTS_PATH = getenv(
 CUSTOM_CORPUS_PATH = getenv("CUSTOM_CORPUS_PATH", "data/corpus.jsonl")
 
 
-ARXIV_CATEGORIES_METADATA: dict[str, dict[str, dict[str, str]]] = json.loads(
-    ARXIV_CATEGORY_METADATA_PATH.read_text()
-)
-ARXIV_CATEGORY_METADATA = next(
-    (v[CATEGORY] for _, v in ARXIV_CATEGORIES_METADATA.items() if CATEGORY in v)
-)
+ARXIV_CATEGORIES_METADATA: dict[str, ArxivCategoryInfo] = {
+    code: ArxivCategoryInfo(
+        category_group=category_group,
+        code=code,
+        name=info.get("name_override") or info["name"],
+        description=info.get("description_override") or info["description"],
+    )
+    for category_group, categories in json.loads(
+        ARXIV_CATEGORY_METADATA_PATH.read_text()
+    ).items()
+    for code, info in categories.items()
+}
+ARXIV_CATEGORY_METADATA = ARXIV_CATEGORIES_METADATA[CATEGORY]
 
-FIELD = (
-    ARXIV_CATEGORY_METADATA.get("name_override") or ARXIV_CATEGORY_METADATA["name"]
-    if USE_ARXIV
-    else CUSTOM_FIELD
-)
-DESCRIPTION = (
-    ARXIV_CATEGORY_METADATA.get("description_override")
-    or ARXIV_CATEGORY_METADATA["description"]
-    if USE_ARXIV
-    else CUSTOM_DESCRIPTION
-)
+FIELD = ARXIV_CATEGORY_METADATA.name if USE_ARXIV else CUSTOM_FIELD
+DESCRIPTION = ARXIV_CATEGORY_METADATA.description if USE_ARXIV else CUSTOM_DESCRIPTION
 CORPUS_PATH = Path(
-    ARXIV_FILTERED_PAPERS_FORMAT.format(CATEGORY) if USE_ARXIV else CUSTOM_CORPUS_PATH
+    ARXIV_AI_FILTERED_PAPERS_FORMAT.format(CATEGORY)
+    if USE_ARXIV
+    else CUSTOM_CORPUS_PATH
 )
 TREE_PATH = Path(ARXIV_TREE_FORMAT.format(CATEGORY) if USE_ARXIV else CUSTOM_TREE_PATH)
 BREAKDOWN_RESULTS_PATH = Path(
@@ -78,6 +84,7 @@ if __name__ == "__main__":
     print(f"ARXIV_ALL_PAPERS_FORMAT: {ARXIV_ALL_PAPERS_FORMAT}")
     print(f"ARXIV_ALL_PAPERS_PROGRESS_FORMAT: {ARXIV_ALL_PAPERS_PROGRESS_FORMAT}")
     print(f"ARXIV_FILTERED_PAPERS_FORMAT: {ARXIV_FILTERED_PAPERS_FORMAT}")
+    print(f"ARXIV_AI_FILTERED_PAPERS_FORMAT: {ARXIV_AI_FILTERED_PAPERS_FORMAT}")
     print(f"ARXIV_TREE_FORMAT: {ARXIV_TREE_FORMAT}")
     print(f"ARXIV_BREAKDOWN_RESULTS_FORMAT: {ARXIV_BREAKDOWN_RESULTS_FORMAT}")
 

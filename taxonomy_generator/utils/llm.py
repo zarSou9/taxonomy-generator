@@ -25,11 +25,9 @@ from taxonomy_generator.utils.utils import cap_words, log
 CHAT_CACHE_PATH = Path(".chat_cache")
 
 AllModels = Literal[
-    "claude-3-7-sonnet-latest",
-    "claude-3-5-haiku-latest",
-    "gemini-1.5-pro",
-    "gemini-2.0-flash",
-    "gemini-2.5-pro-exp-03-25",
+    "claude-sonnet-4-20250514",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
 ]
 History = str | list[str | AntMessage]
 
@@ -111,14 +109,13 @@ def convert_to_google_messages(history: History) -> list[GContent]:
 
 def is_google_model(model: str) -> bool:
     return model in [
-        "gemini-1.5-pro",
-        "gemini-2.0-flash",
-        "gemini-2.5-pro-exp-03-25",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
     ]
 
 
 def is_anthropic_model(model: str) -> bool:
-    return model in ["claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"]
+    return model in ["claude-sonnet-4-20250514"]
 
 
 def get_ant_message_text(ant_message: AntMessage) -> str:
@@ -142,7 +139,7 @@ def resolve_simple_history(history: History) -> list[str]:
 def ask_llm(
     history: History,
     system: str | None = None,
-    model: AllModels = "claude-3-7-sonnet-latest",
+    model: AllModels = "claude-sonnet-4-20250514",
     temp: float | None = None,
     max_tokens: int = 8192,
     max_retries: int = 4,
@@ -161,7 +158,7 @@ def ask_llm(
 def ask_llm(
     history: History,
     system: str | None = None,
-    model: AllModels = "claude-3-7-sonnet-latest",
+    model: AllModels = "claude-sonnet-4-20250514",
     temp: float | None = None,
     max_tokens: int = 8192,
     max_retries: int = 4,
@@ -179,7 +176,7 @@ def ask_llm(
 def ask_llm(
     history: History,
     system: str | None = None,
-    model: AllModels = "claude-3-7-sonnet-latest",
+    model: AllModels = "claude-sonnet-4-20250514",
     temp: float | None = None,
     max_tokens: int = 8192,
     max_retries: int = 4,
@@ -196,10 +193,10 @@ def ask_llm(
         log(get_last(history))
 
     if not is_google_model(model) and ground_with_google_search:
-        model = "gemini-1.5-pro"
+        model = "gemini-2.5-pro"
 
     if use_thinking:
-        model = "claude-3-7-sonnet-latest"
+        model = "claude-sonnet-4-20250514"
 
     response = None
     for attempt in range(max_retries):

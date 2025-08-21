@@ -8,6 +8,7 @@ import jsonlines
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY
+from taxonomy_generator.corpus.utils import get_pretty_paper
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import first_int
 from taxonomy_generator.utils.utils import random_sample
@@ -100,20 +101,10 @@ class Corpus:
             if isinstance(paper_or_id, str)
             else paper_or_id
         )
+        if paper is None:
+            raise ValueError(f"Invalid paper id: {paper_or_id}")
 
-        title_map = {
-            "title": "Title",
-            "id": "ArXiv ID",
-            "url": "URL",
-            "authors": "Authors",
-            "published": "Published",
-            "abstract": "Abstract",
-        }
-        return "\n".join(
-            f"{title_map[key]}: {getattr(paper, key)}"
-            for key in (keys or title_map.keys())
-            if hasattr(paper, key)
-        )
+        return get_pretty_paper(paper, keys)
 
     def get_pretty_sample(
         self,
