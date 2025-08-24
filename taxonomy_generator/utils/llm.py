@@ -8,6 +8,7 @@ from typing import Any, Literal, NotRequired, TypedDict, cast, overload
 
 from anthropic import Anthropic
 from anthropic.types import Message as AntMessage
+from anthropic.types.message import Message
 from google import genai
 from google.genai.chats import Chat as GenaiChat
 from google.genai.types import Content as GContent
@@ -476,11 +477,11 @@ def model_validate_chat(chat_json: list[ChatMessageJSON]) -> list[ChatMessage]:
     ]
 
 
-def chat_to_history(chat_history: list[ChatMessage]):
+def chat_to_history(chat_history: list[ChatMessage]) -> list[str | Message]:
     return [m["message"] for m in chat_history]
 
 
-def history_to_chat(history: History | None):
+def history_to_chat(history: History | None) -> list[ChatMessage]:
     history = ([history] if isinstance(history, str) else history) or []
     return [
         ChatMessage(message=m, settings_override={})

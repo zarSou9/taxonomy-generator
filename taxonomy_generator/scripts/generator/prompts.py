@@ -99,7 +99,9 @@ You should strive for the following attributes:
 - Your breakdown should provide a clear mental model of {title} that is valuable to both newcomers and experienced researchers.
 {f"- Strive for topics that likely have existing overview or literature review papers{' (if possible)' if parents else ''}. The evaluation system will reward topics for which it could find at least one associated overview/survey paper." if overrview_checks else ""}
 
-Please present your topics as a JSON array without any other text or explanation. Example format:
+Please present your topics as a JSON array of objects with "title" and "description" keys, without any other text or explanation. The descriptions should provide complete clarity on what the topic encompasses while remaining concise.
+
+Example response format:
 
 ```json
 [
@@ -316,7 +318,7 @@ def get_overview_results_str(eval_result: EvalResult, first: bool):
     return f"""
 {"For each topic, we attempted to find at least one associated overview or literature review paper. Here are the results:" if first else "Here are the overview paper results:"}
 
-{tabulate(((title, "YES" if papers else "NO") for title, papers in eval_result.overview_papers.items()), headers=["Topic", "Found Overview Paper"])}
+{tabulate(((title, "SEARCH ERROR" if papers is None else "YES" if papers else "NO") for title, papers in eval_result.overview_papers.items()), headers=["Topic", "Found Overview Paper"])}
 """
 
 

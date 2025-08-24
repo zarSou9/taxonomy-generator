@@ -182,3 +182,5 @@ anything*.md
 data/
 .chat_cache/
 .func_cache/
+
+.claude/

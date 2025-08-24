@@ -32,14 +32,20 @@ def find_overview_papers(
     topic: Topic,
     parents: list[Topic],
     add_to_corpus: bool = False,
-) -> list[Paper]:
-    papers = fetch_papers_by_id(search_arxs(get_exa_query(topic, parents)))
+) -> list[Paper] | None:
+    exa_query = get_exa_query(topic, parents)
+    try:
+        arx_ids = search_arxs(exa_query)
+    except TimeoutError as e:
+        print(f"TimeoutError: {e}")
+        return None
+    papers = fetch_papers_by_id(arx_ids)
 
+    is_overview_prompts = [
+        get_is_overview_prompt(topic, parents, paper) for paper in papers
+    ]
     responses = run_in_parallel(
-        [get_is_overview_prompt(topic, parents, paper) for paper in papers],
-        max_workers=40,
-        model=SMALL_MODEL,
-        temp=0,
+        is_overview_prompts, max_workers=40, model=SMALL_MODEL, temp=0
     )
 
     overview_papers = [

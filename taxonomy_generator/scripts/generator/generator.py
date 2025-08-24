@@ -163,15 +163,16 @@ def evaluate_topics(
         for title in chosen_topics:
             topic_papers[title].append(paper)
 
-        if len(chosen_topics) > 1:
-            overlap_papers.append(paper)
-
-            if chosen_topics in overlap_topics_papers:
-                overlap_topics_papers[chosen_topics].append(paper)
-            else:
-                overlap_topics_papers[chosen_topics] = [paper]
-        else:
+        if len(chosen_topics) == 1:
             single_papers.append(paper)
+            continue
+
+        overlap_papers.append(paper)
+
+        if chosen_topics not in overlap_topics_papers:
+            overlap_topics_papers[chosen_topics] = []
+
+        overlap_topics_papers[chosen_topics].append(paper)
 
     no_papers_topics = [
         f'"{title}"' for title, papers in topic_papers.items() if not papers
@@ -182,9 +183,9 @@ def evaluate_topics(
         )
 
     # Overview Papers
-    overview_papers = {
+    overview_papers: dict[str, list[Paper] | None] = {
         t.title: (
-            []
+            None
             if no_overviews
             else find_overview_papers(t, parents + [topic], add_to_corpus=True)
         )
@@ -193,7 +194,16 @@ def evaluate_topics(
 
     # Helpfulness Scores
     system_prompts = get_topics_feedback_system_prompts(FIELD)
-    if not no_feedback:
+    if no_feedback:
+        topics_feedbacks = [
+            TopicsFeedback(
+                score=1,
+                feedback="No feedback",
+                system="No feedback",
+            )
+            for _ in system_prompts
+        ]
+    else:
         prompt = get_topics_feedback_prompt(topics, parents + [topic])
 
         score_feedbacks: Iterable[tuple[int, str | None]] = (
@@ -215,24 +225,19 @@ def evaluate_topics(
             )
             if score >= 0 and feedback is not None
         ]
-    else:
-        topics_feedbacks = [
-            TopicsFeedback(
-                score=1,
-                feedback="No feedback",
-                system="No feedback",
-            )
-            for _ in system_prompts
-        ]
 
     # Final Score
     feedback_score = (
         sum(tf.score for tf in topics_feedbacks) / len(topics_feedbacks) - 1
     ) / 4
 
-    topics_overview_score = sum(
-        bool(papers) for papers in overview_papers.values()
-    ) / len(topics)
+    topic_overview_paperss = [ps for ps in overview_papers.values() if ps is not None]
+    if not topic_overview_paperss:
+        topics_overview_score = None
+    else:
+        topics_overview_score = sum(
+            len(papers) > 0 for papers in topic_overview_paperss
+        ) / len(topic_overview_paperss)
 
     not_placed_perc = len(not_placed) / len(sort_results)
     not_placed_score = -(not_placed_perc if not_placed_perc > 0.015 else 0)

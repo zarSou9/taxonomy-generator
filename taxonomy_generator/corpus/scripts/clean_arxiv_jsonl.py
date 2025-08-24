@@ -11,7 +11,7 @@ input_path = good_path / "arxiv.jsonl"
 output_path = good_path / "arxiv_clean.jsonl"
 
 with jsonlines.open(input_path.resolve().as_posix(), mode="r") as reader:  # pyright: ignore[reportUnknownMemberType]
-    arx_ids = [get_arxiv_id_from_url(p["url"]) for p in reader]
+    arx_ids = [get_arxiv_id_from_url(p["url"], include_version=True) for p in reader]
     arx_ids = [arx for arx in arx_ids if arx]
 
 corpus = Corpus(corpus_path=output_path)

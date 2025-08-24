@@ -2,9 +2,12 @@ import functools
 import json
 import pickle
 import random
+import signal
 import time
 from collections.abc import Callable, Generator, Iterable, Sequence
+from contextlib import contextmanager
 from pathlib import Path
+from types import FrameType
 from typing import Any, Literal, ParamSpec, TypeVar, cast, overload
 
 import matplotlib.pyplot as plt
@@ -22,6 +25,20 @@ class Recursor(BaseModel):
     gen: Generator[None, Any]
     depth: int
     complete: bool
+
+
+@contextmanager
+def timeout(seconds: int, operation_descriptor: str = "Operation"):
+    def timeout_handler(signum: int, frame: FrameType | None):  # pyright: ignore[reportUnusedParameter]
+        raise TimeoutError(f"{operation_descriptor} timed out after {seconds} seconds")
+
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def recurse_even(func: Callable[P, GR]):

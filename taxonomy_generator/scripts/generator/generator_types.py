@@ -41,6 +41,6 @@ class EvalResult(BaseModel):
     single_papers: list[Paper]
     overlap_papers: list[Paper]
     sample_len: int
-    overview_papers: dict[str, list[Paper]]
+    overview_papers: dict[str, list[Paper] | None]
     invalid: bool = False
     invalid_reason: str = ""

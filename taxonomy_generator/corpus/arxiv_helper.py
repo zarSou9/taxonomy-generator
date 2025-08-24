@@ -6,19 +6,47 @@ import arxiv
 from taxonomy_generator.corpus.corpus_types import Paper
 
 
-def get_base_arxiv_id(url: str) -> str:
+def strip_arxiv_version(arxiv_id: str, dont_strip: bool = False) -> str:
+    """Strip the version from an Arxiv ID."""
+    if not dont_strip and re.search(r"v\d+$", arxiv_id):
+        return arxiv_id.rsplit("v", 1)[0]
+    return arxiv_id
+
+
+def get_arxiv_id_from_url(url: str, include_version: bool = False) -> str:
+    """Extract ArXiv ID from various URL formats.
+
+    Handles both new format (1234.5678) and old format (category/YYMMnnn).
+
+    Args:
+        url: The ArXiv URL to extract ID from
+        include_version: If False, strips version suffix (v1, v2, etc.) from the ID
+
+    Examples:
+    - https://arxiv.org/abs/1234.5678v1 -> 1234.5678v1 (if include_version=True) or 1234.5678 (if include_version=False)
+    - https://arxiv.org/pdf/1234.5678.pdf -> 1234.5678
+    - https://arxiv.org/abs/hep-th/0603155 -> hep-th/0603155
+    - https://arxiv.org/pdf/hep-th/0603155v2.pdf -> hep-th/0603155v2 (if include_version=True) or hep-th/0603155 (if include_version=False)
+    """
+    # Remove .pdf extension if present at the end
+    clean_url = url[:-4] if url.endswith(".pdf") else url
+
+    # Pattern for new format: 1234.5678 (with optional version)
+    new_format_pattern = (
+        r"arxiv\.org/(?:abs|pdf|html|format|e-print)/(\d{4}\.\d{4,5}(?:v\d+)?)"
+    )
+    match = re.search(new_format_pattern, clean_url, re.IGNORECASE)
+    if match:
+        return strip_arxiv_version(match.group(1), dont_strip=include_version)
+
+    # Pattern for old format: category/YYMMnnn (with optional version)
+    old_format_pattern = r"arxiv\.org/(?:abs|pdf|html|format|e-print)/([a-z-]+(?:\.[A-Z]{2})?/\d{7}(?:v\d+)?)"
+    match = re.search(old_format_pattern, clean_url, re.IGNORECASE)
+    if match:
+        return strip_arxiv_version(match.group(1), dont_strip=include_version)
+
     match = re.search(r"\d+\.\d+", url)
     return match.group(0) if match else ""
-
-
-def get_arxiv_id_from_url(url: str) -> str:
-    pattern = r"arxiv\.org/(?:.+?)/(\d+\.\d+(?:v\d+)?)"
-    match = re.search(pattern, url, re.IGNORECASE)
-
-    if match:
-        return match.group(1)
-
-    return get_base_arxiv_id(url)
 
 
 def extract_paper_info(paper: arxiv.Result) -> dict[str, Any]:
@@ -26,8 +54,7 @@ def extract_paper_info(paper: arxiv.Result) -> dict[str, Any]:
     # Get the paper ID - paper.get_short_id() already returns just the ID
     paper_id = paper.get_short_id()
     # If it contains a version (like "1234.5678v1"), extract just the base ID
-    if "v" in paper_id:
-        paper_id = paper_id.split("v")[0]
+    paper_id = strip_arxiv_version(paper_id)
 
     paper_data = {
         "id": paper_id,
