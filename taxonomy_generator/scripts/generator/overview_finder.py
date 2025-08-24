@@ -23,9 +23,7 @@ Only respond with either YES or NO depending on whether this paper is an overvie
 
 
 def get_exa_query(topic: Topic, parents: list[Topic]) -> str:
-    description = topic.description[0].lower() + topic.description[1:].rstrip(".")
-
-    return f"This research paper provides a comprehensive overview of {topic.title} in the context of {get_parents_context(parents)}. The paper covers: {description}. It's published on ArXiv here: "
+    return f"This research paper provides a comprehensive overview of {topic.title} in the context of {get_parents_context(parents)}. {topic.title} is defined as: {topic.description.rstrip('.')}. The paper is published on ArXiv here: "
 
 
 def find_overview_papers(

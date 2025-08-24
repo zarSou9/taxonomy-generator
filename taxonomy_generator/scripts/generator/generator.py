@@ -5,11 +5,12 @@ from typing import cast
 from InquirerPy import inquirer
 
 from taxonomy_generator.config import (
-    BIG_MODEL,
     BREAKDOWN_RESULTS_PATH,
     DESCRIPTION,
+    FEEDBACK_MODEL,
     FIELD,
     SMALL_MODEL,
+    TOPICS_MODEL,
     TREE_PATH,
 )
 from taxonomy_generator.corpus.corpus_instance import corpus
@@ -214,7 +215,7 @@ def evaluate_topics(
             for response in run_in_parallel(
                 [prompt for _ in system_prompts],
                 [{"system": system} for system in system_prompts],
-                model=BIG_MODEL,
+                model=FEEDBACK_MODEL,
                 temp=1.5,
             )
         )
@@ -330,7 +331,7 @@ def generate_topics(
                 use_cache=True,
                 use_thinking=True,
                 verbose=True,
-                model=BIG_MODEL,
+                model=TOPICS_MODEL,
                 thinking_budget=epoch_thinking_budget,
             )
             eval_result: EvalResult | None = None

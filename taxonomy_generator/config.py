@@ -50,7 +50,8 @@ CUSTOM_BREAKDOWN_RESULTS_PATH = getenv(
 )
 CUSTOM_CORPUS_PATH = getenv("CUSTOM_CORPUS_PATH", "data/corpus.jsonl")
 
-BIG_MODEL = getenv("BIG_MODEL", "gemini-2.5-pro")
+TOPICS_MODEL = getenv("TOPICS_MODEL", "claude-sonnet-4-20250514")
+FEEDBACK_MODEL = getenv("FEEDBACK_MODEL", "gemini-2.5-pro")
 SMALL_MODEL = getenv("SMALL_MODEL", "gemini-2.5-flash")
 
 ARXIV_CATEGORIES_METADATA: dict[str, ArxivCategoryInfo] = {
@@ -105,5 +106,6 @@ if __name__ == "__main__":
     print(f"CORPUS_PATH: {CORPUS_PATH}")
     print(f"TREE_PATH: {TREE_PATH}")
     print(f"BREAKDOWN_RESULTS_PATH: {BREAKDOWN_RESULTS_PATH}")
-    print(f"BIG_MODEL: {BIG_MODEL}")
+    print(f"TOPICS_MODEL: {TOPICS_MODEL}")
+
     print(f"SMALL_MODEL: {SMALL_MODEL}")
