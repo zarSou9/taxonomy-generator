@@ -3,6 +3,7 @@ from pathlib import Path
 from InquirerPy import inquirer
 from tabulate import tabulate
 
+from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import Topic
@@ -39,7 +40,7 @@ def sort_papers(
     responses = run_in_parallel(
         prompts,
         max_workers=40,
-        model="gemini-2.0-flash",
+        model=SMALL_MODEL,
         temp=0,
     )
 

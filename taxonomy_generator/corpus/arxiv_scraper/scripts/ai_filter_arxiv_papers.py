@@ -3,6 +3,7 @@ from taxonomy_generator.config import (
     ARXIV_CATEGORY_METADATA,
     ARXIV_FILTERED_PAPERS_FORMAT,
     CATEGORY,
+    SMALL_MODEL,
 )
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
 from taxonomy_generator.corpus.corpus_types import Paper
@@ -61,7 +62,7 @@ def ai_filter_arxiv_papers():
     prompts = [get_filter_arxiv_paper_prompt(paper) for paper in papers]
 
     # Process all papers in parallel
-    responses = run_in_parallel(prompts, model="gemini-2.5-flash", max_workers=40)
+    responses = run_in_parallel(prompts, model=SMALL_MODEL, max_workers=40)
 
     # Process responses and filter papers
     filtered_papers: list[Paper] = []

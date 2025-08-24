@@ -5,9 +5,11 @@ from typing import cast
 from InquirerPy import inquirer
 
 from taxonomy_generator.config import (
+    BIG_MODEL,
     BREAKDOWN_RESULTS_PATH,
     DESCRIPTION,
     FIELD,
+    SMALL_MODEL,
     TREE_PATH,
 )
 from taxonomy_generator.corpus.corpus_instance import corpus
@@ -78,14 +80,14 @@ def process_sort_results(
             break
 
         print(f"Attempting to sort {len(this_sample)} papers")
-
+        prompts = [
+            get_sort_prompt(topic, p, topics, parents, multiple=True)
+            for p in this_sample
+        ]
         responses = run_in_parallel(
-            [
-                get_sort_prompt(topic, p, topics, parents, multiple=True)
-                for p in this_sample
-            ],
+            prompts,
             max_workers=40,
-            model="gemini-2.0-flash",
+            model=SMALL_MODEL,
             temp=0,
         )
 
@@ -202,7 +204,7 @@ def evaluate_topics(
             for response in run_in_parallel(
                 [prompt for _ in system_prompts],
                 [{"system": system} for system in system_prompts],
-                model="gemini-1.5-pro",
+                model=BIG_MODEL,
                 temp=1.5,
             )
         )
@@ -313,7 +315,8 @@ def generate_topics(
         epoch = 0
         while epoch < max_epochs:
             score_to_beat = get_score_to_beat(topic, parents, score_better_than_perc)
-            print(f"Score to beat: {score_to_beat:.2f}")
+            if score_to_beat:
+                print(f"Score to beat: {score_to_beat:.2f}")
             epoch_seed = None if seed is None else seed + epoch
             epoch_thinking_budget = resolve_all_param(thinking_budget, epoch, tuple)
 
@@ -322,6 +325,7 @@ def generate_topics(
                 use_cache=True,
                 use_thinking=True,
                 verbose=True,
+                model=BIG_MODEL,
                 thinking_budget=epoch_thinking_budget,
             )
             eval_result: EvalResult | None = None
@@ -481,8 +485,8 @@ def calculate_overall_score(scores: EvalScores, depth: int = 0) -> float:
 def generate(
     generate: Callable[..., None],
     num_papers_threshold: int | None = None,
-    init_sample_len_all: int | list[int] = [80, 60, 40],
-    sort_sample_len_all: int | list[int] = [400, 200, 80],
+    init_sample_len_all: int | list[int] = [100, 80, 60],
+    sort_sample_len_all: int | list[int] = [400, 300, 200],
     min_iterations: int = 5,
     max_iterations_all: int | list[int] = [12, 10, 8, 6],
     score_better_than_perc_all: float | list[float] = [1, 0.8, 0.5, 0.3],
@@ -492,9 +496,9 @@ def generate(
         (2, 8),
     ],
     thinking_budget_all: int | tuple[int] | list[int | tuple[int]] = [  # pyright: ignore[reportArgumentType]
-        (3100, 2600),
-        2000,
-        1700,
+        (3500, 2600),
+        (2000, 1700),
+        1800,
     ],
     find_overviews_all: bool | list[bool] = [True, True, False],
     calculate_overall_score: Callable[
@@ -632,4 +636,4 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate(max_depth=4, num_papers_threshold=25)  # pyright: ignore[reportCallIssue]
+    generate(max_depth=4, num_papers_threshold=25, auto_all=False)  # pyright: ignore[reportCallIssue]

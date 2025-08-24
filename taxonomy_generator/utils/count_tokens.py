@@ -51,13 +51,14 @@ Please identify which category/categories this paper belongs to. Respond with a 
 
 fps(globals())
 
-MODEL_ID = "gemini-2.0-flash"
+MODEL_ID = "gemini-2.5-flash"
 PROMPT = SORT_PAPER_PROMPT
-INPUT_COST_PER_MIL_TOKENS = 0.10
-OUTPUT_COST_PER_MIL_TOKENS = 0.40
+INPUT_COST_PER_MIL_TOKENS = 0.30
+OUTPUT_COST_PER_MIL_TOKENS = 2.50
 EXPECTED_AMOUNT = 400
-ONE_INPUT_TOKENS = 756
-ONE_OUTPUT_TOKENS = 16
+
+ONE_INPUT_TOKENS = 0
+ONE_OUTPUT_TOKENS = 0
 
 if not ONE_INPUT_TOKENS or not ONE_INPUT_TOKENS:
     genai_client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))

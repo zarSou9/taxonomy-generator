@@ -238,8 +238,6 @@ def get_all_children_by_depth(
 
 
 def get_relevant_topics_ordered(topic: Topic, parents: list[Topic]) -> list[Topic]:
-    if not parents:
-        raise ValueError("Invalid parents")
     relevant_topics_by_depth: list[list[Topic]] = []
 
     for i, ancestor in enumerate(reversed(parents + [topic])):

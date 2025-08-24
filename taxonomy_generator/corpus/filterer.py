@@ -5,6 +5,7 @@ from collections import Counter
 from collections.abc import Generator
 from pathlib import Path
 
+from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY, IS_AI_SAFETY_EXPLANATION
@@ -28,7 +29,7 @@ def check_relevance(
     responses = run_in_parallel(
         [prompt.format(corpus.get_pretty_paper(paper)) for paper in sample],
         max_workers=max_workers,
-        model="gemini-2.0-flash",
+        model=SMALL_MODEL,
         temp=0,
     )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -63,7 +64,7 @@ def print_relevance_data(data_file: Path, verbose: int = 0):
             if verbose >= 2 or (score < 3 and verbose == 1):
                 explanation = get_xml_content(r, "explanation")
                 print("---")
-                print(corpus.get_pretty_paper(arx_id, ["title", "url", "abstract"]))
+                print(corpus.get_pretty_paper(arx_id, ["title", "url", "summary"]))
                 print("---")
                 print(f"Score: {score}")
                 if explanation:
@@ -114,7 +115,7 @@ def filter_papers(
             "\n"
             + corpus.get_pretty_sample(
                 random.sample(removed, 10),
-                keys=["title", "url", "published", "abstract"],
+                keys=["title", "url", "published", "summary"],
             )
         )
 
@@ -133,4 +134,4 @@ if __name__ == "__main__":
     #     verbose=2,
     # )
 
-    print("\n" + corpus.get_pretty_sample(10, ["title", "url", "abstract"]) + "\n")
+    print("\n" + corpus.get_pretty_sample(10, ["title", "url", "summary"]) + "\n")

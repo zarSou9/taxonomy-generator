@@ -1,3 +1,4 @@
+from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_instance import corpus
 from taxonomy_generator.corpus.corpus_types import Paper
@@ -37,7 +38,7 @@ def find_overview_papers(
     responses = run_in_parallel(
         [get_is_overview_prompt(topic, parents, paper) for paper in papers],
         max_workers=40,
-        model="gemini-2.0-flash",
+        model=SMALL_MODEL,
         temp=0,
     )
 

@@ -5,6 +5,7 @@ from typing import Literal, cast, final
 
 import jsonlines
 
+from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY
@@ -94,7 +95,7 @@ class Corpus:
     def get_pretty_paper(
         self,
         paper_or_id: Paper | str,
-        keys: list[str] | None = ["title", "published", "abstract"],
+        keys: list[str] | None = ["title", "published", "summary"],
     ) -> str:
         paper = (
             self.get_paper_by_id(paper_or_id)
@@ -109,7 +110,7 @@ class Corpus:
     def get_pretty_sample(
         self,
         sample_or_n: int | Iterable[Paper | str],
-        keys: list[str] = ["title", "published", "abstract"],
+        keys: list[str] = ["title", "published", "summary"],
         sep_len: int = 0,
         seed: int | None = None,
     ) -> str:
@@ -200,7 +201,7 @@ class Corpus:
         if ensure_relevance:
             responses = run_in_parallel(
                 [IS_AI_SAFETY.format(self.get_pretty_paper(paper)) for paper in to_add],
-                model="gemini-2.0-flash",
+                model=SMALL_MODEL,
                 temp=0,
             )
 
@@ -231,7 +232,7 @@ class Corpus:
                 print(
                     self.get_pretty_sample(
                         papers,
-                        ["title", "url", "published", "abstract"],
+                        ["title", "url", "published", "summary"],
                     ),
                 )
                 print()

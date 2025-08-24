@@ -16,6 +16,7 @@ from google.genai.types import (
     GenerateContentConfig,
     GoogleSearch,
     Part,
+    ThinkingConfig,
     Tool,
 )
 from tqdm import tqdm
@@ -135,6 +136,20 @@ def resolve_simple_history(history: History) -> list[str]:
     return [resolve_message_text(m) for m in history]
 
 
+def log_response(
+    response: str, thinking: str | None = None, usage: str | None = None
+) -> None:
+    output = ""
+    if thinking:
+        output += f"\n-------THINKING START-------\n\n{thinking}\n\n-------THINKING END-------\n"
+    if usage:
+        output += f"\n-------USAGE START-------\n\n{usage}\n\n-------USAGE END-------\n"
+    output += (
+        f"\n-------RESPONSE START-------\n\n{response}\n\n-------RESPONSE END-------\n"
+    )
+    log(output)
+
+
 @overload
 def ask_llm(
     history: History,
@@ -186,7 +201,7 @@ def ask_llm(
     use_cache: bool = False,
     dont_cache_last: bool = False,
     use_thinking: bool = False,
-    thinking_budget: int = 7000,
+    thinking_budget: int | None = None,
     verbose: bool = False,
 ) -> str | AntMessage:
     if verbose:
@@ -194,9 +209,6 @@ def ask_llm(
 
     if not is_google_model(model) and ground_with_google_search:
         model = "gemini-2.5-pro"
-
-    if use_thinking:
-        model = "claude-sonnet-4-20250514"
 
     response = None
     for attempt in range(max_retries):
@@ -241,6 +253,7 @@ def ask_llm(
                 ant_message: AntMessage = cast(
                     AntMessage, anthropic_client.messages.create(**kwargs)
                 )
+                response = get_ant_message_text(ant_message)
 
                 if verbose:
                     usage_strs: list[str] = []
@@ -248,37 +261,36 @@ def ask_llm(
                         usage_strs.append(
                             f"{cap_words(name.replace('_', ' '))}: {value}"
                         )
-                    log(
-                        f"-------USAGE START------\n\n{'\n'.join(usage_strs)}\n\n-------USAGE END-------"
-                    )
-
-                if use_thinking:
-                    if verbose:
-                        output = "-------THINKING START------\n\n"
-
+                    usage_str = "\n".join(usage_strs)
+                    thinking_str = ""
+                    if use_thinking:
                         for m in ant_message.content:
                             if m.type == "thinking":
-                                output += m.thinking + "\n"
+                                thinking_str += m.thinking + "\n"
                             elif m.type == "redacted_thinking":
-                                output += (
+                                thinking_str += (
                                     "------------\nREDACTED SECTION\n------------\n"
                                 )
 
-                        output += "\n-------THINKING END-------\n\n"
+                    log_response(response, thinking_str, usage_str)
 
-                        output += f"\n-------RESPONSE START-------\n\n{get_ant_message_text(ant_message)}\n\n-------RESPONSE END-------\n"
-
-                        log(output)
-
+                if use_thinking:
                     return ant_message
 
-                response = get_ant_message_text(ant_message)
             elif is_google_model(model):
                 generation_config = GenerateContentConfig(
                     temperature=temp or 1,
                     max_output_tokens=max_tokens,
                     stop_sequences=stop_sequences,
                     system_instruction=system,
+                    thinking_config=(
+                        ThinkingConfig(
+                            thinking_budget=(thinking_budget or -1)
+                            if use_thinking
+                            else 0,
+                            include_thoughts=use_thinking,
+                        )
+                    ),
                 )
                 if ground_with_google_search:
                     generation_config.tools = [Tool(google_search=GoogleSearch())]
@@ -297,16 +309,42 @@ def ask_llm(
                     ),
                 )
 
-                response = chat.send_message(get_last(history)).text
+                content_response = chat.send_message(get_last(history))  # pyright:ignore[reportUnknownMemberType]
+                response = content_response.text
+                if response is None:
+                    raise RuntimeError("No response from the API.")
+
+                if verbose:
+                    usage_str = (
+                        content_response.usage_metadata
+                        and content_response.usage_metadata.model_dump_json(indent=2)
+                    )
+                    thinking_text = ""
+                    if use_thinking:
+                        # Extract thinking from response parts
+                        if (
+                            content_response.candidates
+                            and content_response.candidates[0].content
+                            and content_response.candidates[0].content.parts
+                        ):
+                            for part in content_response.candidates[0].content.parts:
+                                if (
+                                    hasattr(part, "thought")
+                                    and part.thought
+                                    and hasattr(part, "text")
+                                    and part.text
+                                ):
+                                    thinking_text += part.text + "\n"
+
+                    log_response(
+                        response,
+                        thinking=thinking_text if thinking_text.strip() else None,
+                        usage=usage_str,
+                    )
             else:
                 raise ValueError(f"Invalid model: {model}")
 
-            if response is None:
-                raise RuntimeError("No response from the API.")
-
             response = response.strip()
-            if verbose:
-                log(response)
             return response
         except Exception as e:
             if isinstance(e, ValueError):

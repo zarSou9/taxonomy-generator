@@ -38,7 +38,7 @@ def generate_embedding(
     while retry_count <= max_retries:
         try:
             result = client.models.embed_content(
-                model="gemini-embedding-exp-03-07",
+                model="gemini-embedding-001",
                 contents=topic["text"],
             )
             # Add the embedding to the topic dict

@@ -4,6 +4,7 @@ from typing import Any
 
 from InquirerPy import inquirer
 
+from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.scripts.generator.generator_types import Topic
 from taxonomy_generator.scripts.generator.prompts import get_order_papers_prompt
@@ -95,7 +96,6 @@ def collect_prompts_recursively(
 def order_all_papers(
     tree_path: Path = TREE_PATH,
     max_workers: int = 40,
-    model: str = "gemini-2.0-flash",
     temp: float = 0,
 ) -> None:
     """Order papers for all topics in the taxonomy and save to file."""
@@ -128,7 +128,7 @@ def order_all_papers(
     responses = run_in_parallel(
         prompts,
         max_workers=max_workers,
-        model=model,
+        model=SMALL_MODEL,
         temp=temp,
     )
 
