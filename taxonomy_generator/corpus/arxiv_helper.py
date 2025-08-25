@@ -3,7 +3,7 @@ from typing import Any, Literal, overload
 
 import arxiv
 
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 def strip_arxiv_version(arxiv_id: str, dont_strip: bool = False) -> str:

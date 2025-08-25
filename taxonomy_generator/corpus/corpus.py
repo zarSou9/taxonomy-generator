@@ -7,9 +7,9 @@ import jsonlines
 
 from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.arxiv_helper import fetch_papers_by_id
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY
 from taxonomy_generator.corpus.utils import get_pretty_paper
+from taxonomy_generator.models.corpus import Paper
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import first_int
 from taxonomy_generator.utils.utils import random_sample

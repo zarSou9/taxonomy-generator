@@ -1,4 +1,4 @@
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 def get_pretty_paper(

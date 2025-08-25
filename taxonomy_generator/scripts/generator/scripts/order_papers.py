@@ -5,8 +5,8 @@ from typing import Any
 from InquirerPy import inquirer
 
 from taxonomy_generator.config import SMALL_MODEL
-from taxonomy_generator.corpus.corpus_types import Paper
-from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.models.corpus import Paper
+from taxonomy_generator.models.generator import Topic
 from taxonomy_generator.scripts.generator.prompts import get_order_papers_prompt
 from taxonomy_generator.scripts.generator.utils import (
     get_parents,

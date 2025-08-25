@@ -4,9 +4,9 @@ import arxiv
 
 from taxonomy_generator.config import ARXIV_CATEGORY_METADATA, SMALL_MODEL, USE_ARXIV
 from taxonomy_generator.corpus.arxiv_helper import get_arxiv_id_from_url
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.utils import get_pretty_paper
-from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.models.corpus import Paper
+from taxonomy_generator.models.generator import Topic
 from taxonomy_generator.utils.llm import AllModels, ask_llm
 from taxonomy_generator.utils.parse_llm import get_xml_content
 from taxonomy_generator.utils.utils import cache, timeout

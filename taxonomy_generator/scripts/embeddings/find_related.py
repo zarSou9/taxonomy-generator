@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import cast
 
+from taxonomy_generator.models.generator import Link, Topic
 from taxonomy_generator.scripts.embeddings.embeddings import find_similar_by_id
-from taxonomy_generator.scripts.generator.generator_types import Link, Topic
 from taxonomy_generator.scripts.generator.utils import get_tid, topic_breadcrumbs
 from taxonomy_generator.utils.utils import save_pydantic
 

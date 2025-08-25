@@ -8,7 +8,7 @@ from taxonomy_generator.config import (
     CORPUS_CUTOFFS_PATH,
 )
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 def get_manual_cutoffs(category: str) -> dict[int, int]:

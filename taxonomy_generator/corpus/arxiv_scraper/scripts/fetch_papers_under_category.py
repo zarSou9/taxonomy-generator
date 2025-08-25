@@ -12,7 +12,7 @@ from taxonomy_generator.config import (
 )
 from taxonomy_generator.corpus.arxiv_helper import extract_paper_info
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 def save_progress(progress_file: Path, progress: dict[str, Any]) -> None:

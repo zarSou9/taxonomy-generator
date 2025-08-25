@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 import aiohttp
 
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 def get_longest_overlap_len(s1: str, s2: str) -> int:

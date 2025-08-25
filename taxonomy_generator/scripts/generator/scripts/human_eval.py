@@ -1,6 +1,6 @@
 # from taxonomy_generator.corpus.corpus_instance import corpus
 # from taxonomy_generator.scripts.generator.generator import evaluate_topics
-# from taxonomy_generator.scripts.generator.generator_types import Topic
+# from taxonomy_generator.models.generator import Topic
 # from taxonomy_generator.scripts.generator.prompts import get_iter_topics_prompt
 
 TOPICS = [

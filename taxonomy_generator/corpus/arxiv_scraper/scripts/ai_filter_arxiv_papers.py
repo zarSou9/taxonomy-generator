@@ -6,8 +6,8 @@ from taxonomy_generator.config import (
     SMALL_MODEL,
 )
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.utils import get_pretty_paper
+from taxonomy_generator.models.corpus import Paper
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.prompting import prompt
 

@@ -14,8 +14,8 @@ from taxonomy_generator.config import (
     TREE_PATH,
 )
 from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.corpus.corpus_types import Paper
-from taxonomy_generator.scripts.generator.generator_types import (
+from taxonomy_generator.models.corpus import Paper
+from taxonomy_generator.models.generator import (
     EvalResult,
     EvalScores,
     Topic,

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 
 class Link(BaseModel):

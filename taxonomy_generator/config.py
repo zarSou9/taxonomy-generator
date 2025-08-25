@@ -4,7 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from taxonomy_generator.models.arxiv_category import ArxivCategoryInfo
+from taxonomy_generator.models.arxiv import ArxivCategoryInfo
 
 load_dotenv()
 

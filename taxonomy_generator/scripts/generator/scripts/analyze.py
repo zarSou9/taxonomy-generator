@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.models.generator import Topic
 from taxonomy_generator.scripts.generator.utils import get_parents, topic_breadcrumbs
 from taxonomy_generator.utils.utils import compare_datas, normalize, plot_list
 

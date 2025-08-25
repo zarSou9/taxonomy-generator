@@ -8,7 +8,7 @@ import numpy as np
 from InquirerPy import inquirer
 from tabulate import tabulate
 
-from taxonomy_generator.scripts.generator.generator_types import EvalScores, Topic
+from taxonomy_generator.models.generator import EvalScores, Topic
 from taxonomy_generator.utils.parse_llm import parse_response_json
 from taxonomy_generator.utils.utils import format_perc
 

@@ -3,7 +3,7 @@ import time
 import arxiv
 
 from taxonomy_generator.corpus.arxiv_helper import extract_paper_info
-from taxonomy_generator.corpus.corpus_types import Paper
+from taxonomy_generator.models.corpus import Paper
 
 AI_SAFETY_SUBTOPICS = {
     "alignment": ["AI alignment", "aligned AI", "value alignment"],

@@ -7,8 +7,8 @@ from pathlib import Path
 
 from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.corpus.corpus_types import Paper
 from taxonomy_generator.corpus.prompts import IS_AI_SAFETY, IS_AI_SAFETY_EXPLANATION
+from taxonomy_generator.models.corpus import Paper
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.parse_llm import first_int, get_xml_content
 

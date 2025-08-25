@@ -5,8 +5,8 @@ from tabulate import tabulate
 
 from taxonomy_generator.config import SMALL_MODEL
 from taxonomy_generator.corpus.corpus_instance import corpus
-from taxonomy_generator.corpus.corpus_types import Paper
-from taxonomy_generator.scripts.generator.generator_types import Topic
+from taxonomy_generator.models.corpus import Paper
+from taxonomy_generator.models.generator import Topic
 from taxonomy_generator.scripts.generator.prompts import get_sort_prompt
 from taxonomy_generator.utils.llm import run_in_parallel
 from taxonomy_generator.utils.utils import format_perc, save_pydantic
