@@ -2,8 +2,8 @@ import json
 import random
 
 from taxonomy_generator.config import (
-    ARXIV_ALL_PAPERS_FORMAT,
-    ARXIV_FILTERED_PAPERS_FORMAT,
+    ARXIV_ALL_PAPERS_PATH,
+    ARXIV_FILTERED_PAPERS_PATH,
     CATEGORY,
     CORPUS_CUTOFFS_PATH,
 )
@@ -12,6 +12,7 @@ from taxonomy_generator.models.corpus import Paper
 
 
 def get_manual_cutoffs(category: str) -> dict[int, int]:
+    """Transforms citation cuttoffs to their indicative year."""
     corpus_cuttofs = json.loads(CORPUS_CUTOFFS_PATH.read_text())[category]
 
     year_start = corpus_cuttofs["year_start"]
@@ -34,9 +35,20 @@ def get_manual_cutoffs(category: str) -> dict[int, int]:
 
 
 def filter_arxiv_papers(category: str) -> list[Paper]:
+    """Filter arXiv papers based on citation count thresholds for each year.
+
+    Reads all papers for the given category and filters them to keep only
+    those with citation counts above the year-specific thresholds.
+
+    Args:
+        category: arXiv category (e.g., 'hep-th', 'cs.AI')
+
+    Returns:
+        List of Paper objects that meet the citation criteria
+    """
     manual_cutoffs = get_manual_cutoffs(category)
 
-    papers = read_papers_jsonl(ARXIV_ALL_PAPERS_FORMAT.format(category))
+    papers = read_papers_jsonl(ARXIV_ALL_PAPERS_PATH)
 
     print(f"Filtering {len(papers)} papers for {category}")
     filtered_papers: list[Paper] = []
@@ -61,4 +73,4 @@ def print_some_papers(papers: list[Paper]):
 if __name__ == "__main__":
     papers = filter_arxiv_papers(CATEGORY)
 
-    write_papers_jsonl(ARXIV_FILTERED_PAPERS_FORMAT.format(CATEGORY), papers)
+    write_papers_jsonl(ARXIV_FILTERED_PAPERS_PATH, papers)

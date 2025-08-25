@@ -8,47 +8,46 @@ from taxonomy_generator.models.arxiv import ArxivCategoryInfo
 
 load_dotenv()
 
+REPO_ROOT = Path(__file__).parent.parent
+DATA_PATH = REPO_ROOT / "data"
+
 # Arxiv
 USE_ARXIV = getenv("USE_ARXIV") == "True"
 
 CATEGORY = getenv("CATEGORY", "NOTSET")
 if CATEGORY == "NOTSET":
     raise ValueError("CATEGORY is not set")
-ARXIV_ALL_PAPERS_FORMAT = getenv(
-    "ARXIV_ALL_PAPERS_FORMAT", "data/arxiv/categories/{}/papers.jsonl"
-)
-ARXIV_ALL_PAPERS_PROGRESS_FORMAT = getenv(
-    "ARXIV_ALL_PAPERS_PROGRESS_FORMAT", "data/arxiv/categories/{}/progress.json"
-)
-ARXIV_FILTERED_PAPERS_FORMAT = getenv(
-    "ARXIV_FILTERED_PAPERS_FORMAT", "data/arxiv/categories/{}/filtered_papers.jsonl"
-)
-ARXIV_AI_FILTERED_PAPERS_FORMAT = getenv(
-    "ARXIV_AI_FILTERED_PAPERS_FORMAT",
-    "data/arxiv/categories/{}/ai_filtered_papers.jsonl",
-)
-ARXIV_TREE_FORMAT = getenv("ARXIV_TREE_FORMAT", "data/arxiv/categories/{}/tree.json")
-ARXIV_BREAKDOWN_RESULTS_FORMAT = getenv(
-    "ARXIV_BREAKDOWN_RESULTS_FORMAT", "data/arxiv/categories/{}/breakdown_results"
+
+ARXIV_CATEGORY_PATH = REPO_ROOT / "data/arxiv/categories" / CATEGORY
+ARXIV_ALL_PAPERS_PATH = ARXIV_CATEGORY_PATH / "papers.jsonl"
+ARXIV_ALL_PAPERS_PROGRESS_PATH = ARXIV_CATEGORY_PATH / "progress.json"
+ARXIV_CITATIONS_PROGRESS_PATH = ARXIV_CATEGORY_PATH / "citations_progress"
+ARXIV_FILTERED_PAPERS_PATH = ARXIV_CATEGORY_PATH / "filtered_papers.jsonl"
+ARXIV_AI_FILTERED_PAPERS_PATH = ARXIV_CATEGORY_PATH / "ai_filtered_papers.jsonl"
+ARXIV_TREE_PATH = ARXIV_CATEGORY_PATH / "tree.json"
+ARXIV_BREAKDOWN_RESULTS_PATH = ARXIV_CATEGORY_PATH / "breakdown_results"
+
+CORPUS_CUTOFFS_PATH = (
+    REPO_ROOT
+    / "taxonomy_generator/corpus/arxiv_scraper/category_metadata/corpus_cuttofs.json"
 )
 
-CORPUS_CUTOFFS_PATH = Path(
-    "taxonomy_generator/corpus/arxiv_scraper/category_metadata/corpus_cuttofs.json"
+ARXIV_CATEGORY_METADATA_PATH = (
+    REPO_ROOT
+    / "taxonomy_generator/corpus/arxiv_scraper/category_metadata/arxiv_categories.json"
 )
-ARXIV_CATEGORY_METADATA_PATH = Path(
-    "taxonomy_generator/corpus/arxiv_scraper/category_metadata/arxiv_categories.json"
-)
+
 
 # Generator
 CUSTOM_FIELD = getenv("CUSTOM_FIELD")
 CUSTOM_DESCRIPTION = getenv("CUSTOM_DESCRIPTION")
 if not CUSTOM_FIELD or not CUSTOM_DESCRIPTION:
     raise ValueError("CUSTOM_FIELD and CUSTOM_DESCRIPTION must be set")
-CUSTOM_TREE_PATH = getenv("CUSTOM_TREE_PATH", "data/tree.json")
-CUSTOM_BREAKDOWN_RESULTS_PATH = getenv(
-    "CUSTOM_BREAKDOWN_RESULTS_PATH", "data/breakdown_results"
+CUSTOM_TREE_PATH = Path(getenv("CUSTOM_TREE_PATH", DATA_PATH / "tree.json"))
+CUSTOM_BREAKDOWN_RESULTS_PATH = Path(
+    getenv("CUSTOM_BREAKDOWN_RESULTS_PATH", DATA_PATH / "breakdown_results")
 )
-CUSTOM_CORPUS_PATH = getenv("CUSTOM_CORPUS_PATH", "data/corpus.jsonl")
+CUSTOM_CORPUS_PATH = Path(getenv("CUSTOM_CORPUS_PATH", DATA_PATH / "corpus.jsonl"))
 
 TOPICS_MODEL = getenv("TOPICS_MODEL", "claude-sonnet-4-20250514")
 FEEDBACK_MODEL = getenv("FEEDBACK_MODEL", "gemini-2.5-pro")
@@ -70,26 +69,15 @@ ARXIV_CATEGORY_METADATA = ARXIV_CATEGORIES_METADATA[CATEGORY]
 
 FIELD = ARXIV_CATEGORY_METADATA.name if USE_ARXIV else CUSTOM_FIELD
 DESCRIPTION = ARXIV_CATEGORY_METADATA.description if USE_ARXIV else CUSTOM_DESCRIPTION
-CORPUS_PATH = Path(
-    ARXIV_AI_FILTERED_PAPERS_FORMAT.format(CATEGORY)
-    if USE_ARXIV
-    else CUSTOM_CORPUS_PATH
+CORPUS_PATH = ARXIV_AI_FILTERED_PAPERS_PATH if USE_ARXIV else CUSTOM_CORPUS_PATH
+TREE_PATH = ARXIV_TREE_PATH if USE_ARXIV else CUSTOM_TREE_PATH
+BREAKDOWN_RESULTS_PATH = (
+    ARXIV_BREAKDOWN_RESULTS_PATH if USE_ARXIV else CUSTOM_BREAKDOWN_RESULTS_PATH
 )
-TREE_PATH = Path(ARXIV_TREE_FORMAT.format(CATEGORY) if USE_ARXIV else CUSTOM_TREE_PATH)
-BREAKDOWN_RESULTS_PATH = Path(
-    ARXIV_BREAKDOWN_RESULTS_FORMAT.format(CATEGORY)
-    if USE_ARXIV
-    else CUSTOM_BREAKDOWN_RESULTS_PATH
-)
+
 
 if __name__ == "__main__":
     print(f"CATEGORY: {CATEGORY}")
-    print(f"ARXIV_ALL_PAPERS_FORMAT: {ARXIV_ALL_PAPERS_FORMAT}")
-    print(f"ARXIV_ALL_PAPERS_PROGRESS_FORMAT: {ARXIV_ALL_PAPERS_PROGRESS_FORMAT}")
-    print(f"ARXIV_FILTERED_PAPERS_FORMAT: {ARXIV_FILTERED_PAPERS_FORMAT}")
-    print(f"ARXIV_AI_FILTERED_PAPERS_FORMAT: {ARXIV_AI_FILTERED_PAPERS_FORMAT}")
-    print(f"ARXIV_TREE_FORMAT: {ARXIV_TREE_FORMAT}")
-    print(f"ARXIV_BREAKDOWN_RESULTS_FORMAT: {ARXIV_BREAKDOWN_RESULTS_FORMAT}")
 
     print("-" * 100)
 
@@ -106,6 +94,9 @@ if __name__ == "__main__":
     print(f"CORPUS_PATH: {CORPUS_PATH}")
     print(f"TREE_PATH: {TREE_PATH}")
     print(f"BREAKDOWN_RESULTS_PATH: {BREAKDOWN_RESULTS_PATH}")
-    print(f"TOPICS_MODEL: {TOPICS_MODEL}")
 
+    print("-" * 100)
+
+    print(f"TOPICS_MODEL: {TOPICS_MODEL}")
     print(f"SMALL_MODEL: {SMALL_MODEL}")
+    print(f"FEEDBACK_MODEL: {FEEDBACK_MODEL}")

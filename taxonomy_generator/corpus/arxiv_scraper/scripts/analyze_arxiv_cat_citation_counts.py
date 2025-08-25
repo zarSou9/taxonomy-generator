@@ -1,9 +1,10 @@
 from collections import defaultdict
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from taxonomy_generator.config import ARXIV_ALL_PAPERS_FORMAT, CATEGORY
+from taxonomy_generator.config import ARXIV_ALL_PAPERS_PATH, CATEGORY
 from taxonomy_generator.corpus.arxiv_scraper.scripts.filter_arxiv_papers import (
     get_manual_cutoffs,
 )
@@ -11,7 +12,7 @@ from taxonomy_generator.corpus.corpus import read_papers_jsonl
 
 
 def analyze_citation_counts_by_year(
-    corpus_path: str, plot: bool = False
+    corpus_path: str | Path, plot: bool = False
 ) -> defaultdict[int, list[int]]:
     papers = read_papers_jsonl(corpus_path)
 
@@ -241,9 +242,7 @@ def visualize_cutoff_strategy(
 if __name__ == "__main__":
     # First, show the basic citation analysis
     print("Analyzing citation patterns by year...")
-    papers_by_year = analyze_citation_counts_by_year(
-        ARXIV_ALL_PAPERS_FORMAT.format(CATEGORY)
-    )
+    papers_by_year = analyze_citation_counts_by_year(ARXIV_ALL_PAPERS_PATH)
 
     # Then analyze different cutoff strategies (includes visualization for each)
     analyze_citation_cutoffs(papers_by_year, CATEGORY, target_total=5000)

@@ -1,8 +1,9 @@
+from InquirerPy import inquirer
+
 from taxonomy_generator.config import (
-    ARXIV_AI_FILTERED_PAPERS_FORMAT,
+    ARXIV_AI_FILTERED_PAPERS_PATH,
     ARXIV_CATEGORY_METADATA,
-    ARXIV_FILTERED_PAPERS_FORMAT,
-    CATEGORY,
+    ARXIV_FILTERED_PAPERS_PATH,
     SMALL_MODEL,
 )
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
@@ -56,10 +57,20 @@ Use Y for sufficient quality/relevance, N for insufficient
 
 
 def ai_filter_arxiv_papers():
-    papers = read_papers_jsonl(ARXIV_FILTERED_PAPERS_FORMAT.format(CATEGORY))
+    papers = read_papers_jsonl(ARXIV_FILTERED_PAPERS_PATH)
 
     # Generate prompts for all papers
     prompts = [get_filter_arxiv_paper_prompt(paper) for paper in papers]
+
+    print("SAMPLE_PROMPT:")
+    print("-" * 20)
+    print(prompts[0])
+    print("-" * 20)
+    if not inquirer.confirm(  # pyright: ignore[reportPrivateImportUsage]
+        "Does this prompt look correct?",
+        default=True,
+    ).execute():
+        return
 
     # Process all papers in parallel
     responses = run_in_parallel(prompts, model=SMALL_MODEL, max_workers=40)
@@ -92,9 +103,7 @@ def ai_filter_arxiv_papers():
 
         filtered_papers.append(paper)
 
-    write_papers_jsonl(
-        ARXIV_AI_FILTERED_PAPERS_FORMAT.format(CATEGORY), filtered_papers
-    )
+    write_papers_jsonl(ARXIV_AI_FILTERED_PAPERS_PATH, filtered_papers)
 
 
 if __name__ == "__main__":

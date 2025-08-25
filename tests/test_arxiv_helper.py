@@ -26,6 +26,7 @@ from taxonomy_generator.corpus.arxiv_helper import get_arxiv_id_from_url
         ("https://arxiv.org/abs/hep-th/0603155", False, "hep-th/0603155"),
         ("https://arxiv.org/pdf/hep-th/0603155.pdf", True, "hep-th/0603155"),
         ("https://arxiv.org/pdf/hep-th/0603155.pdf", False, "hep-th/0603155"),
+        ("https://arxiv.org/pdf/eess.SY/0603155.pdf", False, "eess.SY/0603155"),
         # Different URL paths
         ("https://arxiv.org/html/2301.12345v3", True, "2301.12345v3"),
         ("https://arxiv.org/html/2301.12345v3", False, "2301.12345"),

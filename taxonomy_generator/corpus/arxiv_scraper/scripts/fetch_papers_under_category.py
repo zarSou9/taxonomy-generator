@@ -6,9 +6,10 @@ from typing import Any
 import arxiv
 
 from taxonomy_generator.config import (
-    ARXIV_ALL_PAPERS_FORMAT,
-    ARXIV_ALL_PAPERS_PROGRESS_FORMAT,
+    ARXIV_ALL_PAPERS_PATH,
+    ARXIV_ALL_PAPERS_PROGRESS_PATH,
     CATEGORY,
+    CORPUS_CUTOFFS_PATH,
 )
 from taxonomy_generator.corpus.arxiv_helper import extract_paper_info
 from taxonomy_generator.corpus.corpus import read_papers_jsonl, write_papers_jsonl
@@ -18,8 +19,8 @@ from taxonomy_generator.models.corpus import Paper
 def save_progress(progress_file: Path, progress: dict[str, Any]) -> None:
     """Save current progress to file."""
     progress["last_update"] = datetime.now().isoformat()
-    with open(progress_file, "w") as f:
-        json.dump(progress, f, indent=2)
+    progress_file.parent.mkdir(parents=True, exist_ok=True)
+    progress_file.write_text(json.dumps(progress, indent=2))
 
 
 def fetch_arxiv_category(
@@ -42,9 +43,6 @@ def fetch_arxiv_category(
     Returns:
         List of Paper objects
     """
-    papers_file = Path(ARXIV_ALL_PAPERS_FORMAT.format(category))
-    progress_file = Path(ARXIV_ALL_PAPERS_PROGRESS_FORMAT.format(category))
-
     # Initialize arXiv client
     client = arxiv.Client(
         page_size=min(batch_size, 2000),  # arXiv API limit
@@ -59,9 +57,8 @@ def fetch_arxiv_category(
         "start_time": None,
         "last_update": None,
     }
-    if progress_file.exists():
-        with open(progress_file) as f:
-            progress = json.load(f)
+    if ARXIV_ALL_PAPERS_PROGRESS_PATH.exists():
+        progress = json.loads(ARXIV_ALL_PAPERS_PROGRESS_PATH.read_text())
 
     # Check if already completed
     if progress.get("completed"):
@@ -69,16 +66,16 @@ def fetch_arxiv_category(
             f"Category '{category}' already completed. Found {progress['total_fetched']} papers."
         )
         print("Delete the progress file to start over, or load existing papers.")
-        return read_papers_jsonl(papers_file)
+        return read_papers_jsonl(ARXIV_ALL_PAPERS_PATH)
 
     # Initialize progress
     if progress["start_time"] is None:
         progress["start_time"] = datetime.now().isoformat()
-        save_progress(progress_file, progress)
+        save_progress(ARXIV_ALL_PAPERS_PATH, progress)
 
     print(f"Starting to fetch all papers from category '{category}'")
-    print(f"Output will be saved to: {papers_file}")
-    print(f"Progress will be tracked in: {progress_file}")
+    print(f"Output will be saved to: {ARXIV_ALL_PAPERS_PATH}")
+    print(f"Progress will be tracked in: {ARXIV_ALL_PAPERS_PROGRESS_PATH}")
 
     # Fetch papers by date range
     all_papers = []
@@ -92,9 +89,15 @@ def fetch_arxiv_category(
     if last_year is not None:
         current_year = int(last_year)
         last_month = progress.get("last_month")
-        current_month = int(last_month) if last_month is not None else 1
+        if last_month is None:
+            current_month = 1
+        else:
+            current_month = last_month + 1
+            if current_month > 12:
+                current_month = 1
+                current_year += 1
         # Load existing papers
-        all_papers = read_papers_jsonl(papers_file)
+        all_papers = read_papers_jsonl(ARXIV_ALL_PAPERS_PATH)
 
     print(f"Starting fetch from {current_year}-{current_month:02d}")
 
@@ -130,7 +133,9 @@ def fetch_arxiv_category(
             print(
                 f"Found {len(month_papers)} papers for {current_year}-{current_month:02d}"
             )
-            write_papers_jsonl(papers_file, month_papers, append=len(all_papers) > 0)
+            write_papers_jsonl(
+                ARXIV_ALL_PAPERS_PATH, month_papers, append=len(all_papers) > 0
+            )
             all_papers.extend(month_papers)
 
             # Update progress
@@ -142,7 +147,7 @@ def fetch_arxiv_category(
                     "completed": False,
                 }
             )
-            save_progress(progress_file, progress)
+            save_progress(ARXIV_ALL_PAPERS_PROGRESS_PATH, progress)
         else:
             print(f"No papers found for {current_year}-{current_month:02d}")
 
@@ -159,38 +164,36 @@ def fetch_arxiv_category(
             "completed": True,
         }
     )
-    save_progress(progress_file, progress)
+    save_progress(ARXIV_ALL_PAPERS_PROGRESS_PATH, progress)
 
     print(f"\nCompleted! Fetched {len(all_papers)} papers from category '{category}'")
-    print(f"Papers saved to: {papers_file}")
+    print(f"Papers saved to: {ARXIV_ALL_PAPERS_PATH}")
 
     return all_papers
 
 
 def get_fetch_status(category: str) -> dict[str, Any]:
     """Get current status of the fetching process."""
-    papers_file = Path(ARXIV_ALL_PAPERS_FORMAT.format(category))
-    progress_file = Path(ARXIV_ALL_PAPERS_PROGRESS_FORMAT.format(category))
-
     progress = {"total_fetched": 0, "completed": False}
-    if progress_file.exists():
-        with open(progress_file) as f:
-            progress = json.load(f)
+    if ARXIV_ALL_PAPERS_PROGRESS_PATH.exists():
+        progress = json.loads(ARXIV_ALL_PAPERS_PROGRESS_PATH.read_text())
 
-    existing_papers = len(read_papers_jsonl(papers_file))
+    existing_papers = len(read_papers_jsonl(ARXIV_ALL_PAPERS_PATH))
 
     return {
         "category": category,
         "progress": progress,
-        "papers_file_exists": papers_file.exists(),
+        "papers_file_exists": ARXIV_ALL_PAPERS_PATH.exists(),
         "papers_in_file": existing_papers,
     }
 
 
 if __name__ == "__main__":
-    # Example: Fetch all papers from hep-th category
-    print("🚀 Starting to fetch all papers from hep-th category...")
-    print("This may take a while as hep-th has many papers dating back to 1991.")
+    start_year = json.loads(CORPUS_CUTOFFS_PATH.read_text())[CATEGORY]["year_start"]
+    print(f"🚀 Starting to fetch all papers from {CATEGORY} category...")
+    print(
+        f"This may take a while as {CATEGORY} has many papers dating back to {start_year}."
+    )
     print("The script will save progress and can be resumed if interrupted.")
     print()
 
@@ -216,8 +219,8 @@ if __name__ == "__main__":
         try:
             papers = fetch_arxiv_category(
                 category=CATEGORY,
-                start_year=1991,
-                batch_size=2000,
+                start_year=start_year,
+                batch_size=1000,
                 delay_seconds=2.0,
             )
 
