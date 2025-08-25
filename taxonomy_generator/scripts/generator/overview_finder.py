@@ -8,7 +8,7 @@ from taxonomy_generator.utils.exa import search_arxs
 from taxonomy_generator.utils.llm import run_in_parallel
 
 
-def get_is_overview_prompt(topic: Topic, parents: list[Topic], paper: Paper):
+def get_is_overview_prompt(topic: Topic, parents: list[Topic], paper: Paper) -> str:
     return f"""
 Please determine if the included paper is an overview, survey, or literature review of {topic.title} research in the context of {get_parents_context(parents)}.
 
